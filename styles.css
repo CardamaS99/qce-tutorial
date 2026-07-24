@@ -387,6 +387,7 @@ h2.section-title {
   transition: transform 0.25s ease, box-shadow 0.25s ease;
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .def-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); }
