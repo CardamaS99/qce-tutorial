@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Practical Distributed Quantum Computing · NetQMPI over CUNQA — IEEE QCE26 Tutorial</title>
+<meta name="google-site-verification" content="P7sriwk7mPbn010ObYihtnQ-udC82GXivOHCSkdBxAw" />
 <meta name="description" content="A hands-on IEEE Quantum Week 2026 (QCE26) tutorial on programming distributed quantum applications with NetQMPI over the CUNQA emulator, by CiTIUS (USC) and CESGA.">
 
 <meta property="og:title" content="Practical Distributed Quantum Computing: NetQMPI over CUNQA">
@@ -172,23 +173,38 @@
           <div class="agenda-block">
             <div class="agenda-time">13:00<br>13:30</div>
             <div>
-              <h4>Introduction &amp; Environment Setup</h4>
+              <h4>Foundations of Distributed Computing</h4>
               <ul>
-                <li>Monolithic QPU bottlenecks: cross-talk, cooling, wiring.</li>
-                <li>Network topologies for multi-QPU architectures.</li>
-                <li><span class="ex-chip">Exercise 0</span>Verifying the CUNQA and NetQMPI initialization.</li>
+                <li>Anatomy of a distributed system.</li>
+                <li>Structure of a High-Peformance Computing (HPC) cluster.</li>
+                <li>How to divide computational tasks across multiple nodes.</li>
+                <li><span class="ex-chip">Exercise 0</span>Environment setup.</li>
               </ul>
             </div>
           </div>
           <div class="agenda-block">
-            <div class="agenda-time">13:30<br>14:30</div>
+            <div class="agenda-time">13:30<br>14:00</div>
+            <div>
+              <h4>Programming Model: MPI Basics</h4>
+              <ul>
+                <li>Single Program Multiple Data (SPMD) programming model.</li>
+                <li><span class="ex-chip">Exercise 1</span>"Hello world" with MPI.</li>
+                <li>Point to point directives for communication between processes.</li>
+                <li><span class="ex-chip">Exercise 2</span>Distributed vector addition.</li>
+                <li>Collective operations.</li>
+                <li><span class="ex-chip">Exercise 3</span>Dot product with a reduction.</li>
+              </ul>
+            </div>
+          </div>
+          <div class="agenda-block">
+            <div class="agenda-time">14:00<br>14:30</div>
             <div>
               <h4>Programming Model: NetQMPI Basics</h4>
               <ul>
-                <li>Quantum Communicators — mapping classical MPI onto quantum states.</li>
-                <li><span class="ex-chip">Exercise 1</span>Creating a Distributed Bell State between two NetQMPI ranks.</li>
+                <li>Quantum Distributed Directives, mapping classical MPI operations to quantum states.</li>
+                <li><span class="ex-chip">Exercise 4</span>Creating a Distributed Bell State between two NetQMPI ranks.</li>
                 <li>Managing non-local operations and distributed gates.</li>
-                <li><span class="ex-chip">Exercise 2</span>Executing a Non-Local CNOT gate across two different QPUs.</li>
+                <li><span class="ex-chip">Exercise 5</span>Executing a Non-Local CNOT gate across two different QPUs.</li>
               </ul>
             </div>
           </div>
@@ -210,7 +226,7 @@
               <ul>
                 <li>Architecture of the CUNQA emulator.</li>
                 <li>Simulating network noise and latency.</li>
-                <li><span class="ex-chip">Exercise 3</span>Analyzing teleportation fidelity under different CUNQA noise models.</li>
+                <li><span class="ex-chip">Exercise 6</span>Analyzing teleportation fidelity under different CUNQA noise models.</li>
               </ul>
             </div>
           </div>
@@ -219,8 +235,8 @@
             <div>
               <h4>Advanced Distributed Algorithms</h4>
               <ul>
-                <li><span class="ex-chip">Exercise 4</span>Multi-node communication: generating and distributing an EPR state across 3+ QPUs.</li>
-                <li><span class="ex-chip">Exercise 5</span>Building a distributed Quantum Fourier Transform (QFT).</li>
+                <li><span class="ex-chip">Exercise 7</span>Multi-node communication: generating and distributing an EPR state across 3+ QPUs.</li>
+                <li><span class="ex-chip">Exercise 8</span>Building a distributed Quantum Fourier Transform (QFT).</li>
               </ul>
             </div>
           </div>
@@ -481,8 +497,7 @@ results = gather(qjobs)
           <p class="biblio-authors">D. Barral, F.J. Cardama, G. Díaz, D. Faílde, I.F. Llovo, M. Mussa Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J.C. Pichel, T.F. Pena, A. Gómez</p>
           <div class="biblio-meta">
             <span class="biblio-venue">Computer Science Review, Vol. 57, 2025, Art. 100747</span>
-            <a class="biblio-link" href="https://doi.org/10.1016/j.cosrev.2025.100747" target="_blank" rel="noopener">DOI <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
-            <a class="biblio-link" href="https://arxiv.org/abs/2404.01265" target="_blank" rel="noopener">arXiv:2404.01265 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            <a class="biblio-link" href="https://doi.org/10.1016/j.cosrev.2025.100747" target="_blank" rel="noopener">10.1016/J.COSREV.2025.100747 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
           </div>
         </div>
       </div>
@@ -491,10 +506,10 @@ results = gather(qjobs)
         <div class="biblio-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
         <div class="biblio-body">
           <h3>NetQMPI: An MPI-Inspired Library for Programming Distributed Quantum Applications over Quantum Networks Using NetQASM SDK</h3>
-          <p class="biblio-authors">F.J. Cardama, T.F. Pena</p>
+          <p class="biblio-authors">F.J. Cardama, J. Vázquez-Pérez,T.F. Pena, A. Gómez</p>
           <div class="biblio-meta">
-            <span class="biblio-venue">arXiv preprint, 2025</span>
-            <a class="biblio-link" href="https://arxiv.org/abs/2512.11483" target="_blank" rel="noopener">arXiv:2512.11483 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
+            <span class="biblio-venue">IEEE Access, 2026</span>
+            <a class="biblio-link" href="https://ieeexplore.ieee.org/document/11654595" target="_blank" rel="noopener">10.1109/ACCESS.2026.3723566<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17 17 7M9 7h8v8"/></svg></a>
           </div>
         </div>
       </div>
