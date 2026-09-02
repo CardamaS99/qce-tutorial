@@ -2,7 +2,8 @@
 /** Inserta una figura. El SVG se toma de src/figures/<id>.<idioma>.svg */
 interface Props { id: string }
 const { id } = Astro.props;
-const lang = Astro.url.pathname.startsWith('/en') ? 'en' : 'es';
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+const lang = Astro.url.pathname.startsWith(`${base}/en`) ? 'en' : 'es';
 
 const svgs = import.meta.glob<string>('../figures/*.svg', { query: '?raw', import: 'default', eager: true });
 const key = `../figures/${id}.${lang}.svg`;

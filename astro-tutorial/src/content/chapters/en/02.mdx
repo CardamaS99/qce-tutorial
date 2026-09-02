@@ -32,9 +32,5 @@ Under **distributed memory** each process has its own private address space. The
 In practice real codes are hybrid: MPI between nodes, OpenMP or CUDA within. But for our purposes the relevant model is pure distributed memory, because that is what describes a QPU network: **each quantum node has its own qubit register and there is no mechanism by which another node reads that register directly**. Distributed memory is not a design choice in distributed quantum computing; it is the only possible topology.
 
 <Note label="A point of terminology">
-  Do not conflate
-  
-  with
-  
-  . MPI launches processes; you can have eight processes on one node or one per node. The standard promises nothing about physical placement; the scheduler decides. This distinction between logical identity and physical resource is exactly the one NetQMPI inherits when it maps ranks to QPUs, and it is worth establishing clearly here.
+  Do not conflate *process* with *nodes*. MPI launches processes; you can have eight processes on one node or one per node. The standard promises nothing about physical placement; the scheduler decides. This distinction between logical identity and physical resource is exactly the one NetQMPI inherits when it maps ranks to QPUs, and it is worth establishing clearly here.
 </Note>

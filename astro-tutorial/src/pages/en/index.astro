@@ -12,7 +12,7 @@ import Formula from '../../components/Formula.astro';
 import Ref from '../../components/Ref.astro';
 import i18n from '../../data/i18n.json';
 
-const lang = 'es' as const;
+const lang = 'en' as const;
 const strings = i18n[lang];
 const components = { Figure, Bridge, Warning, Note, Exercise, Formula, Ref };
 
@@ -20,13 +20,13 @@ const entries = (await getCollection('chapters', (c) => c.data.lang === lang))
   .sort((a, b) => a.data.order - b.data.order);
 
 const rendered = await Promise.all(
-  entries.map(async (e) => ({ data: e.data, slug: `c${e.data.order}`, Content: (await render(e)).Content }))
+  entries.map(async (e) => ({ data: e.data, slug: `e${e.data.order}`, Content: (await render(e)).Content }))
 );
 const tocItems = rendered.map((r) => ({
   slug: r.slug, order: r.data.order, title: r.data.title, part: r.data.part, accent: r.data.accent,
 }));
 ---
-<Book lang={lang} strings={strings} other="/en/">
+<Book lang={lang} strings={strings} other={`${import.meta.env.BASE_URL.replace(/\/$/, '')}/es/`}>
   <Toc slot="toc" heading={strings.toc} refsLabel={strings.references} chapters={tocItems} />
   {rendered.map(({ data, slug, Content }) => (
     <section class="chapter" id={slug} data-accent={data.accent}>

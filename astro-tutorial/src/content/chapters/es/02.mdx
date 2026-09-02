@@ -32,9 +32,5 @@ En **memoria distribuida** cada proceso tiene su propio espacio de direcciones p
 En la práctica los códigos reales son híbridos: MPI entre nodos, OpenMP o CUDA dentro. Pero para lo que nos ocupa aquí, el modelo relevante es el distribuido puro, porque es el que describe una red de QPU: **cada nodo cuántico tiene su propio registro de qubits y no existe ningún mecanismo por el que otro nodo lea ese registro directamente**. La memoria distribuida no es una elección de diseño en computación cuántica distribuida; es la única topología posible.
 
 <Note label="Precisión terminológica">
-  No confundir
-  
-  con
-  
-  . MPI lanza procesos; puedes tener ocho procesos en un solo nodo o uno por nodo. El estándar no promete nada sobre la ubicación física; lo decide el planificador. Esta distinción entre identidad lógica y recurso físico es exactamente la que NetQMPI hereda cuando mapea ranks a QPU, y merece la pena establecerla aquí con claridad.
+  No confundir *proceso* con *nodo*. MPI lanza procesos; puedes tener ocho procesos en un solo nodo o uno por nodo. El estándar no promete nada sobre la ubicación física; lo decide el planificador. Esta distinción entre identidad lógica y recurso físico es exactamente la que NetQMPI hereda cuando mapea ranks a QPU, y merece la pena establecerla aquí con claridad.
 </Note>

@@ -1,0 +1,920 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>De circuitos monolíticos a redes multi-QPU</title><meta name="description" content="Fundamentos de programación distribuida en HPC, el estándar MPI, y su traslación al dominio cuántico con NetQMPI sobre el emulador CUNQA. Material de apoyo del primer bloque del tutorial."><link rel="alternate" hreflang="en" href="/tutorial/en/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="/tutorial/_astro/i18n.BK51drxS.css"></head><body><header class="masthead"><div><a class="lang-switch" href="/tutorial/en/" hreflang="en">English</a><p class="eyebrow">IEEE Quantum Week · QCE26 · tutorial de 3 horas · 18 de septiembre</p><h1>De circuitos monolíticos a redes multi-QPU</h1><p class="dek">Fundamentos de programación distribuida en HPC, el estándar MPI, y su traslación al dominio cuántico con NetQMPI sobre el emulador CUNQA. Material de apoyo del primer bloque del tutorial.</p><div class="meta"><div>Bloque<strong>Primera hora y media</strong></div><div>Requisitos<strong>Python; circuitos cuánticos básicos</strong></div><div>Herramientas<strong>mpi4py · NetQMPI · CUNQA</strong></div><div>Objetivo<strong>Escribir y ejecutar una aplicación distribuida</strong></div></div></div></header><div class="shell"><nav class="toc" aria-label="Contenido"><p class="toc-head">Contenido</p><div class="toc-group" data-accent="classical">Parte I</div><a href="#c1"><b>1</b>Por qué paralelizamos</a><a href="#c2"><b>2</b>Anatomía de un sistema distribuido</a><a href="#c3"><b>3</b>Cómo se reparte el trabajo</a><a href="#c4"><b>4</b>Cuánto se puede ganar</a><a href="#c5"><b>5</b>Cuánto cuesta comunicar</a><div class="toc-group" data-accent="classical">Parte II</div><a href="#c6"><b>6</b>MPI: SPMD, rank y communicator</a><a href="#c7"><b>7</b>Comunicación punto a punto</a><a href="#c8"><b>8</b>Operaciones colectivas</a><a href="#c9"><b>9</b>Ejercicios con mpi4py</a><div class="toc-group" data-accent="quantum">Parte III</div><a href="#c10"><b>10</b>Qué se rompe al pasar al dominio cuántico</a><a href="#c11"><b>11</b>La pila software</a><a href="#c12"><b>12</b>NetQMPI: la interfaz</a><a href="#c13"><b>13</b>Colectivas cuánticas</a><a href="#c14"><b>14</b>Caso de estudio: el estado GHZ distribuido</a><a href="#c15"><b>15</b>Cierre y qué queda fuera</a><a href="#refs"><b>§</b>Referencias</a></nav><main><section class="chapter" id="c1" data-accent="classical"><span class="chapter-num">Parte I · Capítulo 1</span><h2>Por qué paralelizamos</h2><p class="lead">La computación distribuida no es una técnica de optimización avanzada que se aplica cuando ya no queda nada más que hacer. Es la consecuencia directa de dos límites físicos que se alcanzaron hace dos décadas y que no se han levantado desde entonces. Conviene empezar por ahí, porque exactamente los mismos dos límites reaparecen —con otro vocabulario— cuando hablamos de conectar varias QPU.</p><h3 id="11-el-escalado-de-dennard-y-su-final">1.1 El escalado de Dennard y su final</h3>
+<p>En 1974, Robert Dennard y sus coautores formularon la regla que gobernó el diseño de microprocesadores durante treinta años.<sup class="ref-call"><a href="#r19">19</a></sup> El enunciado, simplificado: si reduces las dimensiones lineales de un transistor por un factor <em>k</em>, y reduces proporcionalmente la tensión de alimentación, entonces la densidad de potencia por unidad de área se mantiene constante. Traducido a consecuencias prácticas: cada nueva generación de proceso te daba más transistores <em>y</em> más frecuencia de reloj <em>sin</em> pagar más vatios por milímetro cuadrado.</p>
+<p>Eso es lo que se llamó <em>the free lunch</em>. Un programador podía escribir código secuencial y confiar en que, sin tocar una línea, ese mismo código iría más rápido en el hardware del año siguiente. No era una promesa de marketing: era una propiedad física del escalado.</p>
+<p>El escalado de Dennard se rompe alrededor de 2004–2006. La razón inmediata es que la tensión de umbral de los transistores no puede seguir bajando sin que la corriente de fuga (<em>leakage</em>) se dispare, y la potencia estática empieza a dominar el presupuesto térmico. A partir de ahí, subir la frecuencia significa subir la potencia de forma superlineal, y la potencia se convierte en el recurso restrictivo del diseño.</p>
+<p>Es importante ser preciso con el vocabulario aquí, porque es el error más común al contar esta historia: <strong>lo que se rompió no fue la ley de Moore, sino el escalado de Dennard</strong>. El número de transistores por chip ha seguido creciendo. Lo que dejó de crecer fue lo que podías <em>hacer</em> con ellos manteniendo un único hilo de ejecución. La respuesta de la industria fue replicar: si no puedes hacer que un núcleo vaya más rápido, pon más núcleos. Y en el momento en que hay más de un núcleo, el rendimiento deja de ser un problema del fabricante y pasa a ser un problema del programador.</p>
+<figure><div class="canvas"><svg aria-label="Gráfica logarítmica de 1971 a 2025 mostrando que los transistores por chip siguen creciendo mientras la frecuencia de reloj se estanca hacia 2005, punto en el que empieza a crecer el número de núcleos por chip." role="img" viewbox="0 0 800 400">
+<title>Divergencia de las tendencias de microprocesador</title>
+<line stroke="#E4E6E3" stroke-width="1" x1="70" x2="700" y1="325.7" y2="325.7"></line>
+<line stroke="#E4E6E3" stroke-width="1" x1="70" x2="700" y1="254.3" y2="254.3"></line>
+<line stroke="#E4E6E3" stroke-width="1" x1="70" x2="700" y1="182.9" y2="182.9"></line>
+<line stroke="#E4E6E3" stroke-width="1" x1="70" x2="700" y1="111.5" y2="111.5"></line>
+<line stroke="#E4E6E3" stroke-width="1" x1="70" x2="700" y1="40" y2="40"></line>
+<text class="sv-m" text-anchor="end" x="62" y="329">1</text>
+<text class="sv-m" text-anchor="end" x="62" y="258">10²</text>
+<text class="sv-m" text-anchor="end" x="62" y="186">10⁴</text>
+<text class="sv-m" text-anchor="end" x="62" y="115">10⁶</text>
+<text class="sv-m" text-anchor="end" x="62" y="44">10⁸</text>
+<line stroke="#A8451A" stroke-dasharray="4 4" stroke-width="1" x1="453" x2="453" y1="40" y2="340"></line>
+<text class="sv-m" fill="#A8451A" x="458" y="54">2005 · fin del escalado de Dennard</text>
+<polyline fill="none" points="70,312.8 171,273 284,218.6 396,160.6 453,136.4 509,108.6 565,86.5 621,65 678,43.5" stroke="#12695C" stroke-width="2.2"></polyline>
+<polyline fill="none" points="70,325.7 171,300.8 284,265 396,222 453,206.4 509,197.1 565,189.5 621,181.4 678,174.7" stroke="#3B4754" stroke-width="2"></polyline>
+<polyline fill="none" points="70,330.2 171,300.8 284,271.5 396,218.6 453,200.6 509,200.1 565,199.2 621,197.9 678,195.3" stroke="#A8451A" stroke-dasharray="7 4" stroke-width="2.2"></polyline>
+<polyline fill="none" points="70,325.7 171,325.7 284,325.7 396,325.7 453,315 509,297.9 565,282.7 621,261.2 678,250.5" stroke="#5B3FB8" stroke-dasharray="2 3" stroke-width="2.2"></polyline>
+<circle cx="678" cy="43.5" fill="#12695C" r="3"></circle><circle cx="678" cy="174.7" fill="#3B4754" r="3"></circle><circle cx="678" cy="195.3" fill="#A8451A" r="3"></circle><circle cx="678" cy="250.5" fill="#5B3FB8" r="3"></circle>
+<text class="sv-s" fill="#12695C" x="686" y="47">transistores</text>
+<text class="sv-s" fill="#3B4754" x="686" y="178">monohilo</text>
+<text class="sv-s" fill="#A8451A" x="686" y="199">frecuencia</text>
+<text class="sv-s" fill="#5B3FB8" x="686" y="254">núcleos</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="700" y1="340" y2="340"></line>
+<text class="sv-m" text-anchor="middle" x="70" y="358">1971</text>
+<text class="sv-m" text-anchor="middle" x="171" y="358">1980</text>
+<text class="sv-m" text-anchor="middle" x="284" y="358">1990</text>
+<text class="sv-m" text-anchor="middle" x="396" y="358">2000</text>
+<text class="sv-m" text-anchor="middle" x="509" y="358">2010</text>
+<text class="sv-m" text-anchor="middle" x="621" y="358">2020</text>
+<text class="sv-s" text-anchor="middle" x="385" y="384">Escala vertical logarítmica · unidades normalizadas por serie</text>
+</svg></div><figcaption><p>Las cuatro curvas comparten un solo eje logarítmico y unidades arbitrarias por serie: lo que importa no es el valor absoluto sino la <em>forma</em>. La curva de transistores no se dobla. La de frecuencia se aplana hacia 2005 y desde entonces es esencialmente horizontal. La de núcleos permanece en 1 durante treinta y cuatro años y despega exactamente en el mismo punto donde la frecuencia se detiene. Valores esquemáticos de orden de magnitud; para cifras auditables, véase el conjunto de datos de tendencias de microprocesador de Rupp.<sup class="ref-call"><a href="#r20">20</a></sup></p></figcaption></figure>
+<h3 id="12-el-muro-de-memoria">1.2 El muro de memoria</h3>
+<p>El segundo límite es independiente del primero y, en la práctica actual, más restrictivo. Wulf y McKee lo bautizaron en 1995 con un artículo de cuatro páginas cuyo argumento sigue siendo válido treinta años después.<sup class="ref-call"><a href="#r18">18</a></sup> La observación es sencilla: la velocidad de cómputo y la <em>latencia</em> de acceso a memoria principal han mejorado a ritmos radicalmente distintos. El ancho de banda de memoria ha crecido de forma respetable; la latencia, casi nada. Un acceso a DRAM sigue costando del orden de decenas o centenares de ciclos de reloj, igual que hace décadas.</p>
+<p>La consecuencia se formaliza con el concepto de <strong>intensidad aritmética</strong>: el número de operaciones en coma flotante que ejecutas por cada byte que mueves desde memoria. Si tu algoritmo tiene intensidad aritmética baja, no importa cuántos FLOPS tenga tu máquina —estarás limitado por el movimiento de datos, no por el cálculo. En aceleradores modernos el punto de equilibrio se sitúa en el orden de decenas de FLOP por byte, lo que deja a la mayoría de los núcleos computacionales científicos del lado limitado por memoria. El modelo <em>roofline</em> es la herramienta estándar para visualizar esto y aparece en cualquier tratamiento serio del tema.<sup class="ref-call"><a href="#r17">17</a></sup></p>
+<p>La lección operativa, que conviene grabar porque va a reaparecer en la parte cuántica sin apenas cambios: <strong>mover un dato cuesta más que operar con él</strong>. Todo el diseño de algoritmos paralelos consiste, en el fondo, en reorganizar el cálculo para mover menos.</p>
+<aside class="callout callout--bridge"><span class="callout-label">Puente clásico → cuántico</span><p>En una red de QPU los dos límites tienen equivalente exacto. El equivalente al muro de potencia es el límite de qubits coherentes por dispositivo: no puedes seguir agrandando un único chip indefinidamente sin que la fidelidad y la conectividad se degraden, así que replicas y conectas.<sup class="ref-call"><a href="#r11">11</a></sup> El equivalente al muro de memoria es más severo todavía: mover un qubit entre nodos exige consumir un par entrelazado, un recurso que se genera lentamente, se degrada con el tiempo y no se puede almacenar de forma indefinida. Si en HPC clásico mover datos es caro, en computación cuántica distribuida mover estados es <em>el</em> coste dominante.</p></aside></section><section class="chapter" id="c2" data-accent="classical"><span class="chapter-num">Parte I · Capítulo 2</span><h2>Anatomía de un sistema distribuido</h2><p class="lead">Antes de repartir trabajo hay que saber sobre qué se reparte. La jerarquía física de un supercomputador determina qué operaciones son baratas y cuáles caras, y esa jerarquía es la que después se refleja —a veces mal— en el modelo de programación.</p><h3 id="21-la-jerarquía-física">2.1 La jerarquía física</h3>
+<p>De dentro hacia fuera, un supercomputador contemporáneo se organiza en cuatro niveles:</p>
+<ul>
+<li><strong>Núcleo</strong> (<em>core</em>): la unidad de ejecución. Tiene sus propios registros y sus cachés de primer nivel.</li>
+<li><strong>Socket</strong>: un encapsulado físico que agrupa decenas de núcleos con una caché de último nivel compartida y un controlador de memoria.</li>
+<li><strong>Nodo</strong>: una placa con uno o varios sockets, su memoria DRAM y, cada vez más, aceleradores (GPU y —esta es la apuesta del campo— QPU). Todo lo que hay dentro de un nodo comparte un espacio de direcciones.</li>
+<li><strong>Clúster</strong>: el conjunto de nodos unidos por una red de interconexión de baja latencia. Entre nodos <em>no</em> hay memoria compartida.</li>
+</ul>
+<p>Esa última frase es la bisagra de todo el curso. La frontera del nodo es la frontera del espacio de direcciones, y cruzarla exige un mecanismo explícito de comunicación. Dentro del nodo puedes usar hilos y variables compartidas; fuera, tienes que enviar mensajes.</p>
+<figure><div class="canvas"><svg aria-label="Diagrama de dos nodos de cómputo, cada uno con memoria local y dos sockets de cuatro núcleos, conectados por una red de interconexión común." role="img" viewbox="0 0 800 372">
+<title>Jerarquía núcleo, socket, nodo, clúster</title>
+<rect fill="#F7F8F6" height="209" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="40" y="46"></rect>
+<text class="sv-th" x="56" y="70">nodo 0</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.8" width="290" x="60" y="82"></rect>
+<text class="sv-s" fill="#0C3F38" text-anchor="middle" x="205" y="101">memoria local · un único espacio de direcciones</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="60" y="128"></rect>
+<text class="sv-s" x="70" y="147">socket 0</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="70" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="102" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="134" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="166" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="70" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="131" y="207">caché compartida</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="210" y="128"></rect>
+<text class="sv-s" x="220" y="147">socket 1</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="220" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="252" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="284" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="316" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="220" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="281" y="207">caché compartida</text>
+<rect fill="#F7F8F6" height="209" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="430" y="46"></rect>
+<text class="sv-th" x="446" y="70">nodo 1</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.8" width="290" x="450" y="82"></rect>
+<text class="sv-s" fill="#0C3F38" text-anchor="middle" x="595" y="101">memoria local · un único espacio de direcciones</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="450" y="128"></rect>
+<text class="sv-s" x="460" y="147">socket 0</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="460" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="492" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="524" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="556" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="460" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="521" y="207">caché compartida</text>
+<rect fill="#EDEAFA" height="108" rx="5" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.9" width="140" x="600" y="128"></rect>
+<text class="sv-s" fill="#3B2C82" x="610" y="147">acelerador</text>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="670" y="188">QPU</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="670" y="207">futuro cercano</text>
+<line stroke="#3B4754" stroke-width="1.4" x1="205" x2="205" y1="255" y2="288"></line>
+<line stroke="#3B4754" stroke-width="1.4" x1="595" x2="595" y1="255" y2="288"></line>
+<rect fill="#141C24" height="34" rx="5" width="720" x="40" y="288"></rect>
+<text class="sv-s" fill="#E4E8E4" text-anchor="middle" x="400" y="309">red de interconexión · paso de mensajes explícito, sin memoria común</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="345">la frontera del nodo es la frontera del espacio de direcciones</text>
+</svg></div><figcaption><p>Dentro de un nodo, los núcleos comparten memoria y la comunicación es implícita: escribir una variable basta. Al cruzar a otro nodo hay que empaquetar, enviar y recibir. Nótese el acelerador dibujado en el nodo 1: la tesis de la integración HPC-QC es exactamente esta, tratar la QPU como un acelerador más dentro de la jerarquía existente.<sup class="ref-call"><a href="#r1">1</a></sup></p></figcaption></figure>
+<h3 id="22-memoria-compartida-frente-a-memoria-distribuida">2.2 Memoria compartida frente a memoria distribuida</h3>
+<p>De la jerarquía se derivan dos modelos de programación con propiedades opuestas.</p>
+<p>En <strong>memoria compartida</strong> todos los hilos ven las mismas direcciones. Comunicar es escribir en una variable; no hay coste explícito de transferencia. A cambio, aparecen las condiciones de carrera, hace falta sincronización (cerrojos, barreras, secciones críticas) y el modelo no escala más allá del nodo. OpenMP es el estándar de referencia.</p>
+<p>En <strong>memoria distribuida</strong> cada proceso tiene su propio espacio de direcciones privado. No hay carreras de datos porque no hay datos compartidos; a cambio, toda comunicación es explícita y tiene un coste que el programador debe contabilizar. El modelo escala a cientos de miles de procesos. MPI es el estándar de referencia.<sup class="ref-call"><a href="#r15">15</a></sup></p>
+<p>En la práctica los códigos reales son híbridos: MPI entre nodos, OpenMP o CUDA dentro. Pero para lo que nos ocupa aquí, el modelo relevante es el distribuido puro, porque es el que describe una red de QPU: <strong>cada nodo cuántico tiene su propio registro de qubits y no existe ningún mecanismo por el que otro nodo lea ese registro directamente</strong>. La memoria distribuida no es una elección de diseño en computación cuántica distribuida; es la única topología posible.</p>
+<aside class="callout callout--note"><span class="callout-label">Precisión terminológica</span><p>No confundir <em>proceso</em> con <em>nodo</em>. MPI lanza procesos; puedes tener ocho procesos en un solo nodo o uno por nodo. El estándar no promete nada sobre la ubicación física; lo decide el planificador. Esta distinción entre identidad lógica y recurso físico es exactamente la que NetQMPI hereda cuando mapea ranks a QPU, y merece la pena establecerla aquí con claridad.</p></aside></section><section class="chapter" id="c3" data-accent="classical"><span class="chapter-num">Parte I · Capítulo 3</span><h2>Cómo se reparte el trabajo</h2><p class="lead">Dado un problema y N procesadores, hay esencialmente dos formas de dividirlo. La elección entre ambas no es estética: determina el patrón de comunicación resultante, y el patrón de comunicación determina el rendimiento.</p><h3 id="31-descomposición-de-datos">3.1 Descomposición de datos</h3>
+<p>Se reparte el <em>dominio</em> del problema y todos los procesos ejecutan el mismo código sobre su porción. Es la estrategia dominante en cálculo científico: mallas de diferencias finitas, matrices densas, cuerpos en una simulación gravitatoria, píxeles de una imagen. Cada proceso conoce su bloque, opera sobre él y sólo necesita comunicarse en las fronteras del bloque —lo que en simulación por dominios se llama intercambio de <em>halo</em> o <em>ghost cells</em>.</p>
+<p>Sus propiedades: el código es único y no depende de N; la comunicación se concentra en momentos discretos (una distribución inicial, un intercambio de fronteras por iteración, una reducción final); y escala bien mientras el bloque local sea grande comparado con su frontera, es decir, mientras la razón volumen/superficie sea favorable.</p>
+<h3 id="32-descomposición-de-tareas">3.2 Descomposición de tareas</h3>
+<p>Se reparten las <em>etapas</em> del cálculo y los datos fluyen a través de ellas. Cada proceso hace algo distinto. Es el modelo de un cauce de procesamiento: adquirir, filtrar, transformar, escribir. También el de los grafos de tareas irregulares.</p>
+<p>Sus propiedades son casi complementarias: el código es distinto en cada rank, la comunicación es continua en lugar de discreta, y el rendimiento global lo fija la etapa más lenta, no la suma de las etapas. Balancear un cauce es más difícil que balancear un dominio, porque las etapas rara vez cuestan lo mismo.</p>
+<h3 id="33-el-caso-feliz-embarrassingly-parallel">3.3 El caso feliz: <em>embarrassingly parallel</em></h3>
+<p>El límite degenerado de la descomposición de datos, cuando la comunicación entre procesos es <strong>nula</strong>. Muestreo Monte Carlo, barridos de parámetros, evaluación de un mismo circuito con distintas semillas. No hay fronteras que intercambiar porque las porciones son independientes. El escalado es lineal por construcción y el único coste es la agregación final de resultados.</p>
+<figure><div class="canvas"><svg aria-label="Comparación entre descomposición de datos, donde tres ranks aplican la misma operación a bloques distintos de un vector, y descomposición de tareas, donde tres ranks ejecutan etapas diferentes de un cauce." role="img" viewbox="0 0 800 356">
+<title>Descomposición de datos frente a descomposición de tareas</title>
+<rect fill="#fff" height="238" rx="8" stroke="#C3C7C2" stroke-width="1" width="360" x="30" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="210" y="62">descomposición de datos</text>
+<text class="sv-s" text-anchor="middle" x="210" y="81">misma operación, datos distintos</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="55" y="96"></rect>
+<text class="sv-m" text-anchor="middle" x="210" y="114">vectores a, b · n elementos</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="112" x2="112" y1="126" y2="152"></line><path d="M108 147l4 6 4-6" fill="#6B7683"></path>
+<line stroke="#6B7683" stroke-width="1.2" x1="210" x2="210" y1="126" y2="152"></line><path d="M206 147l4 6 4-6" fill="#6B7683"></path>
+<line stroke="#6B7683" stroke-width="1.2" x1="308" x2="308" y1="126" y2="152"></line><path d="M304 147l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="63" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="112" y="178">rank 0</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="112" y="196">bloque 0</text>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="161" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="210" y="178">rank 1</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="210" y="196">bloque 1</text>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="259" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="308" y="178">rank 2</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="308" y="196">bloque 2</text>
+<rect fill="#F7F8F6" height="30" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="55" y="228"></rect>
+<text class="sv-m" text-anchor="middle" x="210" y="247">todos ejecutan c[i] = a[i] + b[i]</text>
+<rect fill="#fff" height="238" rx="8" stroke="#C3C7C2" stroke-width="1" width="360" x="410" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="590" y="62">descomposición de tareas</text>
+<text class="sv-s" text-anchor="middle" x="590" y="81">operaciones distintas, datos en cadena</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="435" y="96"></rect>
+<text class="sv-m" text-anchor="middle" x="590" y="114">flujo de datos entrante</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="484" x2="484" y1="126" y2="152"></line><path d="M480 147l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="437" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="484" y="178">rank 0</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="484" y="196">filtrar</text>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="543" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="590" y="178">rank 1</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="590" y="196">transformar</text>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="649" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="696" y="178">rank 2</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="696" y="196">escribir</text>
+<line stroke="#A8451A" stroke-width="1.2" x1="533" x2="539" y1="183" y2="183"></line><path d="M536 179l6 4-6 4" fill="#A8451A"></path>
+<line stroke="#A8451A" stroke-width="1.2" x1="639" x2="645" y1="183" y2="183"></line><path d="M642 179l6 4-6 4" fill="#A8451A"></path>
+<rect fill="#F7F8F6" height="30" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="435" y="228"></rect>
+<text class="sv-m" text-anchor="middle" x="590" y="247">cada rank ejecuta una etapa distinta</text>
+<rect fill="#F2F3F1" height="46" rx="6" stroke="#C3C7C2" stroke-width="0.8" width="740" x="30" y="292"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="313">caso límite · embarrassingly parallel</text>
+<text class="sv-s" text-anchor="middle" x="400" y="331">descomposición de datos con comunicación nula entre ranks · escalado lineal por construcción</text>
+</svg></div><figcaption><p>El eje que separa ambas estrategias no es «datos» frente a «tareas» sino el patrón de comunicación que inducen. A la izquierda, comunicación concentrada en los extremos y proporcional al tamaño del bloque. A la derecha, comunicación continua y dominada por la latencia de mensajes pequeños. Son dos regímenes distintos del modelo de coste que se introduce en el capítulo 5.</p></figcaption></figure>
+<aside class="callout callout--bridge"><span class="callout-label">Puente clásico → cuántico</span><p>Las tres categorías reaparecen literalmente como los tres modelos de ejecución que implementa CUNQA.<sup class="ref-call"><a href="#r1">1</a></sup> El modelo <em>sin comunicación</em> es el caso <em>embarrassingly parallel</em>: N QPU ejecutando circuitos independientes, con agregación clásica al final. El modelo de <em>comunicación clásica</em> permite intercambiar resultados de medida entre nodos durante la ejecución. El modelo de <em>comunicación cuántica</em> permite transferir estados, y es el único que necesita entrelazamiento distribuido.</p><p>Cuando en la segunda mitad del tutorial aparezcan esos tres nombres, el asistente ya tendrá el marco mental montado.</p></aside></section><section class="chapter" id="c4" data-accent="classical"><span class="chapter-num">Parte I · Capítulo 4</span><h2>Cuánto se puede ganar</h2><p class="lead">Existe un límite superior a lo que la paralelización puede darte, y ese límite lo fija la parte del programa que se niega a paralelizarse. Las dos formulaciones clásicas de ese límite no se contradicen: responden a preguntas distintas.</p><h3 id="41-la-ley-de-amdahl">4.1 La ley de Amdahl</h3>
+<p>Gene Amdahl planteó en 1967 el argumento que aún hoy modera las expectativas.<sup class="ref-call"><a href="#r16a">16</a></sup> Sea <em>s</em> la fracción del tiempo de ejecución que es intrínsecamente secuencial, y <em>1−s</em> la fracción paralelizable. Con N procesadores, la aceleración es</p>
+<p class="formula"><p>S(N) = 1 / ( s + (1 − s)/N )</p></p>
+<p>Cuando N tiende a infinito, el segundo término se anula y queda <strong>S ≤ 1/s</strong>. Con un 5 % secuencial, la aceleración máxima alcanzable con infinitos procesadores es 20×. Con un 25 %, es 4×. No hay hardware que arregle eso.</p>
+<p>La lectura correcta de Amdahl no es «paralelizar no merece la pena». Es «identifica y ataca la fracción serie antes de comprar más nodos». En la práctica, esa fracción serie casi nunca es cálculo puro: suele ser entrada/salida, inicialización, sincronización global y —muy en particular— <strong>comunicación</strong>.</p>
+<h3 id="42-la-ley-de-gustafson">4.2 La ley de Gustafson</h3>
+<p>John Gustafson observó en 1988 que Amdahl asume algo que casi nunca se cumple: que el tamaño del problema es fijo.<sup class="ref-call"><a href="#r16a">16</a></sup> Nadie compra un supercomputador para resolver el mismo problema más rápido; lo compra para resolver un problema mayor en el mismo tiempo. Si al aumentar N aumentas también el tamaño del problema, la fracción paralelizable crece con él mientras la serie permanece aproximadamente constante. La aceleración escalada resulta</p>
+<p class="formula"><p>S(N) = s + (1 − s) · N</p></p>
+<p>que es lineal en N y no está acotada. Ambas leyes son ciertas; describen escenarios distintos.</p>
+<figure><div class="canvas"><svg aria-label="Dos gráficas comparativas: la ley de Amdahl con curvas que saturan en un techo, y la ley de Gustafson con curvas de crecimiento lineal, para fracciones serie del 5, 10 y 25 por ciento." role="img" viewbox="0 0 800 342">
+<title>Ley de Amdahl frente a ley de Gustafson</title>
+<text class="sv-th" x="60" y="26">Amdahl · problema de tamaño fijo</text>
+<text class="sv-s" x="60" y="43">la aceleración satura en 1/s</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="60" x2="60" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="60" x2="385" y1="280" y2="280"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="60" x2="380" y1="165" y2="165"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="60" x2="380" y1="50" y2="50"></line>
+<text class="sv-m" text-anchor="end" x="54" y="284">0</text><text class="sv-m" text-anchor="end" x="54" y="169">10</text><text class="sv-m" text-anchor="end" x="54" y="54">20</text>
+<polyline fill="none" points="60,268.5 113.3,257 166.7,234 220,188 273.3,96 290.5,50" stroke="#C3C7C2" stroke-dasharray="4 4" stroke-width="1.6"></polyline>
+<polyline fill="none" points="60,268.5 113.3,258.1 166.7,240 220,211.9 273.3,174.9 326.7,135.7 380,102.7" stroke="#12695C" stroke-width="2.2"></polyline>
+<polyline fill="none" points="60,268.5 113.3,259.1 166.7,244.6 220,225.9 273.3,206.4 326.7,190.3 380,179.1" stroke="#5B3FB8" stroke-width="2.2"></polyline>
+<polyline fill="none" points="60,268.5 113.3,261.6 166.7,253.7 220,246.5 273.3,241.3 326.7,237.9 380,236.1" stroke="#A8451A" stroke-width="2.2"></polyline>
+<text class="sv-m" fill="#12695C" x="386" y="106">s=5%</text>
+<text class="sv-m" fill="#5B3FB8" x="386" y="183">s=10%</text>
+<text class="sv-m" fill="#A8451A" x="386" y="240">s=25%</text>
+<text class="sv-m" fill="#8A8F8B" x="296" y="46">ideal</text>
+<text class="sv-m" text-anchor="middle" x="60" y="298">1</text><text class="sv-m" text-anchor="middle" x="166.7" y="298">4</text><text class="sv-m" text-anchor="middle" x="273.3" y="298">16</text><text class="sv-m" text-anchor="middle" x="380" y="298">64</text>
+<text class="sv-s" text-anchor="middle" x="220" y="320">procesadores N · escala log₂</text>
+<text class="sv-th" x="460" y="26">Gustafson · problema que crece con N</text>
+<text class="sv-s" x="460" y="43">la aceleración escalada no satura</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="460" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="735" y1="280" y2="280"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="730" y1="165" y2="165"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="730" y1="50" y2="50"></line>
+<text class="sv-m" text-anchor="end" x="454" y="284">0</text><text class="sv-m" text-anchor="end" x="454" y="169">32</text><text class="sv-m" text-anchor="end" x="454" y="54">64</text>
+<polyline fill="none" points="460,276.4 505,273 550,265.6 595,251.3 640,222.5 685,165 730,50" stroke="#C3C7C2" stroke-dasharray="4 4" stroke-width="1.6"></polyline>
+<polyline fill="none" points="460,276.4 505,273 550,266.2 595,252.5 640,225.2 685,170.6 730,61.3" stroke="#12695C" stroke-width="2.2"></polyline>
+<polyline fill="none" points="460,276.4 505,273.2 550,266.7 595,253.8 640,227.9 685,176.1 730,72.6" stroke="#5B3FB8" stroke-width="2.2"></polyline>
+<polyline fill="none" points="460,276.4 505,273.7 550,268.3 595,257.5 640,236 685,192.9 730,106.6" stroke="#A8451A" stroke-width="2.2"></polyline>
+<text class="sv-m" fill="#12695C" x="736" y="65">5%</text>
+<text class="sv-m" fill="#5B3FB8" x="736" y="76">10%</text>
+<text class="sv-m" fill="#A8451A" x="736" y="110">25%</text>
+<text class="sv-m" text-anchor="middle" x="460" y="298">1</text><text class="sv-m" text-anchor="middle" x="550" y="298">4</text><text class="sv-m" text-anchor="middle" x="640" y="298">16</text><text class="sv-m" text-anchor="middle" x="730" y="298">64</text>
+<text class="sv-s" text-anchor="middle" x="595" y="320">procesadores N · escala log₂</text>
+</svg></div><figcaption><p>La misma fracción serie produce dos diagnósticos opuestos según qué se mantenga fijo. Con el problema congelado (izquierda), un 25 % secuencial hace inútil pasar de ocho procesadores. Con el problema escalando (derecha), esa misma fracción sigue dando retorno hasta sesenta y cuatro. Antes de citar cualquiera de las dos leyes hay que declarar cuál de los dos experimentos se está haciendo.</p></figcaption></figure>
+<h3 id="43-escalado-fuerte-y-escalado-débil">4.3 Escalado fuerte y escalado débil</h3>
+<p>Las dos leyes anteriores tienen su contrapartida experimental, y son los dos únicos gráficos que un revisor va a mirar en un artículo de rendimiento:</p>
+<ul>
+<li><strong>Escalado fuerte</strong> (<em>strong scaling</em>): el tamaño del problema se mantiene constante y se aumenta N. Se mide el tiempo de ejecución. Es el experimento que corresponde a Amdahl. Su curva siempre acaba doblándose, porque al aumentar N el trabajo local se reduce y la comunicación acaba dominando.</li>
+<li><strong>Escalado débil</strong> (<em>weak scaling</em>): el tamaño del problema <em>por proceso</em> se mantiene constante, de modo que el problema total crece con N. Se mide si el tiempo permanece plano. Es el experimento que corresponde a Gustafson.</li>
+</ul>
+<p>Un resultado de escalado débil impecable con un escalado fuerte pésimo es perfectamente posible, y es una situación común. Presentar sólo uno de los dos es la forma más habitual de maquillar un resultado de rendimiento.</p>
+<aside class="callout callout--bridge"><span class="callout-label">Puente clásico → cuántico</span><p>En computación cuántica distribuida, la «fracción serie» de Amdahl tiene un nombre concreto: <strong>la generación y distribución de entrelazamiento</strong>. Las operaciones locales de un circuito son rápidas; establecer un par EPR entre dos nodos es órdenes de magnitud más lento, y además debe completarse antes de que la decoherencia lo inutilice. Si al particionar un circuito entre N QPU cada partición requiere una cantidad de puertas remotas que crece con N, estás construyendo un caso de Amdahl con una <em>s</em> que empeora al escalar.</p><p>De ahí que el problema central de la disciplina no sea «cómo ejecuto un circuito en varias QPU» —eso ya se sabe hacer— sino «cómo lo particiono minimizando el número de operaciones remotas».<sup class="ref-call"><a href="#r24">24</a></sup></p></aside></section><section class="chapter" id="c5" data-accent="classical"><span class="chapter-num">Parte I · Capítulo 5</span><h2>Cuánto cuesta comunicar</h2><p class="lead">Este es el capítulo que hay que entender de verdad, porque es el único de la primera parte que se traslada al dominio cuántico casi sin modificaciones. Todo lo demás se adapta; esto se aplica.</p><h3 id="51-el-modelo-latenciaancho-de-banda">5.1 El modelo latencia–ancho de banda</h3>
+<p>El coste de enviar un mensaje de <em>n</em> bytes entre dos procesos se modela, en primera aproximación, con dos parámetros:</p>
+<p class="formula"><p>T(n) = α + β·n</p></p>
+<p>donde <strong>α</strong> es la latencia —el coste fijo de iniciar la transferencia, independiente del tamaño— y <strong>β</strong> es el inverso del ancho de banda —el coste marginal por byte. En una red moderna de altas prestaciones, α está en el orden de uno o pocos microsegundos y 1/β en el orden de decenas o centenares de gigabits por segundo.</p>
+<p>De este modelo se deriva la magnitud más útil del capítulo: el <strong>tamaño de media potencia</strong>, <em>n<sub>½</sub></em> = α/β. Es el tamaño de mensaje para el cual el coste fijo iguala al coste variable, y por tanto el punto donde alcanzas la mitad del ancho de banda asintótico. Por debajo de <em>n<sub>½</sub></em> estás pagando sobre todo latencia y la red está prácticamente ociosa; por encima, empiezas a explotar el ancho de banda real.</p>
+<p>La consecuencia de diseño es contundente y contraintuitiva para quien viene de programar en serie: <strong>enviar mil mensajes de un kilobyte es dramáticamente peor que enviar un mensaje de un megabyte</strong>, aunque el volumen total sea idéntico. Agrupar mensajes (<em>message aggregation</em>) es casi siempre la primera optimización que hay que aplicar a un código distribuido que rinde mal.</p>
+<figure><div class="canvas"><svg aria-label="A la izquierda, el tiempo de transferencia como recta con ordenada en el origen alfa y pendiente beta. A la derecha, el ancho de banda efectivo creciendo con el tamaño de mensaje y saturando en el asintótico, con el punto de media potencia marcado." role="img" viewbox="0 0 800 342">
+<title>Modelo de coste de comunicación</title>
+<text class="sv-th" x="70" y="26">coste de un mensaje</text>
+<text class="sv-s" x="70" y="43">T(n) = α + β·n</text>
+<rect fill="#FAEDE6" height="230" width="72" x="70" y="50"></rect>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="70" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="390" y1="280" y2="280"></line>
+<line stroke="#12695C" stroke-width="2.4" x1="70" x2="380" y1="240" y2="70"></line>
+<line stroke="#C3C7C2" stroke-dasharray="3 3" stroke-width="1" x1="70" x2="380" y1="240" y2="240"></line>
+<line stroke="#A8451A" stroke-width="1.4" x1="58" x2="58" y1="280" y2="240"></line>
+<path d="M54 244l4-6 4 6" fill="#A8451A"></path><path d="M54 276l4 6 4-6" fill="#A8451A"></path>
+<text class="sv-m" fill="#A8451A" text-anchor="end" x="46" y="264">α</text>
+<line stroke="#12695C" stroke-dasharray="3 3" stroke-width="1" x1="250" x2="310" y1="141" y2="141"></line>
+<line stroke="#12695C" stroke-dasharray="3 3" stroke-width="1" x1="310" x2="310" y1="141" y2="108"></line>
+<text class="sv-m" fill="#12695C" x="316" y="130">pendiente β</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="106" y="300">dominado</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="106" y="313">por latencia</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="290" y="300">dominado por ancho de banda</text>
+<text class="sv-s" text-anchor="middle" x="230" y="332">tamaño del mensaje n</text>
+<text class="sv-th" x="460" y="26">ancho de banda efectivo</text>
+<text class="sv-s" x="460" y="43">n / T(n), normalizado a 1/β</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="460" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="745" y1="280" y2="280"></line>
+<line stroke="#A8451A" stroke-dasharray="5 4" stroke-width="1.2" x1="460" x2="735" y1="50" y2="50"></line>
+<text class="sv-m" fill="#A8451A" x="740" y="54">1/β</text>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="595" y1="165" y2="165"></line>
+<text class="sv-m" text-anchor="end" x="454" y="169">50%</text>
+<text class="sv-m" text-anchor="end" x="454" y="284">0</text>
+<line stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="1.2" x1="595" x2="595" y1="165" y2="280"></line>
+<circle cx="595" cy="165" fill="#5B3FB8" r="4"></circle>
+<text class="sv-m" fill="#5B3FB8" x="601" y="197">n½ = α/β</text>
+<polyline fill="none" points="460,279.8 505,277.7 550,259.1 595,165 640,70.9 685,52.3 730,50.2" stroke="#12695C" stroke-width="2.4"></polyline>
+<text class="sv-m" text-anchor="middle" x="460" y="298">1 B</text><text class="sv-m" text-anchor="middle" x="550" y="298">100 B</text><text class="sv-m" text-anchor="middle" x="640" y="298">10 kB</text><text class="sv-m" text-anchor="middle" x="730" y="298">1 MB</text>
+<text class="sv-s" text-anchor="middle" x="595" y="332">tamaño del mensaje · escala log₁₀</text>
+</svg></div><figcaption><p>El mismo modelo visto de dos formas. A la izquierda, la ordenada en el origen α es el peaje que se paga por mensaje enviado, sea cual sea su tamaño. A la derecha, la consecuencia: por debajo del tamaño de media potencia la red entrega una fracción despreciable de su capacidad nominal. Los valores del eje horizontal son ilustrativos; el punto <em>n<sub>½</sub></em> concreto se mide empíricamente con un test de ping-pong.</p></figcaption></figure>
+<h3 id="52-granularidad-y-razón-comunicacióncómputo">5.2 Granularidad y razón comunicación/cómputo</h3>
+<p>La <strong>granularidad</strong> de una descomposición es la cantidad de trabajo que hace un proceso entre dos comunicaciones consecutivas. Grano fino significa mucha comunicación y poco cálculo entre mensajes; grano grueso, lo contrario.</p>
+<p>La métrica que gobierna el escalado es la razón entre tiempo de comunicación y tiempo de cómputo. Al aumentar N con el problema fijo, el trabajo por proceso disminuye pero el número de mensajes suele aumentar, así que esta razón empeora inevitablemente. Ese es el mecanismo físico detrás del techo de Amdahl: no es que exista un fragmento místico de código secuencial, es que la comunicación crece hasta comerse el beneficio.</p>
+<h3 id="53-patologías-clásicas">5.3 Patologías clásicas</h3>
+<p>Cuatro fallos que aparecen sistemáticamente en código distribuido y que conviene nombrar antes de escribir la primera línea de MPI:</p>
+<table>
+<thead>
+<tr>
+<th>Patología</th>
+<th>Qué ocurre y cómo se evita</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Interbloqueo</strong></td>
+<td>Dos procesos esperan mutuamente un mensaje que el otro no ha enviado todavía. Se evita ordenando las operaciones, usando primitivas combinadas o pasando a comunicación no bloqueante.</td>
+</tr>
+<tr>
+<td><strong>Desbalanceo</strong></td>
+<td>Un proceso tarda más que el resto y todos esperan en la barrera siguiente. El tiempo total lo fija el más lento, no la media.</td>
+</tr>
+<tr>
+<td><strong>Sobresincronización</strong></td>
+<td>Barreras globales innecesarias que serializan de facto el programa. Cada barrera es una fracción serie regalada a Amdahl.</td>
+</tr>
+<tr>
+<td><strong>Grano demasiado fino</strong></td>
+<td>Muchos mensajes pequeños, todos por debajo de <em>n<sub>½</sub></em>. La red trabaja al 5 % de su capacidad nominal y el perfil de rendimiento parece inexplicable.</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout--bridge"><span class="callout-label">Puente clásico → cuántico</span><p>El modelo α + βn admite una traducción directa. En una red cuántica, α es el tiempo de generar y confirmar un par EPR entre dos nodos, más el viaje de ida y vuelta de los bits clásicos de corrección. Ese α es enorme comparado con el tiempo de una puerta local.</p><p>Pero hay dos asimetrías que no tienen análogo clásico y conviene enunciar explícitamente. Primera: el «ancho de banda» cuántico no sólo es finito, sino que el recurso <strong>se consume</strong> —un par EPR usado desaparece. Segunda: existe un plazo. Un mensaje clásico retrasado sigue siendo correcto cuando llega; un estado entrelazado que espera demasiado se decohiere y deja de ser útil. La comunicación cuántica tiene, además de coste, fecha de caducidad.</p></aside></section><section class="chapter" id="c6" data-accent="classical"><span class="chapter-num">Parte II · Capítulo 6</span><h2>MPI: SPMD, rank y communicator</h2><p class="lead">MPI no es una biblioteca: es una especificación de interfaz, mantenida por el MPI Forum, de la que existen múltiples implementaciones independientes —Open MPI, MPICH, y las variantes de los fabricantes.&lt;Ref n={15} /&gt; Que sea un estándar y no un producto es la razón de que un código escrito en 1996 siga compilando y ejecutando hoy en máquinas que no existían entonces. En Python, el acceso al estándar se hace a través de `mpi4py`.&lt;Ref n={21} /&gt;</p><h3 id="61-el-paradigma-spmd">6.1 El paradigma SPMD</h3>
+<p>La idea que sostiene todo el edificio se llama <strong>Single Program, Multiple Data</strong>. Se escribe <em>un único</em> fichero fuente. El lanzador arranca N copias de ese mismo programa como procesos independientes, y a cada copia le inyecta un identificador distinto. El programa consulta ese identificador y decide qué rama de su propia lógica ejecutar.</p>
+<p>Conviene subrayar por qué esto es una elección de diseño y no una obviedad. La alternativa —MPMD, escribir un programa distinto por rol— parece más natural al principio y produce código ilegible en cuanto hay más de tres participantes: para pasar de tres a cuatro nodos hay que escribir un fichero nuevo <em>y</em> modificar los existentes. SPMD desacopla el código del número de procesos. Ese desacoplo es, literalmente, el argumento central de NetQMPI, y por eso merece la pena insistir aquí.</p>
+<figure><div class="canvas"><svg aria-label="Un único fichero fuente se lanza con mpirun y produce tres procesos idénticos, cada uno con un valor distinto de rank inyectado, que ejecutan ramas diferentes del mismo código." role="img" viewbox="0 0 800 280">
+<title>El paradigma SPMD</title>
+<rect fill="#141C24" height="176" rx="6" width="240" x="30" y="52"></rect>
+<text class="sv-m" fill="#7E9089" x="46" y="76">script.py</text>
+<text class="sv-m" fill="#8ECBE8" x="46" y="100">rank = comm.Get_rank()</text>
+<text class="sv-m" fill="#8ECBE8" x="46" y="118">size = comm.Get_size()</text>
+<text class="sv-m" fill="#C6A6F5" x="46" y="146">if</text><text class="sv-m" fill="#E4E8E4" x="70" y="146">rank == 0:</text>
+<text class="sv-m" fill="#E4E8E4" x="62" y="164">reparte_datos()</text>
+<text class="sv-m" fill="#C6A6F5" x="46" y="182">else</text><text class="sv-m" fill="#E4E8E4" x="78" y="182">:</text>
+<text class="sv-m" fill="#E4E8E4" x="62" y="200">procesa_bloque()</text>
+<text class="sv-s" text-anchor="middle" x="150" y="248">un único fuente</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="278" x2="304" y1="140" y2="140"></line><path d="M300 136l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#F2F3F1" height="44" rx="5" stroke="#3B4754" stroke-width="1" width="126" x="308" y="118"></rect>
+<text class="sv-m" text-anchor="middle" x="371" y="145">mpirun -n 3</text>
+<text class="sv-s" text-anchor="middle" x="371" y="248">el lanzador inyecta rank</text>
+<path d="M440 140 L456 140 L456 90 L470 90" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 86l6 4-6 4" fill="#6B7683"></path>
+<path d="M440 140 L470 140" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 136l6 4-6 4" fill="#6B7683"></path>
+<path d="M440 140 L456 140 L456 190 L470 190" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 186l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="66"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="88">rank 0</text>
+<text class="sv-m" fill="#12695C" x="556" y="88">size 3 → ejecuta reparte_datos()</text>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="166"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="188">rank 2</text>
+<text class="sv-m" fill="#12695C" x="556" y="188">size 3 → ejecuta procesa_bloque()</text>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="116"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="138">rank 1</text>
+<text class="sv-m" fill="#12695C" x="556" y="138">size 3 → ejecuta procesa_bloque()</text>
+<text class="sv-s" text-anchor="middle" x="620" y="248">tres procesos, misma imagen de código</text>
+</svg></div><figcaption><p>El fichero es uno; los procesos, N. El valor de <code>rank</code> es lo único que difiere entre ellos, y sobre esa única diferencia se construye toda la asimetría de roles del programa. Cambiar de tres a treinta y dos procesos no toca ni una línea del fuente: sólo el argumento del lanzador.</p></figcaption></figure>
+<h3 id="62-rank-la-identidad-lógica">6.2 Rank: la identidad lógica</h3>
+<p>El <strong>rank</strong> es un entero en el intervalo [0, size−1] asignado a cada proceso dentro de un communicator. No es un número de nodo, ni un identificador de proceso del sistema operativo, ni una dirección de red. Es una etiqueta lógica, y esa es precisamente su virtud: el programa razona sobre ranks y delega en el entorno de ejecución la correspondencia con recursos físicos.</p>
+<p>Por convención universal, el rank 0 hace de coordinador cuando hace falta uno —lee ficheros, distribuye trabajo, recoge resultados—. Es una convención, no una regla del estándar; en MPI, el rank 0 no tiene ningún privilegio.</p>
+<h3 id="63-communicator-el-contexto-de-comunicación">6.3 Communicator: el contexto de comunicación</h3>
+<p>Un <strong>communicator</strong> encapsula dos cosas: un <em>grupo</em> de procesos y un <em>contexto</em> de comunicación aislado. Todo mensaje se envía dentro de un communicator, y los mensajes de contextos distintos nunca se confunden entre sí —propiedad que hace posible escribir bibliotecas paralelas seguras sin miedo a colisionar con los mensajes del programa que las usa.</p>
+<p>Al arrancar existe <code>MPI_COMM_WORLD</code>, que contiene a todos los procesos lanzados. Se pueden derivar subcomunicadores para agrupar procesos por criterios propios.</p>
+<p>La lectura conceptual que interesa para lo que viene después: <strong>el communicator es una capa de virtualización</strong>. Presenta al programador un conjunto de participantes numerados de 0 a N−1 sobre lo que en realidad es un conjunto heterogéneo de recursos físicos conectados por una topología concreta. El programa se escribe contra la vista lógica; el mapeo lo resuelve el sistema.</p>
+<figure><div class="canvas"><svg aria-label="Cuatro ranks lógicos numerados de cero a tres se corresponden mediante líneas cruzadas con cuatro recursos físicos distribuidos en dos nodos, mostrando que el mapeo no es la identidad." role="img" viewbox="0 0 800 300">
+<title>El communicator como capa de virtualización</title>
+<rect fill="#E4F1EE" height="76" rx="8" stroke="#12695C" stroke-width="1" width="700" x="50" y="42"></rect>
+<text class="sv-m" fill="#0C3F38" x="66" y="63">COMM_WORLD · vista lógica</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="120" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="180" y="94">rank 0</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="272" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="332" y="94">rank 1</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="424" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="484" y="94">rank 2</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="576" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="636" y="94">rank 3</text>
+<text class="sv-s" text-anchor="middle" x="400" y="146">el planificador decide el mapeo · el programa no lo sabe ni lo necesita</text>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="180" x2="332" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="332" x2="180" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="484" x2="636" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="636" x2="484" y1="108" y2="192"></line>
+<rect fill="#F7F8F6" height="86" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="50" y="180"></rect>
+<text class="sv-m" fill="#6B7683" x="66" y="201">nodo físico A</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="120" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="180" y="228">socket 0</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="180" y="243">recurso</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="252" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="312" y="228">socket 1</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="312" y="243">recurso</text>
+<rect fill="#F7F8F6" height="86" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="420" y="180"></rect>
+<text class="sv-m" fill="#6B7683" x="436" y="201">nodo físico B</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="424" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="484" y="228">socket 0</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="484" y="243">recurso</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="576" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="636" y="228">socket 1</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="636" y="243">recurso</text>
+<text class="sv-s" text-anchor="middle" x="400" y="288">ranks contiguos no implican recursos contiguos</text>
+</svg></div><figcaption><p>Las líneas de puntos se cruzan deliberadamente. Que dos ranks sean consecutivos no significa que estén en el mismo nodo ni que su comunicación sea barata: el mapeo lo decide el planificador según la política de asignación. Esta separación entre identidad lógica y recurso físico es idéntica a la que introduce el <code>QMPICommunicator</code> de NetQMPI al asociar ranks con QPU.<sup class="ref-call"><a href="#r2">2</a></sup></p></figcaption></figure>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Esqueleto mínimo · mpi4py"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> mpi4py </span><span style="color:#FF7B72">import</span><span style="color:#79C0FF"> MPI</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">comm </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> MPI</span><span style="color:#E6EDF3">.</span><span style="color:#79C0FF">COMM_WORLD</span></span>
+<span class="line"><span style="color:#E6EDF3">rank </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.Get_rank()      </span><span style="color:#8B949E"># quién soy</span></span>
+<span class="line"><span style="color:#E6EDF3">size </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.Get_size()      </span><span style="color:#8B949E"># cuántos somos</span></span>
+<span class="line"><span style="color:#E6EDF3">name </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> MPI</span><span style="color:#E6EDF3">.Get_processor_name()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79C0FF">print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;soy el rank </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">rank</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF"> de </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">size</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">, en </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">name</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Se ejecuta con <code>mpirun -n 4 python hello.py</code>. En <code>mpi4py</code> no hace falta llamar a <code>Init</code> ni a <code>Finalize</code>: la importación del módulo inicializa el entorno y la finalización se registra automáticamente al terminar el intérprete.</p>
+<aside class="callout callout--note"><span class="callout-label">Detalle que sorprende siempre</span><p>La salida de los cuatro procesos aparece desordenada, y el orden cambia entre ejecuciones. No es un error: son cuatro procesos independientes escribiendo al mismo terminal sin ninguna sincronización entre ellos. MPI no ordena la salida estándar. Si el orden importa, hay que forzarlo explícitamente recogiendo los mensajes en el rank 0.</p></aside></section><section class="chapter" id="c7" data-accent="classical"><span class="chapter-num">Parte II · Capítulo 7</span><h2>Comunicación punto a punto</h2><p class="lead">La operación elemental de MPI es el envío de un mensaje de un rank a otro. Todo lo demás —incluidas las colectivas— se puede construir sobre ella.</p><h3 id="71-send-y-recv">7.1 Send y Recv</h3>
+<p>Un envío especifica el destino, y una recepción especifica el origen. Ambos llevan una <em>etiqueta</em> (<code>tag</code>) que permite distinguir mensajes distintos entre la misma pareja de procesos, y ambos ocurren dentro de un communicator. Una recepción sólo casa con un envío si coinciden origen, destino, etiqueta y communicator.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Punto a punto elemental"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> mpi4py </span><span style="color:#FF7B72">import</span><span style="color:#79C0FF"> MPI</span></span>
+<span class="line"><span style="color:#E6EDF3">comm </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> MPI</span><span style="color:#E6EDF3">.</span><span style="color:#79C0FF">COMM_WORLD</span></span>
+<span class="line"><span style="color:#E6EDF3">rank </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.Get_rank()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">    datos </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> {</span><span style="color:#A5D6FF">&quot;iteracion&quot;</span><span style="color:#E6EDF3">: </span><span style="color:#79C0FF">7</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;residuo&quot;</span><span style="color:#E6EDF3">: </span><span style="color:#79C0FF">1e-6</span><span style="color:#E6EDF3">}</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm.send(datos, </span><span style="color:#FFA657">dest</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">tag</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">11</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#FF7B72">elif</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">    datos </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.recv(</span><span style="color:#FFA657">source</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">tag</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">11</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#79C0FF">    print</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">&quot;recibido:&quot;</span><span style="color:#E6EDF3">, datos)</span></span></code></pre>
+<h3 id="72-bloqueante-frente-a-no-bloqueante">7.2 Bloqueante frente a no bloqueante</h3>
+<p>Las operaciones bloqueantes (<code>send</code>, <code>recv</code>) no retornan hasta que es seguro reutilizar el búfer. Las no bloqueantes (<code>Isend</code>, <code>Irecv</code>) retornan inmediatamente devolviendo un objeto <em>request</em>, y el programa debe esperar más tarde con <code>Wait</code> o comprobar con <code>Test</code>. Las no bloqueantes permiten solapar comunicación y cálculo —empezar a enviar, hacer trabajo útil mientras el mensaje viaja, y esperar sólo cuando se necesita el dato—, que es la técnica estándar para ocultar la latencia α del capítulo anterior.</p>
+<h3 id="73-interbloqueo-el-error-canónico">7.3 Interbloqueo: el error canónico</h3>
+<p>Considérese el intercambio de fronteras entre dos vecinos, escrito de la forma aparentemente más natural: cada proceso envía primero y recibe después. Si la implementación de MPI no dispone de espacio de <em>buffering</em> suficiente —y con mensajes grandes no lo tendrá—, <code>send</code> bloquea hasta que el destinatario ejecute su <code>recv</code>. Pero el destinatario está bloqueado en su propio <code>send</code>, esperando lo mismo. Ninguno de los dos llegará jamás a su <code>recv</code>.</p>
+<p>Lo pernicioso de este fallo es que puede funcionar en pruebas y colgarse en producción: con mensajes pequeños la implementación los almacena en un búfer interno y el <code>send</code> retorna, ocultando el error. El programa es incorrecto en ambos casos; simplemente no se manifiesta hasta que el tamaño del problema crece.</p>
+<figure><div class="canvas"><svg aria-label="A la izquierda, dos procesos que envían simultáneamente quedan bloqueados a la espera mutua. A la derecha, alternando el orden de envío y recepción, ambos completan la comunicación." role="img" viewbox="0 0 800 296">
+<title>Interbloqueo en un intercambio bidireccional y su solución</title>
+<text class="sv-th" x="40" y="26">incorrecto · ambos envían primero</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="70" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="125" y="65">rank 0</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="245" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="300" y="65">rank 1</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="125" x2="125" y1="74" y2="248"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="300" x2="300" y1="74" y2="248"></line>
+<rect fill="#fff" height="30" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="70" y="88"></rect>
+<text class="sv-m" text-anchor="middle" x="125" y="108">send(→1)</text>
+<rect fill="#fff" height="30" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="245" y="88"></rect>
+<text class="sv-m" text-anchor="middle" x="300" y="108">send(→0)</text>
+<rect fill="#FAEDE6" height="76" rx="4" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="110" x="70" y="130"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="125" y="165">bloqueado</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="125" y="182">esperando</text>
+<rect fill="#FAEDE6" height="76" rx="4" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="110" x="245" y="130"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="300" y="165">bloqueado</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="300" y="182">esperando</text>
+<line stroke="#A8451A" stroke-dasharray="3 3" stroke-width="1" x1="185" x2="240" y1="152" y2="152"></line>
+<line stroke="#A8451A" stroke-dasharray="3 3" stroke-width="1" x1="185" x2="240" y1="184" y2="184"></line>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="212" y="146">✕</text>
+<text class="sv-s" fill="#A8451A" text-anchor="middle" x="212" y="234">ningún recv llega a ejecutarse</text>
+<text class="sv-s" text-anchor="middle" x="212" y="272">puede pasar los tests con mensajes pequeños</text>
+<text class="sv-th" x="420" y="26">correcto · se alterna el orden</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="450" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="505" y="65">rank 0</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="625" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="680" y="65">rank 1</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="505" x2="505" y1="74" y2="248"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="680" x2="680" y1="74" y2="248"></line>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="450" y="88"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="505" y="108">send(→1)</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="625" y="88"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="680" y="108">recv(←0)</text>
+<line stroke="#12695C" stroke-width="1.4" x1="564" x2="620" y1="103" y2="103"></line><path d="M616 99l6 4-6 4" fill="#12695C"></path>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="450" y="150"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="505" y="170">recv(←1)</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="625" y="150"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="680" y="170">send(→0)</text>
+<line stroke="#12695C" stroke-width="1.4" x1="620" x2="564" y1="165" y2="165"></line><path d="M568 161l-6 4 6 4" fill="#12695C"></path>
+<text class="sv-s" fill="#12695C" text-anchor="middle" x="592" y="234">ambos progresan</text>
+<text class="sv-s" text-anchor="middle" x="592" y="272">o, mejor, una única llamada a Sendrecv</text>
+</svg></div><figcaption><p>Tres soluciones válidas al mismo problema, en orden de preferencia: usar <code>Sendrecv</code>, que delega en la implementación la ordenación segura; usar comunicación no bloqueante con <code>Isend</code>/<code>Irecv</code> seguida de <code>Waitall</code>; o alternar manualmente el orden según la paridad del rank, como muestra el panel derecho. La tercera funciona pero es frágil y no generaliza bien a topologías complejas.</p></figcaption></figure></section><section class="chapter" id="c8" data-accent="classical"><span class="chapter-num">Parte II · Capítulo 8</span><h2>Operaciones colectivas</h2><p class="lead">Una colectiva es una operación en la que participan *todos* los procesos de un communicator. Todos deben invocarla; si uno la omite, el programa se cuelga. A cambio, expresan patrones de comunicación habituales en una sola llamada y permiten a la implementación usar algoritmos óptimos —árboles binomiales, algoritmos en anillo— en lugar del bucle ingenuo que escribiría el usuario.</p><h3 id="81-las-cuatro-fundamentales">8.1 Las cuatro fundamentales</h3>
+<figure><div class="canvas"><svg aria-label="Cuatro diagramas de operaciones colectivas de MPI: Bcast replica un dato del root a todos, Scatter reparte porciones distintas, Gather las recoge, y Reduce las combina con un operador." role="img" viewbox="0 0 800 400">
+<title>Colectivas fundamentales de MPI</title>
+<text class="sv-th" x="40" y="52">Bcast · el root replica un dato a todos</text>
+<text class="sv-m" text-anchor="end" x="52" y="92">0</text><text class="sv-m" text-anchor="end" x="52" y="118">1</text><text class="sv-m" text-anchor="end" x="52" y="144">2</text><text class="sv-m" text-anchor="end" x="52" y="170">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="60" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="75" y="91">A</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="102"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="128"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="154"></rect>
+<line stroke="#6B7683" stroke-width="1.4" x1="102" x2="140" y1="126" y2="126"></line><path d="M136 122l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="102"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="117">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="128"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="143">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="154"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="169">A</text>
+<text class="sv-s" text-anchor="middle" x="75" y="196">antes</text><text class="sv-s" text-anchor="middle" x="167" y="196">después</text>
+<text class="sv-th" x="420" y="52">Scatter · el root reparte porciones</text>
+<text class="sv-m" text-anchor="end" x="442" y="92">0</text><text class="sv-m" text-anchor="end" x="442" y="118">1</text><text class="sv-m" text-anchor="end" x="442" y="144">2</text><text class="sv-m" text-anchor="end" x="442" y="170">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="450" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="463" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="478" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="491" y="91">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="506" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="519" y="91">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="534" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="547" y="91">D</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="102"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="128"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="154"></rect>
+<line stroke="#6B7683" stroke-width="1.4" x1="572" x2="610" y1="126" y2="126"></line><path d="M606 122l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="102"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="117">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="128"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="143">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="154"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="169">D</text>
+<text class="sv-s" text-anchor="middle" x="505" y="196">antes</text><text class="sv-s" text-anchor="middle" x="635" y="196">después</text>
+<text class="sv-th" x="40" y="242">Gather · el root recoge las porciones</text>
+<text class="sv-m" text-anchor="end" x="52" y="282">0</text><text class="sv-m" text-anchor="end" x="52" y="308">1</text><text class="sv-m" text-anchor="end" x="52" y="334">2</text><text class="sv-m" text-anchor="end" x="52" y="360">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="281">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="292"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="307">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="318"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="333">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="344"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="359">D</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="98" x2="136" y1="316" y2="316"></line><path d="M132 312l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="148" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="161" y="281">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="176" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="189" y="281">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="204" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="217" y="281">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="232" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="245" y="281">D</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="292"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="318"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="344"></rect>
+<text class="sv-s" text-anchor="middle" x="73" y="386">antes</text><text class="sv-s" text-anchor="middle" x="203" y="386">después</text>
+<text class="sv-th" x="420" y="242">Reduce · combina con un operador</text>
+<text class="sv-m" text-anchor="end" x="442" y="282">0</text><text class="sv-m" text-anchor="end" x="442" y="308">1</text><text class="sv-m" text-anchor="end" x="442" y="334">2</text><text class="sv-m" text-anchor="end" x="442" y="360">3</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="266"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="281">a</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="292"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="307">b</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="318"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="333">c</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="344"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="359">d</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="492" x2="530" y1="316" y2="316"></line><path d="M526 312l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="112" x="542" y="266"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="598" y="281">a ⊕ b ⊕ c ⊕ d</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="292"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="318"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="344"></rect>
+<text class="sv-s" text-anchor="middle" x="465" y="386">antes</text><text class="sv-s" text-anchor="middle" x="598" y="386">después</text>
+</svg></div><figcaption><p>Cada fila es un rank y cada celda una posición de su búfer. <code>Bcast</code> <strong>copia</strong>; <code>Scatter</code> y <code>Gather</code> <strong>mueven</strong>; <code>Reduce</code> <strong>combina</strong> con un operador asociativo (suma, máximo, producto…). Esta distinción entre copiar, mover y combinar es la que va a determinar qué colectivas sobreviven a la transición al dominio cuántico y cuáles no.</p></figcaption></figure>
+<p>Variantes que conviene conocer: <code>Allgather</code> deja el resultado de un <code>Gather</code> en todos los procesos, no sólo en el root; <code>Allreduce</code> hace lo propio con <code>Reduce</code> y es probablemente la colectiva más usada del estándar; <code>Barrier</code> sincroniza sin transferir datos; y <code>Scatterv</code>/<code>Gatherv</code> admiten porciones de tamaño desigual, necesarias cuando el número de elementos no es divisible entre el número de procesos.</p>
+<aside class="callout callout--note"><span class="callout-label">La trampa clásica de mpi4py</span><p>La biblioteca ofrece cada operación en dos formas. Las de</p><p>(</p><p>,</p><p>,</p><p>,</p><p>) aceptan cualquier objeto Python y lo serializan con</p><p>: son cómodas y lentas. Las de</p><p>(</p><p>,</p><p>,</p><p>,</p><p>) trabajan directamente sobre búferes que exponen el protocolo de memoria, típicamente arrays de NumPy, y no copian: son las que hay que usar en código de rendimiento. Confundirlas es el error número uno de quien empieza, porque el programa funciona igual y rinde diez veces peor.</p></aside>
+<aside class="callout callout--bridge"><span class="callout-label">Puente clásico → cuántico</span><p>Reténgase la clasificación de la figura 9, porque es la que estructura el capítulo 13. De las cuatro operaciones, <strong>sólo las de mover sobreviven intactas</strong> al dominio cuántico. <code>Scatter</code> y <code>Gather</code> tienen análogo directo, porque teletransportar un estado es moverlo, no copiarlo. <code>Bcast</code> es <em>físicamente imposible</em>: replicar un estado cuántico desconocido viola el teorema de no clonación. Y <code>Reduce</code> exige aplicar un operador y quedarse con un resultado, lo que en el caso cuántico obliga a medir y por tanto a destruir la superposición.</p></aside></section><section class="chapter" id="c9" data-accent="classical"><span class="chapter-num">Parte II · Capítulo 9</span><h2>Ejercicios con mpi4py</h2><p class="lead">Cuatro ejercicios en orden creciente de dificultad. El tercero es opcional; el cuarto es el que conecta con la segunda parte del tutorial y merece hacerse aunque no dé tiempo a los demás.</p><aside class="callout callout--exercise"><span class="callout-label">Ejercicio 0 · comprobación de entorno</span><h4 id="hola-rank">Hola, rank</h4><p>Ejecutar el esqueleto del capítulo 6 con cuatro procesos y observar que la salida sale desordenada. Modificarlo después para que el rank 0 recoja los mensajes de todos e imprima ordenado. Objetivo: verificar la instalación y comprobar que se entiende que no hay orden garantizado.</p></aside>
+<aside class="callout callout--exercise"><span class="callout-label">Ejercicio 1 · obligatorio</span><h4 id="suma-de-vectores-distribuida">Suma de vectores distribuida</h4><p>Dados dos vectores <code>a</code> y <code>b</code> de <em>n</em> elementos, calcular <code>c = a + b</code> repartiendo el trabajo entre los procesos. Es el caso canónico de descomposición de datos del capítulo 3.</p></aside>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Solución de referencia · Scatter y Gather sobre búferes NumPy"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> mpi4py </span><span style="color:#FF7B72">import</span><span style="color:#79C0FF"> MPI</span></span>
+<span class="line"><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> numpy </span><span style="color:#FF7B72">as</span><span style="color:#E6EDF3"> np</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">comm </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> MPI</span><span style="color:#E6EDF3">.</span><span style="color:#79C0FF">COMM_WORLD</span></span>
+<span class="line"><span style="color:#E6EDF3">rank, size </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.Get_rank(), comm.Get_size()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">N </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> 1_000_000</span></span>
+<span class="line"><span style="color:#FF7B72">assert</span><span style="color:#E6EDF3"> N </span><span style="color:#FF7B72">%</span><span style="color:#E6EDF3"> size </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;usa Scatterv si N no es divisible&quot;</span></span>
+<span class="line"><span style="color:#E6EDF3">local_n </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> N </span><span style="color:#FF7B72">//</span><span style="color:#E6EDF3"> size</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E"># sólo el root materializa los vectores completos</span></span>
+<span class="line"><span style="color:#FF7B72">if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">    a </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.arange(N, </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"><span style="color:#E6EDF3">    b </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.ones(N,      </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"><span style="color:#E6EDF3">    c </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.empty(N,     </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"><span style="color:#FF7B72">else</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">    a </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> b </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> c </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> None</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">a_local </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.empty(local_n, </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"><span style="color:#E6EDF3">b_local </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.empty(local_n, </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">comm.Scatter(a, a_local, </span><span style="color:#FFA657">root</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)      </span><span style="color:#8B949E"># reparte</span></span>
+<span class="line"><span style="color:#E6EDF3">comm.Scatter(b, b_local, </span><span style="color:#FFA657">root</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">c_local </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> a_local </span><span style="color:#FF7B72">+</span><span style="color:#E6EDF3"> b_local           </span><span style="color:#8B949E"># cálculo puramente local</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">comm.Gather(c_local, c, </span><span style="color:#FFA657">root</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)       </span><span style="color:#8B949E"># recoge</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#79C0FF">    print</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">&quot;correcto:&quot;</span><span style="color:#E6EDF3">, np.allclose(c, np.arange(N) </span><span style="color:#FF7B72">+</span><span style="color:#79C0FF"> 1.0</span><span style="color:#E6EDF3">))</span></span></code></pre>
+<p>Puntos de discusión al corregirlo. Primero: <code>Scatter</code> con mayúscula, porque los datos son arrays de NumPy y no queremos que <code>pickle</code> los serialice. Segundo: los no-root pasan <code>None</code> como búfer de envío, lo cual es correcto —sólo el root necesita tenerlo. Tercero, y es el punto pedagógico importante: <strong>este programa no acelera nada</strong>. La suma de vectores tiene intensidad aritmética ínfima, así que el tiempo lo domina el <code>Scatter</code> y el <code>Gather</code>. Es un ejercicio de mecánica de la API, no de rendimiento, y conviene decirlo en voz alta para no crear una expectativa falsa.</p>
+<aside class="callout callout--exercise"><span class="callout-label">Ejercicio 2</span><h4 id="producto-escalar-con-reducción">Producto escalar con reducción</h4><p>Modificar el anterior para calcular <code>a·b</code>. Cada rank computa la suma parcial de su bloque y se combinan con <code>Reduce</code> y el operador <code>MPI.SUM</code>. Introduce la última de las cuatro colectivas fundamentales.</p></aside>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Núcleo de la solución"><code><span class="line"><span style="color:#E6EDF3">parcial </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.array(np.dot(a_local, b_local))</span></span>
+<span class="line"><span style="color:#E6EDF3">total   </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.empty(</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">) </span><span style="color:#FF7B72">if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#FF7B72"> else</span><span style="color:#79C0FF"> None</span></span>
+<span class="line"><span style="color:#E6EDF3">comm.Reduce(parcial, total, </span><span style="color:#FFA657">op</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">MPI</span><span style="color:#E6EDF3">.</span><span style="color:#79C0FF">SUM</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">root</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Merece la pena señalar aquí que el resultado en coma flotante <em>puede</em> diferir del secuencial, porque la suma en punto flotante no es asociativa y el orden de acumulación depende del algoritmo interno de la reducción. No es un error del programa: es una propiedad del cálculo distribuido que sorprende a mucha gente la primera vez.</p>
+<aside class="callout callout--exercise"><span class="callout-label">Ejercicio 3 · opcional pero muy recomendable</span><h4 id="ping-pong-medir-α-y-β">Ping-pong: medir α y β</h4><p>Enviar un mensaje de <em>n</em> bytes del rank 0 al 1 y devolverlo, cronometrando el ciclo completo. Repetir para <em>n</em> desde 8 bytes hasta unos megabytes, y representar tiempo frente a tamaño. La ordenada en el origen da α; la pendiente asintótica da β. Verificar dónde queda el <em>n<sub>½</sub></em> de la red de la máquina.</p></aside>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Bucle de medida"><code><span class="line"><span style="color:#79C0FF">REPS</span><span style="color:#FF7B72"> =</span><span style="color:#79C0FF"> 200</span></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> nbytes </span><span style="color:#FF7B72">in</span><span style="color:#E6EDF3"> [</span><span style="color:#79C0FF">8</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">64</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">512</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">4096</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">32768</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">262144</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">2097152</span><span style="color:#E6EDF3">]:</span></span>
+<span class="line"><span style="color:#E6EDF3">    buf </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> np.zeros(nbytes </span><span style="color:#FF7B72">//</span><span style="color:#79C0FF"> 8</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">dtype</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">np.float64)</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm.Barrier()</span></span>
+<span class="line"><span style="color:#E6EDF3">    t0 </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> MPI</span><span style="color:#E6EDF3">.Wtime()</span></span>
+<span class="line"><span style="color:#FF7B72">    for</span><span style="color:#E6EDF3"> _ </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">REPS</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#FF7B72">        if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">            comm.Send(buf, </span><span style="color:#FFA657">dest</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">); comm.Recv(buf, </span><span style="color:#FFA657">source</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#FF7B72">        elif</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">            comm.Recv(buf, </span><span style="color:#FFA657">source</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">); comm.Send(buf, </span><span style="color:#FFA657">dest</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">    dt </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> (</span><span style="color:#79C0FF">MPI</span><span style="color:#E6EDF3">.Wtime() </span><span style="color:#FF7B72">-</span><span style="color:#E6EDF3"> t0) </span><span style="color:#FF7B72">/</span><span style="color:#E6EDF3"> (</span><span style="color:#79C0FF">2</span><span style="color:#FF7B72"> *</span><span style="color:#79C0FF"> REPS</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#79C0FF">        print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;</span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">nbytes</span><span style="color:#FF7B72">:&gt;9}</span><span style="color:#A5D6FF"> B  </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">dt</span><span style="color:#FF7B72">*</span><span style="color:#79C0FF">1e6</span><span style="color:#FF7B72">:8.2f}</span><span style="color:#A5D6FF"> us  </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">nbytes</span><span style="color:#FF7B72">/</span><span style="color:#E6EDF3">dt</span><span style="color:#FF7B72">/</span><span style="color:#79C0FF">1e9</span><span style="color:#FF7B72">:7.2f}</span><span style="color:#A5D6FF"> GB/s&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Este es el ejercicio que más rendimiento pedagógico da por minuto invertido, porque produce números concretos de la máquina que se está usando y hace tangible el capítulo 5. Y tiene una segunda vida: en la parte cuántica del tutorial se puede plantear el equivalente —medir el tiempo de establecer un par EPR y compararlo con el de una puerta local— para que el asistente vea con sus propios datos cuántos órdenes de magnitud separan ambos costes.</p>
+<aside class="callout callout--note"><span class="callout-label">Nota logística para el ponente</span><p>Noventa minutos con ejercicios en vivo son muy justos. Recomendación: entorno preinstalado (contenedor o cuadernos en un JupyterHub del centro), ejercicio 0 verificado antes de empezar, y sólo el ejercicio 1 como obligatorio en sala. Los demás, material para llevarse. Si hay que sacrificar algo, que sea el ejercicio 2, nunca la parte III.</p></aside></section><section class="chapter" id="c10" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 10</span><h2>Qué se rompe al pasar al dominio cuántico</h2><p class="lead">Todo lo anterior se traslada. Pero no se traslada gratis: cuatro propiedades que dábamos por supuestas en MPI dejan de ser ciertas, y de esas cuatro roturas salen todas las decisiones de diseño de NetQMPI. Este capítulo es el eje del tutorial.</p><h3 id="101-el-teorema-de-no-clonación-elimina-el-broadcast">10.1 El teorema de no clonación elimina el broadcast</h3>
+<p>No existe ninguna operación física que, dado un estado cuántico arbitrario y desconocido |ψ⟩, produzca dos copias independientes |ψ⟩⊗|ψ⟩. La demostración es de tres líneas y se sigue de la linealidad de la mecánica cuántica. La consecuencia para nosotros es brutal en su simplicidad: <strong><code>MPI_Bcast</code> no tiene equivalente cuántico</strong>. No es que sea caro, ni que esté sin implementar: es que está prohibido.</p>
+<p>Esto no es un detalle menor de la API. Es exactamente la objeción que se le hace a la propuesta teórica QMPI de Häner y coautores, que definió la semántica de un MPI cuántico pero no resolvió cómo expresar las colectivas que implican copia.<sup class="ref-call"><a href="#r4">4</a></sup> Cualquier biblioteca que pretenda ser un «MPI cuántico» tiene que dar una respuesta a esta pregunta, y la respuesta de NetQMPI —las primitivas <code>expose</code> y <code>unexpose</code>— se detalla en el capítulo 13.</p>
+<figure><div class="canvas"><svg aria-label="A la izquierda, un intento de replicar un estado cuántico a tres nodos aparece tachado por violar el teorema de no clonación. A la derecha, la alternativa físicamente válida: un único estado entrelazado compartido entre los cuatro nodos." role="img" viewbox="0 0 800 300">
+<title>El no-broadcast cuántico y su alternativa</title>
+<text class="sv-th" x="40" y="26">prohibido · copiar el estado</text>
+<rect fill="#EDEAFA" height="46" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="40" y="120"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="88" y="140">rank 0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="88" y="157">|ψ⟩</text>
+<path d="M140 143 L170 143 L170 70 L200 70" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<path d="M140 143 L200 143" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<path d="M140 143 L170 143 L170 216 L200 216" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="50"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="75">|ψ⟩ copia</text>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="123"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="148">|ψ⟩ copia</text>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="196"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="221">|ψ⟩ copia</text>
+<line stroke="#A8451A" stroke-width="2.4" x1="150" x2="310" y1="55" y2="235"></line>
+<line stroke="#A8451A" stroke-width="2.4" x1="310" x2="150" y1="55" y2="235"></line>
+<text class="sv-s" fill="#A8451A" text-anchor="middle" x="200" y="272">teorema de no clonación</text>
+<line stroke="#DCDFDB" stroke-width="1" x1="380" x2="380" y1="40" y2="250"></line>
+<text class="sv-th" x="430" y="26">permitido · compartir un estado entrelazado</text>
+<rect fill="#EDEAFA" height="46" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="430" y="120"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="478" y="140">rank 0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="478" y="157">|ψ⟩</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="50"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="75">rank 1</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="123"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="148">rank 2</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="196"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="221">rank 3</text>
+<path d="M530 143 L560 143 L560 70 L590 70" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<path d="M530 143 L590 143" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<path d="M530 143 L560 143 L560 216 L590 216" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<circle cx="560" cy="143" fill="#5B3FB8" r="4"></circle>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="608" y="272">α|0000⟩ + β|1111⟩ · un único estado, cuatro localizaciones</text>
+</svg></div><figcaption><p>La diferencia no es de eficiencia sino de ontología. A la izquierda habría cuatro estados independientes; a la derecha hay <em>uno solo</em>, cuyos grados de libertad están repartidos entre cuatro nodos. Ningún nodo posee el estado, y medir en cualquiera de ellos afecta instantáneamente a lo que verán los demás. Es un recurso compartido, no un dato replicado.</p></figcaption></figure>
+<h3 id="102-las-otras-tres-roturas">10.2 Las otras tres roturas</h3>
+<table>
+<thead>
+<tr>
+<th>Supuesto de MPI</th>
+<th>Qué ocurre en el caso cuántico</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Leer no destruye</strong></td>
+<td>Medir un qubit colapsa su estado. No existe la operación «inspeccionar el búfer sin consumirlo», que es la base de cualquier depuración clásica. Depurar un programa cuántico distribuido es cualitativamente más difícil, y esto justifica por sí solo una capa de abstracción que reduzca la superficie de código.</td>
+</tr>
+<tr>
+<td><strong>El canal es reutilizable</strong></td>
+<td>Cada transferencia consume un par entrelazado, que desaparece al usarse. El «ancho de banda» no es una tasa sostenida sino un inventario de recursos que hay que generar, distribuir y contabilizar.</td>
+</tr>
+<tr>
+<td><strong>Un mensaje retrasado sigue siendo válido</strong></td>
+<td>El entrelazamiento se degrada con el tiempo por decoherencia. Hay un plazo. Un protocolo correcto pero lento puede ser un protocolo incorrecto en la práctica, porque la fidelidad del estado al llegar ya no es aceptable.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-lo-que-no-cambia-el-plano-de-control-clásico">10.3 Lo que <em>no</em> cambia: el plano de control clásico</h3>
+<p>Un malentendido frecuente conviene desactivarlo pronto. Transferir un qubit entre nodos se hace por <strong>teleportación</strong>, y la teleportación no es una alternativa a la comunicación clásica: <em>la necesita</em>. El protocolo consume un par EPR previamente distribuido, el emisor hace una medida de Bell sobre su qubit y su mitad del par, y envía <strong>dos bits clásicos</strong> por un canal convencional. Sin esos dos bits, el receptor no sabe qué corrección de Pauli aplicar y su qubit es basura.</p>
+<p>De modo que una red cuántica es siempre una red doble: un plano cuántico que distribuye entrelazamiento y un plano clásico que transporta resultados de medida y sincroniza. Cualquier biblioteca que abstraiga esto tiene que gestionar los dos, y la mitad de la verbosidad del SDK de NetQASM viene precisamente de tener que orquestar ambos a mano.<sup class="ref-call"><a href="#r6">6</a></sup></p></section><section class="chapter" id="c11" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 11</span><h2>La pila software</h2><p class="lead">Antes de ver código conviene situar cada pieza. El ecosistema de software para redes cuánticas está estratificado de forma muy parecida al de HPC, y confundir los niveles es la fuente principal de malentendidos.</p><h3 id="111-los-niveles">11.1 Los niveles</h3>
+<p>De abajo arriba:</p>
+<ul>
+<li><strong>Simuladores de eventos discretos</strong>. NetSquid modela la física: emisión de fotones, pérdida en fibra, decoherencia de memorias, temporización.<sup class="ref-call"><a href="#r7">7</a></sup> SeQUeNCe hace lo propio con más énfasis en la capa de red y el encaminamiento.<sup class="ref-call"><a href="#r10">10</a></sup> Son herramientas para arquitectos de red, no para programadores de aplicaciones: el código está dominado por definiciones de hardware.</li>
+<li><strong>NetQASM</strong>, una arquitectura de conjunto de instrucciones de bajo nivel, independiente de plataforma, para programas híbridos clásico-cuánticos en una internet cuántica.<sup class="ref-call"><a href="#r6">6</a></sup> Cumple aquí el papel que cumple un ISA en computación clásica: desacopla el software del hardware. Su SDK en Python ofrece la abstracción del <em>EPR socket</em>.</li>
+<li><strong>Backends de ejecución</strong>. SquidASM traduce NetQASM a eventos de NetSquid, dando simulación físicamente realista. SimulaQron ejecuta cada nodo como un proceso separado comunicándose por sockets, lo que impone una separación de memoria estricta muy útil para validar lógica distribuida.<sup class="ref-call"><a href="#r8">8</a></sup></li>
+<li><strong>NetQMPI</strong>, la capa que nos ocupa: middleware sobre el SDK de NetQASM que aporta el paradigma SPMD, el communicator y las primitivas semánticas.<sup class="ref-call"><a href="#r2">2</a></sup></li>
+</ul>
+<p>Al margen de esta pila existen herramientas de alto nivel con filosofías distintas —QuNetSim, con una API centralizada muy accesible pero sin camino a hardware real;<sup class="ref-call"><a href="#r9">9</a></sup> Interlinq, que automatiza el particionado de circuitos<sup class="ref-call"><a href="#r23">23</a></sup>— y, en el nivel de representación intermedia, NetQIR, una extensión de QIR para computación cuántica distribuida desarrollada por el mismo grupo que NetQMPI y de donde proceden las primitivas <code>expose</code>/<code>unexpose</code>.<sup class="ref-call"><a href="#r3">3</a></sup></p>
+<figure><div class="canvas"><svg aria-label="Pila de capas software: aplicación del usuario sobre NetQMPI, sobre el SDK de NetQASM, sobre el ISA de NetQASM, y por debajo los backends SquidASM, SimulaQron y hardware futuro. A la derecha, CUNQA como emulador independiente para entornos HPC." role="img" viewbox="0 0 800 392">
+<title>La pila software de NetQMPI y la posición de CUNQA</title>
+<rect fill="#F7F8F6" height="46" rx="6" stroke="#C3C7C2" stroke-width="1" width="480" x="40" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="280" y="55">aplicación del usuario</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="71">un único fichero, paradigma SPMD</text>
+<rect fill="#EDEAFA" height="60" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="480" x="40" y="90"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="280" y="112">NetQMPI</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="280" y="129">QMPICommunicator · qsend / qrecv</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="280" y="144">qscatter / qgather · expose / unexpose</text>
+<rect fill="#F7F8F6" height="50" rx="6" stroke="#C3C7C2" stroke-width="1" width="480" x="40" y="160"></rect>
+<text class="sv-th" text-anchor="middle" x="280" y="181">NetQASM SDK</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="198">EPRSocket · NetQASMConnection · flush()</text>
+<rect fill="#141C24" height="42" rx="6" width="480" x="40" y="220"></rect>
+<text class="sv-th" fill="#E4E8E4" text-anchor="middle" x="280" y="240">NetQASM ISA</text>
+<text class="sv-m" fill="#8B979F" text-anchor="middle" x="280" y="255">conjunto de instrucciones independiente de plataforma</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="280" x2="280" y1="262" y2="284"></line><path d="M276 279l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-width="1" width="152" x="40" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="116" y="311">SquidASM</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="116" y="328">sobre NetSquid</text>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-width="1" width="152" x="204" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="280" y="311">SimulaQron</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="328">un proceso por nodo</text>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-dasharray="4 3" stroke-width="1" width="152" x="368" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="444" y="311">hardware</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="444" y="328">futuro, si soporta el ISA</text>
+<rect fill="#E4F1EE" height="254" rx="6" stroke="#12695C" stroke-dasharray="6 4" stroke-width="1.4" width="200" x="560" y="90"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="660" y="116">CUNQA</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="660" y="134">emulador DQC para HPC</text>
+<line stroke="#A8C4BD" stroke-width="1" x1="580" x2="740" y1="148" y2="148"></line>
+<text class="sv-m" fill="#12695C" x="580" y="170">· QPU emuladas como</text>
+<text class="sv-m" fill="#12695C" x="590" y="185">trabajos del planificador</text>
+<text class="sv-m" fill="#12695C" x="580" y="209">· tres modelos:</text>
+<text class="sv-m" fill="#12695C" x="590" y="224">sin comunicación,</text>
+<text class="sv-m" fill="#12695C" x="590" y="239">clásica, cuántica</text>
+<text class="sv-m" fill="#12695C" x="580" y="263">· API propia de gestión</text>
+<text class="sv-m" fill="#12695C" x="590" y="278">y despliegue</text>
+<text class="sv-m" fill="#12695C" x="580" y="302">· pensado para el</text>
+<text class="sv-m" fill="#12695C" x="590" y="317">supercomputador</text>
+<line stroke="#6B7683" stroke-dasharray="4 3" stroke-width="1.2" x1="524" x2="556" y1="120" y2="120"></line>
+<path d="M552 116l6 4-6 4" fill="#6B7683"></path><path d="M528 116l-6 4 6 4" fill="#6B7683"></path>
+<text class="sv-s" text-anchor="middle" x="400" y="374">el punto de integración es el objeto del tutorial · confirmar la ruta exacta antes de la sesión</text>
+</svg></div><figcaption><p>NetQMPI se apoya en el SDK de NetQASM y, por tanto, en sus backends. CUNQA es un desarrollo independiente, orientado a emular QPU distribuidas dentro de un entorno HPC real, con su propia API y sus tres modelos de comunicación.<sup class="ref-call"><a href="#r1">1</a></sup> Que ambos se combinen en el título del tutorial exige explicitar por dónde se conectan.</p></figcaption></figure>
+<aside class="callout callout--warning"><span class="callout-label">Punto a resolver antes de impartir</span><p>La literatura publicada describe NetQMPI como middleware sobre el SDK de NetQASM, con SquidASM y SimulaQron como backends de ejecución.<sup class="ref-call"><a href="#r2">2</a></sup> CUNQA, por su parte, se publica como emulador de computación cuántica distribuida para HPC con su propia interfaz de gestión de QPU.<sup class="ref-call"><a href="#r1">1</a></sup> El título del tutorial promete «NetQMPI sobre el emulador CUNQA», lo que presupone una ruta de integración entre ambos.</p><p>Conviene dedicar una diapositiva explícita a esa ruta: si existe un backend de CUNQA para NetQMPI, dibujarlo en la pila; si la integración va por otro camino —por ejemplo, a través de NetQIR como representación intermedia común, o mediante una capa de traducción—, decirlo con claridad. Un asistente con formación en la materia lo va a preguntar, y la respuesta debería estar en las diapositivas y no en el turno de preguntas.</p></aside></section><section class="chapter" id="c12" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 12</span><h2>NetQMPI: la interfaz</h2><p class="lead">Con el marco montado, la API se explica casi sola: es MPI con las restricciones del capítulo 10 aplicadas. Lo interesante no es la sintaxis sino qué decide ocultar y qué decide exponer.</p><h3 id="121-el-problema-que-resuelve">12.1 El problema que resuelve</h3>
+<p>El SDK de NetQASM sigue un modelo <em>basado en roles</em>: se escribe un fichero por participante —<code>app_alice.py</code>, <code>app_bob.py</code>, <code>app_charlie.py</code>—. Además, no ofrece una primitiva de transferencia de qubits: para mover un estado hay que implementar la teleportación a mano, paso por paso, incluyendo la creación del socket EPR, las puertas locales, la medida, el envío de los bits por un socket clásico aparte y la aplicación de correcciones en el receptor. Y hay que invocar <code>flush()</code> manualmente para sincronizar el flujo cuántico.<sup class="ref-call"><a href="#r2">2</a></sup></p>
+<p>El resultado, medido sobre el caso de estudio del capítulo 14, es que el número de ficheros crece con N y la instanciación de sockets crece como N² en topologías completamente conectadas. Ese es el coste que NetQMPI elimina.</p>
+<h3 id="122-inyección-de-rank-y-creación-del-communicator">12.2 Inyección de rank y creación del communicator</h3>
+<p>El usuario escribe una función <code>main</code> que acepta <code>rank</code> y <code>size</code>. La biblioteca los inyecta en tiempo de ejecución, exactamente como <code>mpirun</code> hace con los procesos MPI. El punto de entrada de toda la funcionalidad es el <code>QMPICommunicator</code>.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Estructura mínima de una aplicación NetQMPI"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> netqmpi.sdk.communicator </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> QMPICommunicator</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">def</span><span style="color:#D2A8FF"> main</span><span style="color:#E6EDF3">(app_config</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">None</span><span style="color:#E6EDF3">, rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, size</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#8B949E">    # rank y size los inyecta NetQMPI al arrancar</span></span>
+<span class="line"><span style="color:#79C0FF">    COMM_WORLD</span><span style="color:#FF7B72"> =</span><span style="color:#E6EDF3"> QMPICommunicator(rank, size, app_config)</span></span>
+<span class="line"><span style="color:#79C0FF">    print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;hola, soy el rank </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">rank</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF"> de </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">size</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Y se lanza con una interfaz de línea de órdenes deliberadamente calcada de la de MPI:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> script.py</span></span>
+<span class="line"><span style="color:#FFA657">hola,</span><span style="color:#A5D6FF"> soy</span><span style="color:#A5D6FF"> el</span><span style="color:#A5D6FF"> rank</span><span style="color:#79C0FF"> 0</span><span style="color:#A5D6FF"> de</span><span style="color:#79C0FF"> 3</span></span>
+<span class="line"><span style="color:#FFA657">hola,</span><span style="color:#A5D6FF"> soy</span><span style="color:#A5D6FF"> el</span><span style="color:#A5D6FF"> rank</span><span style="color:#79C0FF"> 2</span><span style="color:#A5D6FF"> de</span><span style="color:#79C0FF"> 3</span></span>
+<span class="line"><span style="color:#FFA657">hola,</span><span style="color:#A5D6FF"> soy</span><span style="color:#A5D6FF"> el</span><span style="color:#A5D6FF"> rank</span><span style="color:#79C0FF"> 1</span><span style="color:#A5D6FF"> de</span><span style="color:#79C0FF"> 3</span></span></code></pre>
+<p>El paralelismo con <code>mpirun -n 3</code> es visualmente evidente y conviene explotarlo en la presentación: el asistente que acaba de hacer el ejercicio 0 reconoce la estructura de inmediato, incluida la salida desordenada.</p>
+<p>Lo que el communicator automatiza al construirse: asigna el rank lógico, recorre la configuración de red instanciando la malla de <code>EPRSocket</code> necesaria entre los participantes, y guarda esos sockets en una tabla de encaminamiento interna. Además gestiona la sincronización del flujo cuántico, con vaciados implícitos en las primitivas y un <code>flush()</code> explícito disponible cuando hace falta.<sup class="ref-call"><a href="#r2">2</a></sup> El programador deja de ver sockets.</p>
+<h3 id="123-qsend-y-qrecv">12.3 <code>qsend</code> y <code>qrecv</code></h3>
+<p>Las dos primitivas punto a punto encapsulan el protocolo de teleportación completo. Desde el punto de vista del programador, la operación es «envía este qubit al rank destino» y nada más: no aparecen pares EPR, ni fidelidades, ni identificadores de QPU, ni señalización clásica.</p>
+<figure><div class="canvas"><svg aria-label="Una llamada a qsend en el emisor y otra a qrecv en el receptor ocultan cuatro pasos: generación del par EPR, medida de Bell local, envío de dos bits clásicos y aplicación de correcciones de Pauli." role="img" viewbox="0 0 800 372">
+<title>Lo que ocultan qsend y qrecv</title>
+<rect fill="#141C24" height="42" rx="5" width="340" x="40" y="24"></rect>
+<text class="sv-m" fill="#8ECBE8" text-anchor="middle" x="210" y="50">comm.qsend(q, dest_rank=1)</text>
+<rect fill="#141C24" height="42" rx="5" width="340" x="420" y="24"></rect>
+<text class="sv-m" fill="#8ECBE8" text-anchor="middle" x="590" y="50">q = comm.qrecv(source_rank=0)</text>
+<line stroke="#C3C7C2" stroke-dasharray="6 4" stroke-width="1" x1="40" x2="760" y1="84" y2="84"></line>
+<text class="sv-s" fill="#6B7683" text-anchor="middle" x="400" y="102">por debajo de esta línea, todo lo hace la biblioteca</text>
+<rect fill="#EDEAFA" height="30" rx="4" stroke="#5B3FB8" stroke-width="1" width="170" x="60" y="118"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="145" y="138">rank 0 · emisor</text>
+<rect fill="#EDEAFA" height="30" rx="4" stroke="#5B3FB8" stroke-width="1" width="170" x="570" y="118"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="655" y="138">rank 1 · receptor</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="145" x2="145" y1="148" y2="344"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="655" x2="655" y1="148" y2="344"></line>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="300" x="250" y="162"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="400" y="183">1 · generar y distribuir el par EPR</text>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="145" x2="246" y1="179" y2="179"></line>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="554" x2="655" y1="179" y2="179"></line>
+<rect fill="#fff" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="60" y="212"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="150" y="233">2 · medida de Bell local</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="150" y="262">CNOT + H, luego medir</text>
+<line stroke="#12695C" stroke-width="1.6" x1="248" x2="566" y1="290" y2="290"></line><path d="M562 286l6 4-6 4" fill="#12695C"></path>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="283">3 · dos bits clásicos de corrección</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="306">canal clásico convencional</text>
+<rect fill="#fff" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="570" y="212"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="660" y="233">esperar entrelazamiento</text>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="570" y="322"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="660" y="343">4 · correcciones X / Z → |ψ⟩</text>
+</svg></div><figcaption><p>Merece la pena desplegar este diagrama en la presentación en lugar de limitarse a decir que la biblioteca «lo gestiona por ti». Una abstracción cuyo interior no se ha mostrado se percibe como magia, y en una audiencia de investigadores eso cuesta credibilidad. Nótese además que el qubit original queda destruido por la medida del paso 2: la teleportación mueve el estado, no lo duplica, y por tanto es compatible con el no-clonación.</p></figcaption></figure>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Punto a punto en NetQMPI · comparar con el ejemplo MPI del capítulo 7"><code><span class="line"><span style="color:#FF7B72">def</span><span style="color:#D2A8FF"> main</span><span style="color:#E6EDF3">(app_config</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">None</span><span style="color:#E6EDF3">, rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, size</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> QMPICommunicator(rank, size, app_config)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">        q </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> Qubit(comm.connection)</span></span>
+<span class="line"><span style="color:#E6EDF3">        q.H()                          </span><span style="color:#8B949E"># prepara |+&gt;</span></span>
+<span class="line"><span style="color:#E6EDF3">        comm.qsend(q, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)               </span><span style="color:#8B949E"># sin gestionar EPR</span></span>
+<span class="line"><span style="color:#79C0FF">        print</span><span style="color:#E6EDF3">(</span><span style="color:#A5D6FF">&quot;rank 0: qubit enviado&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">    elif</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">        q </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.qrecv(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)              </span><span style="color:#8B949E"># devuelve el estado ya corregido</span></span>
+<span class="line"><span style="color:#E6EDF3">        m </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> q.measure()</span></span>
+<span class="line"><span style="color:#79C0FF">        print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;rank 1: recibido, medida = </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">m</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>La simetría estructural con el ejemplo clásico —mismo <code>if rank == 0</code>, mismo par enviar/recibir— es intencionada y es el argumento pedagógico central de la biblioteca: si sabes MPI, ya sabes leer esto.</p></section><section class="chapter" id="c13" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 13</span><h2>Colectivas cuánticas</h2><p class="lead">Aquí es donde la analogía con MPI deja de ser cómoda y hay que romperla explícitamente. Copiar la lista de colectivas de MPI y ponerles una «q» delante no funciona, porque dos de las cuatro fundamentales no son físicamente realizables.</p><h3 id="131-las-que-sobreviven-qscatter-y-qgather">13.1 Las que sobreviven: <code>qscatter</code> y <code>qgather</code></h3>
+<p><code>qscatter</code> toma una lista de qubits en el proceso raíz y los distribuye, uno a cada rank del communicator. <code>qgather</code> hace la operación inversa. Ambas son legítimas porque <strong>mueven</strong> estados en lugar de copiarlos, y su implementación es un bucle de operaciones punto a punto: un <code>qscatter</code> equivale a que el root ejecute un <code>qsend</code> por cada rank destino.<sup class="ref-call"><a href="#r2">2</a></sup></p>
+<p>Conviene ser honesto sobre esto en la presentación: en su forma actual son azúcar sintáctico sobre punto a punto, no colectivas optimizadas con algoritmos de árbol como las de MPI. Es una diferencia real respecto al estándar clásico y una línea de trabajo futura evidente.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="qscatter · el root prepara N qubits en |+⟩ y los reparte"><code><span class="line"><span style="color:#FF7B72">def</span><span style="color:#D2A8FF"> main</span><span style="color:#E6EDF3">(app_config</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">None</span><span style="color:#E6EDF3">, rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, size</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">4</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> QMPICommunicator(rank, size, app_config)</span></span>
+<span class="line"><span style="color:#E6EDF3">    conn </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.connection</span></span>
+<span class="line"><span style="color:#79C0FF">    ROOT</span><span style="color:#FF7B72"> =</span><span style="color:#79C0FF"> 0</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    qubits </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> []</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> ROOT</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">        qubits </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> [Qubit(conn) </span><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> _ </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(size)]</span></span>
+<span class="line"><span style="color:#FF7B72">        for</span><span style="color:#E6EDF3"> q </span><span style="color:#FF7B72">in</span><span style="color:#E6EDF3"> qubits:</span></span>
+<span class="line"><span style="color:#E6EDF3">            q.H()</span></span>
+<span class="line"><span style="color:#E6EDF3">        conn.flush()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    local_qs </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.qscatter(qubits, </span><span style="color:#79C0FF">ROOT</span><span style="color:#E6EDF3">)   </span><span style="color:#8B949E"># devuelve el qubit de este rank</span></span>
+<span class="line"><span style="color:#E6EDF3">    m </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> local_qs[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">].measure()</span></span>
+<span class="line"><span style="color:#E6EDF3">    conn.flush()</span></span>
+<span class="line"><span style="color:#79C0FF">    print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;rank </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">rank</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">: medida </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">m</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<h3 id="132-la-que-no-existe-bcast">13.2 La que no existe: <code>Bcast</code></h3>
+<p>Por lo visto en el capítulo 10, no hay <code>qbcast</code> y no puede haberlo. La propuesta teórica QMPI dejó este hueco sin resolver, y es su limitación más citada.<sup class="ref-call"><a href="#r4">4</a></sup></p>
+<h3 id="133-la-respuesta-de-netqmpi-expose-y-unexpose">13.3 La respuesta de NetQMPI: <code>expose</code> y <code>unexpose</code></h3>
+<p>En lugar de copiar, NetQMPI <strong>distribuye</strong>. La primitiva <code>expose</code>, tomada del marco arquitectónico de NetQIR,<sup class="ref-call"><a href="#r3">3</a></sup> transforma un estado que reside en el root</p>
+<p class="formula"><p>|ψ⟩ = α|0⟩<sub>R₀</sub> + β|1⟩<sub>R₀</sub></p></p>
+<p>en un estado global repartido entre todos los rangos participantes</p>
+<p class="formula"><p>α (|0⟩<sub>R₀</sub> ⊗ … ⊗ |0⟩<sub>Rₙ</sub>) + β (|1⟩<sub>R₀</sub> ⊗ … ⊗ |1⟩<sub>Rₙ</sub>)</p></p>
+<p>La implementación entrelaza el qubit del root con un estado GHZ previamente compartido entre todos los nodos, seguido de medidas locales y correcciones clásicas.<sup class="ref-call"><a href="#r2">2</a></sup> El resultado no es una copia: es <em>un solo</em> estado cuyos grados de libertad están repartidos. Sobre él se pueden ejecutar operaciones controladas colectivas, que es el uso para el que se diseñó.</p>
+<p>Y de ahí la contrapartida: como la operación altera el ámbito de accesibilidad de los qubits, es <strong>obligatorio</strong> liberar el recurso al terminar. <code>unexpose</code> devuelve el sistema a un estado consistente en el que los qubits vuelven a ser privados de su propietario. No es cortesía: es liberación de recursos, y omitirla deja el communicator en estado inconsistente. La analogía correcta no es <code>Bcast</code> sino la pareja adquirir/liberar de un cerrojo.</p>
+<figure><div class="canvas"><svg aria-label="Ciclo de vida de expose: primero el estado reside sólo en el rank cero, después queda repartido entre los cuatro rangos como estado entrelazado sobre el que se opera colectivamente, y finalmente unexpose libera el recurso." role="img" viewbox="0 0 800 302">
+<title>Ciclo de vida de expose y unexpose</title>
+<text class="sv-th" x="30" y="26">1 · antes</text>
+<text class="sv-s" x="30" y="44">el estado vive en el root</text>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="200" x="30" y="58"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="130" y="79">rank 0 · α|0⟩ + β|1⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="98"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="116">rank 1 · |0⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="132"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="150">rank 2 · |0⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="166"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="184">rank 3 · |0⟩</text>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="248" x2="278" y1="126" y2="126"></line><path d="M274 122l6 4-6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="263" y="112">expose</text>
+<text class="sv-th" x="292" y="26">2 · expuesto</text>
+<text class="sv-s" x="292" y="44">un estado, cuatro localizaciones</text>
+<rect fill="#EDEAFA" height="136" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="200" x="292" y="58"></rect>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="70"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="86">rank 0</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="100"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="116">rank 1</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="130"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="146">rank 2</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="160"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="176">rank 3</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="392" y="214">α|0000⟩ + β|1111⟩</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="392" y="232">aquí van las operaciones colectivas</text>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="510" x2="540" y1="126" y2="126"></line><path d="M536 122l6 4-6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="525" y="112">unexpose</text>
+<text class="sv-th" x="556" y="26">3 · liberado</text>
+<text class="sv-s" x="556" y="44">obligatorio, no opcional</text>
+<rect fill="#E4F1EE" height="34" rx="4" stroke="#12695C" stroke-width="1" width="200" x="556" y="58"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="656" y="79">rank 0 · resultado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="98"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="116">rank 1 · liberado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="132"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="150">rank 2 · liberado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="166"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="184">rank 3 · liberado</text>
+<text class="sv-s" text-anchor="middle" x="400" y="286">no es copiar y descartar: es repartir un estado y devolverlo · el recurso entrelazado se consume</text>
+</svg></div><figcaption><p>El ciclo completo. Entre el paso 2 y el 3 es donde el algoritmo hace su trabajo, aplicando operaciones controladas sobre la información cuántica repartida. Omitir <code>unexpose</code> es el equivalente cuántico de una fuga de memoria, con el agravante de que el recurso fugado también se degrada por decoherencia.</p></figcaption></figure>
+<h3 id="134-tabla-de-correspondencias">13.4 Tabla de correspondencias</h3>
+<table>
+<thead>
+<tr>
+<th>MPI</th>
+<th>NetQMPI</th>
+<th>Comentario</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>Send</code> / <code>Recv</code></td>
+<td><code>qsend</code> / <code>qrecv</code></td>
+<td>Correspondencia directa. Internamente es teleportación, y el estado original se destruye.</td>
+</tr>
+<tr>
+<td><code>Scatter</code> / <code>Gather</code></td>
+<td><code>qscatter</code> / <code>qgather</code></td>
+<td>Correspondencia directa. Implementadas como bucles de punto a punto.</td>
+</tr>
+<tr>
+<td><code>Bcast</code></td>
+<td>—</td>
+<td><strong>No existe.</strong> Prohibido por el teorema de no clonación. Su lugar funcional lo ocupa <code>expose</code>, con semántica distinta: reparte, no replica.</td>
+</tr>
+<tr>
+<td><code>Reduce</code> / <code>Allreduce</code></td>
+<td>—</td>
+<td>Requeriría medir para obtener valores combinables, destruyendo la superposición. La reducción de resultados clásicos post-medida sí es posible, pero eso ya es MPI clásico.</td>
+</tr>
+<tr>
+<td><code>Barrier</code></td>
+<td><code>flush()</code></td>
+<td>No son equivalentes exactos: <code>flush</code> sincroniza el flujo de instrucciones cuánticas, no es una barrera de procesos.</td>
+</tr>
+</tbody>
+</table></section><section class="chapter" id="c14" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 14</span><h2>Caso de estudio: el estado GHZ distribuido</h2><p class="lead">Generar un estado de Greenberger–Horne–Zeilinger repartido entre N nodos es el «hola mundo» de la internet cuántica: exige entrelazamiento multipartito y control coordinado, y por eso sirve de banco de pruebas para comparar herramientas.&lt;Ref n={2} /&gt;</p><h3 id="141-el-protocolo">14.1 El protocolo</h3>
+<p>El objetivo es el estado máximamente entrelazado |GHZ⟩ = (|00…0⟩ + |11…1⟩)/√2 compartido entre N nodos distintos. El protocolo conceptual tiene tres pasos: un nodo raíz prepara un qubit en superposición aplicando una puerta Hadamard; a continuación ejecuta una secuencia de CNOT cuyo control es su qubit y cuyos objetivos residen en los N−1 nodos restantes; y, dado que no hay memoria compartida, <strong>cada uno de esos CNOT es remoto</strong> y exige por debajo un protocolo de teleportación o de intercambio de entrelazamiento con su correspondiente comunicación clásica y sus correcciones.</p>
+<figure><div class="canvas"><svg aria-label="Circuito del estado GHZ distribuido: el rango cero aplica una Hadamard y después tres CNOT remotos hacia los rangos uno, dos y tres, cada uno de los cuales requiere un par entrelazado y comunicación clásica." role="img" viewbox="0 0 800 306">
+<title>Generación distribuida de un estado GHZ</title>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="76">rank 0</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="126">rank 1</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="176">rank 2</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="226">rank 3</text>
+<text class="sv-m" x="106" y="52">|0⟩</text><text class="sv-m" x="106" y="102">|0⟩</text><text class="sv-m" x="106" y="152">|0⟩</text><text class="sv-m" x="106" y="202">|0⟩</text>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="72" y2="72"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="122" y2="122"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="172" y2="172"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="222" y2="222"></line>
+<rect fill="#EDEAFA" height="28" rx="3" stroke="#5B3FB8" stroke-width="1.2" width="28" x="140" y="58"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="154" y="77">H</text>
+<rect fill="#F7F8F6" height="90" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="222" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="252" x2="252" y1="72" y2="122"></line>
+<circle cx="252" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="252" cy="122" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="243" x2="261" y1="122" y2="122"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="252" x2="252" y1="113" y2="131"></line>
+<rect fill="#F7F8F6" height="140" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="330" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="360" x2="360" y1="72" y2="172"></line>
+<circle cx="360" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="360" cy="172" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="351" x2="369" y1="172" y2="172"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="360" x2="360" y1="163" y2="181"></line>
+<rect fill="#F7F8F6" height="190" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="438" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="468" x2="468" y1="72" y2="222"></line>
+<circle cx="468" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="468" cy="222" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="459" x2="477" y1="222" y2="222"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="468" x2="468" y1="213" y2="231"></line>
+<path d="M584 60 Q596 147 584 234" fill="none" stroke="#12695C" stroke-width="1.4"></path>
+<text class="sv-m" fill="#0C3F38" x="608" y="140">(|0000⟩ + |1111⟩) / √2</text>
+<text class="sv-m" fill="#12695C" x="608" y="160">estado GHZ compartido</text>
+<text class="sv-s" fill="#5B3FB8" text-anchor="middle" x="360" y="272">cada recuadro punteado es un CNOT remoto</text>
+<text class="sv-s" fill="#6B7683" text-anchor="middle" x="360" y="292">= 1 par EPR consumido + 2 bits clásicos + correcciones de Pauli</text>
+</svg></div><figcaption><p>El circuito lógico es trivial: una Hadamard y N−1 puertas CNOT. Lo que no es trivial es que ninguna de esas CNOT se puede ejecutar localmente, porque control y objetivo están en máquinas distintas. Toda la complejidad del problema está oculta dentro de los recuadros punteados, y es exactamente esa complejidad la que las distintas herramientas gestionan de forma más o menos afortunada.</p></figcaption></figure>
+<h3 id="142-la-misma-tarea-dos-herramientas">14.2 La misma tarea, dos herramientas</h3>
+<p>En NetQMPI el programa es un único fichero cuya lógica no depende de N. La primitiva <code>expose</code> se encarga de los CNOT remotos y de la distribución de entrelazamiento subyacente.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="NetQMPI · fichero único, complejidad O(1)"><code><span class="line"><span style="color:#FF7B72">def</span><span style="color:#D2A8FF"> main</span><span style="color:#E6EDF3">(app_config</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">None</span><span style="color:#E6EDF3">, rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, size</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">3</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> QMPICommunicator(rank, size, app_config)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # 1 · el root crea el qubit base en superposición</span></span>
+<span class="line"><span style="color:#E6EDF3">    qubits </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> []</span></span>
+<span class="line"><span style="color:#E6EDF3">    q </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> Qubit(comm.connection)</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">        q.H()</span></span>
+<span class="line"><span style="color:#E6EDF3">    qubits.append(q)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # 2 · operación colectiva: reparte el control del CNOT remoto</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm.expose(qubits, </span><span style="color:#FFA657">root_rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # 3 · operaciones locales en los rangos no raíz</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">!=</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">        qubits[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">].cnot(mi_qubit)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # 4 · liberar el recurso: obligatorio</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm.unexpose(</span><span style="color:#FFA657">root_rank</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Pasar de tres a cincuenta nodos consiste en escribir <code>netqmpi -n 50</code>. El fuente no se toca.</p>
+<aside class="callout callout--warning"><span class="callout-label">Dos precisiones que hay que anticipar</span><p><strong>Primera.</strong> Si el qubit del root está en |+⟩, la propia llamada a <code>expose</code> ya produce el estado GHZ sobre los rangos participantes: eso es exactamente lo que dice su definición formal del capítulo 13 con α = β = 1/√2. Conviene dejar claro en la diapositiva qué aportan entonces las CNOT locales posteriores —extender el entrelazamiento a qubits adicionales dentro de cada nodo— porque de lo contrario un asistente atento preguntará dónde se crea realmente el GHZ, y con razón.</p><p><strong>Segunda.</strong> El fragmento publicado usa una variable <code>mi_qubit</code> que no está declarada en el propio fragmento. Antes de proyectarlo conviene completarlo, o el ejemplo pierde fuerza justo en el momento en que se está argumentando que el código es limpio.</p></aside>
+<p>El contraste con el SDK crudo es el argumento visual más eficaz de todo el bloque. En NetQASM SDK la lógica está separada estrictamente por roles: para tres nodos hacen falta tres ficheros, la creación de sockets es explícita y por pares, y el CNOT remoto no es una primitiva nativa sino un protocolo que hay que implementar a mano.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="NetQASM SDK · un fichero por rol, con sockets explícitos"><code><span class="line"><span style="color:#8B949E"># --- app_alice.py (root) ---</span></span>
+<span class="line"><span style="color:#E6EDF3">sock_bob     </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> EPRSocket(</span><span style="color:#A5D6FF">&quot;Bob&quot;</span><span style="color:#E6EDF3">)          </span><span style="color:#8B949E"># un socket por destino</span></span>
+<span class="line"><span style="color:#E6EDF3">sock_charlie </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> EPRSocket(</span><span style="color:#A5D6FF">&quot;Charlie&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">csock_bob     </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> Socket(</span><span style="color:#A5D6FF">&quot;Alice&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;Bob&quot;</span><span style="color:#E6EDF3">)      </span><span style="color:#8B949E"># y otro clásico por destino</span></span>
+<span class="line"><span style="color:#E6EDF3">csock_charlie </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> Socket(</span><span style="color:#A5D6FF">&quot;Alice&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;Charlie&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">with</span><span style="color:#E6EDF3"> NetQASMConnection(</span><span style="color:#A5D6FF">&quot;Alice&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">epr_sockets</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">[sock_bob, sock_charlie]) </span><span style="color:#FF7B72">as</span><span style="color:#E6EDF3"> c:</span></span>
+<span class="line"><span style="color:#E6EDF3">    q </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> Qubit(c); q.H()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    epr_b </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> sock_bob.create_epr()[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">]     </span><span style="color:#8B949E"># CNOT remoto hacia Bob, a mano</span></span>
+<span class="line"><span style="color:#E6EDF3">    q.cnot(epr_b)</span></span>
+<span class="line"><span style="color:#E6EDF3">    m_b </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> epr_b.measure()</span></span>
+<span class="line"><span style="color:#E6EDF3">    c.flush()</span></span>
+<span class="line"><span style="color:#E6EDF3">    csock_bob.send(</span><span style="color:#79C0FF">str</span><span style="color:#E6EDF3">(m_b))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    epr_c </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> sock_charlie.create_epr()[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">] </span><span style="color:#8B949E"># y la lógica duplicada para Charlie</span></span>
+<span class="line"><span style="color:#E6EDF3">    q.cnot(epr_c)</span></span>
+<span class="line"><span style="color:#E6EDF3">    m_c </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> epr_c.measure()</span></span>
+<span class="line"><span style="color:#E6EDF3">    c.flush()</span></span>
+<span class="line"><span style="color:#E6EDF3">    csock_charlie.send(</span><span style="color:#79C0FF">str</span><span style="color:#E6EDF3">(m_c))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E"># --- app_bob.py --- y --- app_charlie.py --- : ficheros aparte, casi idénticos</span></span></code></pre>
+<p>Añadir un cuarto nodo obliga a crear un fichero nuevo <em>y</em> a modificar el del root para instanciar los dos sockets adicionales y duplicar otra vez el bloque de teleportación. Es código repetitivo, estructuralmente necesario y una fuente inagotable de errores de copiar y pegar.</p>
+<h3 id="143-cómo-escala-el-código">14.3 Cómo escala el código</h3>
+<figure><div class="canvas"><svg aria-label="Gráfica del número de líneas de código necesarias para generar un estado GHZ en función del número de nodos: NetQMPI se mantiene constante mientras que el SDK de NetQASM y los simuladores crecen de forma cuadrática." role="img" viewbox="0 0 800 342">
+<title>Escalado del código con el número de nodos</title>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="70" y1="40" y2="300"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="700" y1="300" y2="300"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="70" x2="690" y1="70" y2="70"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="70" x2="690" y1="185" y2="185"></line>
+<text class="sv-m" text-anchor="end" x="62" y="304">0</text>
+<text class="sv-m" text-anchor="end" x="62" y="189">300</text>
+<text class="sv-m" text-anchor="end" x="62" y="74">600</text>
+<polyline fill="none" points="70,287.7 220,254 370,208 520,149.7 670,79.2" stroke="#A8451A" stroke-width="2.4"></polyline>
+<polyline fill="none" points="70,296.9 220,284.7 370,260.1 520,223.3 670,174.3" stroke="#5B3FB8" stroke-dasharray="7 4" stroke-width="2.4"></polyline>
+<polyline fill="none" points="70,295.4 220,295.4 370,295.4 520,295.4 670,295.4" stroke="#12695C" stroke-width="2.8"></polyline>
+<circle cx="670" cy="79.2" fill="#A8451A" r="3.5"></circle><circle cx="670" cy="174.3" fill="#5B3FB8" r="3.5"></circle><circle cx="670" cy="295.4" fill="#12695C" r="3.5"></circle>
+<text class="sv-m" fill="#A8451A" x="678" y="83">NetQASM SDK · O(N²)</text>
+<text class="sv-m" fill="#5B3FB8" x="678" y="178">QuNetSim · O(N²) de red</text>
+<text class="sv-m" fill="#12695C" x="678" y="299">NetQMPI · O(1)</text>
+<text class="sv-m" text-anchor="middle" x="70" y="320">2</text><text class="sv-m" text-anchor="middle" x="220" y="320">6</text><text class="sv-m" text-anchor="middle" x="370" y="320">10</text><text class="sv-m" text-anchor="middle" x="520" y="320">14</text><text class="sv-m" text-anchor="middle" x="670" y="320">18</text>
+<text class="sv-s" text-anchor="middle" x="370" y="338">número de nodos N · líneas lógicas de código, sin comentarios ni imports</text>
+</svg></div><figcaption><p>Tendencias cualitativas según el análisis comparativo publicado.<sup class="ref-call"><a href="#r2">2</a></sup> En los marcos basados en roles, cada nodo nuevo exige un fichero, la instanciación manual de sockets —que crece cuadráticamente en topologías completamente conectadas— y la duplicación de la lógica de control. NetQMPI mantiene la curva plana porque el bucle está dentro de la primitiva colectiva y recorre dinámicamente el tamaño del communicator.</p></figcaption></figure>
+<aside class="callout callout--note"><span class="callout-label">Advertencia sobre la métrica</span><p>Las líneas de código miden esfuerzo de desarrollo y superficie de error, no rendimiento. Que NetQMPI mantenga la curva plana no significa que el coste de comunicación deje de crecer: los pares EPR necesarios siguen siendo los mismos, sólo que ya no los escribe el usuario. Conviene decirlo explícitamente para cerrar el círculo con el capítulo 4: la abstracción reduce el coste de programar, no la fracción serie de Amdahl.</p></aside></section><section class="chapter" id="c15" data-accent="quantum"><span class="chapter-num">Parte III · Capítulo 15</span><h2>Cierre y qué queda fuera</h2><p class="lead"></p><p>El recorrido completo, en una frase: los límites físicos obligan a replicar unidades; replicar unidades obliga a comunicar; comunicar es caro; MPI estandarizó cómo se programa eso en el mundo clásico mediante SPMD, rank y communicator; y NetQMPI traslada esas tres abstracciones al dominio cuántico, adaptando las primitivas allí donde la física prohíbe la traducción literal.</p>
+<h3 id="151-lo-que-este-bloque-no-cubre">15.1 Lo que este bloque no cubre</h3>
+<ul>
+<li><strong>Fidelidad y ruido.</strong> Todo el tratamiento anterior ha sido funcional. El coste real de una operación remota depende de la fidelidad del par EPR y de la tasa de decoherencia, y NetSquid existe precisamente para modelar eso.<sup class="ref-call"><a href="#r7">7</a></sup></li>
+<li><strong>Particionado de circuitos.</strong> Dado un circuito monolítico y N QPU, ¿cómo se reparte minimizando puertas remotas? Es un problema de optimización combinatoria y una línea de investigación activa.<sup class="ref-call"><a href="#r24">24</a></sup></li>
+<li><strong>Topología real de red.</strong> Se ha asumido conectividad completa. Una red cuántica realista tiene encaminadores, repetidores e intercambio de entrelazamiento, y el communicator oculta —por ahora— esa estructura.<sup class="ref-call"><a href="#r13">13</a></sup></li>
+<li><strong>Comparativa de emuladores.</strong> Existe trabajo específico de evaluación comparativa de emuladores de computación cuántica distribuida que conviene consultar antes de elegir herramienta.<sup class="ref-call"><a href="#r22">22</a></sup></li>
+</ul>
+<h3 id="152-enlace-con-la-segunda-mitad-del-tutorial">15.2 Enlace con la segunda mitad del tutorial</h3>
+<p>Los tres modelos de comunicación de CUNQA —sin comunicación, comunicación clásica y comunicación cuántica— corresponden ordenadamente a las tres situaciones descritas en la parte I: el caso <em>embarrassingly parallel</em>, el intercambio de resultados escalares, y el movimiento de estado. La estimación de fase cuántica, que es el algoritmo con el que se demuestra el emulador en la literatura,<sup class="ref-call"><a href="#r1">1</a></sup> ejercita los tres.</p>
+<p>Si el asistente se lleva una sola idea de esta hora y media, que sea esta: <strong>la computación cuántica distribuida es computación distribuida</strong>, con un modelo de coste de comunicación más severo y una prohibición física —el no clonado— que elimina una de las cuatro colectivas fundamentales. Todo lo demás es transferible.</p></section><section class="references" id="refs"><h2>Referencias</h2><ol><li id="r1"><b>J. Vázquez-Pérez, D. Expósito-Patiño, M. Losada, Á. Carballido, A. Gómez, T. F. Pena.</b> CUNQA: a Distributed Quantum Computing emulator for HPC. arXiv:2511.05209 [quant-ph], 2025. <a href="https://arxiv.org/abs/2511.05209">arxiv.org/abs/2511.05209</a> · documentación y código en <a href="https://github.com/CESGA-Quantum-Spain/cunqa">github.com/CESGA-Quantum-Spain/cunqa</a></li><li id="r2"><b>F. J. Cardama, T. F. Pena.</b> NetQMPI: An MPI-Inspired library for programming Distributed Quantum Applications over Quantum Networks using NetQASM SDK. arXiv:2512.11483 [quant-ph], 2025. <a href="https://arxiv.org/abs/2512.11483">arxiv.org/abs/2512.11483</a> · código en <a href="https://github.com/netqir/netqmpi">github.com/netqir/netqmpi</a></li><li id="r3"><b>F. J. Cardama, J. Vázquez-Pérez, C. Piñeiro, T. F. Pena, J. C. Pichel, A. Gómez.</b> NetQIR: An extension of QIR for distributed quantum computing. <em>Future Generation Computer Systems</em>, 174:107989, 2026.</li><li id="r4"><b>T. Häner, D. S. Steiger, T. Hoefler, M. Troyer.</b> Distributed quantum computing with QMPI. <em>Proc. SC'21</em>, 2021.</li><li id="r5"><b>Y. Shi et al.</b> A Reference Implementation for a Quantum Message Passing Interface. <em>Proc. SC-W '23</em>, pp. 1420–1425, 2023.</li><li id="r6"><b>A. Dahlberg, B. van der Vecht, C. Delle Donne, M. Skrzypczyk, I. te Raa, W. Kozlowski, S. Wehner.</b> NetQASM — a low-level instruction set architecture for hybrid quantum-classical programs in a quantum internet. <em>Quantum Science and Technology</em>, 7(3):035023, 2022.</li><li id="r7"><b>T. Coopmans et al.</b> NetSquid, a NETwork Simulator for QUantum Information using Discrete events. <em>Communications Physics</em>, 4:164, 2021.</li><li id="r8"><b>A. Dahlberg, S. Wehner.</b> SimulaQron — a simulator for developing quantum internet software. <em>Quantum Science and Technology</em>, 4(1):015001, 2018.</li><li id="r9"><b>S. DiAdamo, J. Nötzel, B. Zanger, M. M. Beşe.</b> QuNetSim: A Software Framework for Quantum Networks. <em>IEEE Transactions on Quantum Engineering</em>, 2, 2021.</li><li id="r10"><b>X. Wu et al.</b> SeQUeNCe: a customizable discrete-event simulator of quantum networks. <em>Quantum Science and Technology</em>, 6(4):045027, 2021.</li><li id="r11"><b>D. Barral, F. J. Cardama, G. Díaz-Camacho, D. Faílde, I. F. Llovo, M. Mussa-Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J. C. Pichel, T. F. Pena, A. Gómez.</b> Review of Distributed Quantum Computing: From single QPU to High Performance Quantum Computing. <em>Computer Science Review</em>, 57:100747, 2025.</li><li id="r12"><b>M. Caleffi, M. Amoretti, D. Ferrari, J. Illiano, A. Manzalini, A. S. Cacciapuoti.</b> Distributed quantum computing: A survey. <em>Computer Networks</em>, 254:110672, 2024.</li><li id="r13"><b>S. Wehner, D. Elkouss, R. Hanson.</b> Quantum internet: A vision for the road ahead. <em>Science</em>, 362(6412), 2018.</li><li id="r14"><b>J. Preskill.</b> Quantum Computing in the NISQ era and beyond. <em>Quantum</em>, 2:79, 2018.</li><li id="r15"><b>MPI Forum.</b> MPI: A Message-Passing Interface Standard. Versión 4.1, 2023. <a href="https://www.mpi-forum.org/docs/">mpi-forum.org/docs</a></li><li id="r16a"><b>G. M. Amdahl.</b> Validity of the single processor approach to achieving large scale computing capabilities. <em>AFIPS Spring Joint Computer Conference</em>, pp. 483–485, 1967. — <b id="r16b">J. L. Gustafson.</b> Reevaluating Amdahl's Law. <em>Communications of the ACM</em>, 31(5):532–533, 1988.</li><li id="r17"><b>J. L. Hennessy, D. A. Patterson.</b> <em>Computer Architecture: A Quantitative Approach.</em> 6.ª ed., Morgan Kaufmann, 2019. — Para el modelo roofline: S. Williams, A. Waterman, D. Patterson, <em>Communications of the ACM</em>, 52(4):65–76, 2009.</li><li id="r18"><b>W. A. Wulf, S. A. McKee.</b> Hitting the Memory Wall: Implications of the Obvious. <em>ACM SIGARCH Computer Architecture News</em>, 23(1):20–24, 1995.</li><li id="r19"><b>R. H. Dennard, F. H. Gaensslen, H.-N. Yu, V. L. Rideout, E. Bassous, A. R. LeBlanc.</b> Design of ion-implanted MOSFET's with very small physical dimensions. <em>IEEE Journal of Solid-State Circuits</em>, 9(5):256–268, 1974.</li><li id="r20"><b>K. Rupp.</b> Microprocessor Trend Data. Conjunto de datos abierto, licencia CC-BY. <a href="https://github.com/karlrupp/microprocessor-trend-data">github.com/karlrupp/microprocessor-trend-data</a> — fuente recomendada si se proyectan cifras concretas en la figura 1.</li><li id="r21"><b>L. Dalcín, R. Paz, M. Storti, J. D'Elía.</b> MPI for Python: Performance improvements and MPI-2 extensions. <em>Journal of Parallel and Distributed Computing</em>, 68(5):655–662, 2008. · documentación en <a href="https://mpi4py.readthedocs.io">mpi4py.readthedocs.io</a></li><li id="r22"><b>G. Díaz-Camacho, I. F. Llovo, F. J. Cardama, I. Bautista, D. Faílde, M. M. Juane, J. Vázquez-Pérez, N. Costas, T. F. Pena, A. Gómez.</b> Benchmarking Distributed Quantum Computing Emulators. arXiv:2512.01807, 2025.</li><li id="r23"><b>R. Parekh, A. Ricciardi, A. Darwish, S. DiAdamo.</b> Quantum Algorithms and Simulation for Parallel and Distributed Quantum Computing. <em>Proc. QCS 2021 (SC21)</em>, pp. 9–19, 2021.</li><li id="r24"><b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023.</li></ol></section></main></div><footer class="site-footer"><div><p>Material de apoyo · Practical Distributed Quantum Computing: Programming distributed applications with NetQMPI over the CUNQA emulator — from monolithic circuits to multi-QPU networks · IEEE Quantum Week (QCE26), 18 de septiembre.</p><p>Las figuras son esquemáticas y están pensadas para proyección; los valores numéricos ilustran órdenes de magnitud y tendencias, no medidas. Para cifras citables, acúdase a las fuentes primarias listadas en las referencias.</p></div></footer><script type="module">document.querySelector(`.lang-switch`)?.addEventListener(`click`,e=>{let t=e.currentTarget,n=location.hash.slice(1);n&&(t.href=t.getAttribute(`href`)+`#`+n)});</script></body></html>

@@ -12,6 +12,7 @@ const codeTitle = {
 
 export default defineConfig({
   site: 'https://example.org',
+  base: '/tutorial',
   integrations: [mdx()],
   markdown: {
     shikiConfig: {

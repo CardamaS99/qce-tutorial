@@ -1,0 +1,17 @@
+---
+// Reparto por idioma del navegador, con /es/ como destino por defecto.
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirigiendo…</title>
+  <link rel="canonical" href={`${base}/es/`} />
+  <meta http-equiv="refresh" content={`0; url=${base}/es/`} />
+  <script is:inline define:vars={{ base }}>
+    location.replace((navigator.language || 'es').toLowerCase().startsWith('es') ? `${base}/es/` : `${base}/en/`);
+  </script>
+</head>
+<body><p><a href={`${base}/es/`}>Español</a> · <a href={`${base}/en/`}>English</a></p></body>
+</html>
