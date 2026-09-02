@@ -1,0 +1,57 @@
+<svg aria-label="Cuatro diagramas de operaciones colectivas de MPI: Bcast replica un dato del root a todos, Scatter reparte porciones distintas, Gather las recoge, y Reduce las combina con un operador." role="img" viewbox="0 0 800 400">
+<title>Colectivas fundamentales de MPI</title>
+<text class="sv-th" x="40" y="52">Bcast · el root replica un dato a todos</text>
+<text class="sv-m" text-anchor="end" x="52" y="92">0</text><text class="sv-m" text-anchor="end" x="52" y="118">1</text><text class="sv-m" text-anchor="end" x="52" y="144">2</text><text class="sv-m" text-anchor="end" x="52" y="170">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="60" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="75" y="91">A</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="102"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="128"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="30" x="60" y="154"></rect>
+<line stroke="#6B7683" stroke-width="1.4" x1="102" x2="140" y1="126" y2="126"></line><path d="M136 122l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="102"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="117">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="128"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="143">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="30" x="152" y="154"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="167" y="169">A</text>
+<text class="sv-s" text-anchor="middle" x="75" y="196">antes</text><text class="sv-s" text-anchor="middle" x="167" y="196">después</text>
+<text class="sv-th" x="420" y="52">Scatter · el root reparte porciones</text>
+<text class="sv-m" text-anchor="end" x="442" y="92">0</text><text class="sv-m" text-anchor="end" x="442" y="118">1</text><text class="sv-m" text-anchor="end" x="442" y="144">2</text><text class="sv-m" text-anchor="end" x="442" y="170">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="450" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="463" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="478" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="491" y="91">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="506" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="519" y="91">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="534" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="547" y="91">D</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="102"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="128"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="450" y="154"></rect>
+<line stroke="#6B7683" stroke-width="1.4" x1="572" x2="610" y1="126" y2="126"></line><path d="M606 122l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="76"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="91">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="102"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="117">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="128"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="143">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="622" y="154"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="635" y="169">D</text>
+<text class="sv-s" text-anchor="middle" x="505" y="196">antes</text><text class="sv-s" text-anchor="middle" x="635" y="196">después</text>
+<text class="sv-th" x="40" y="242">Gather · el root recoge las porciones</text>
+<text class="sv-m" text-anchor="end" x="52" y="282">0</text><text class="sv-m" text-anchor="end" x="52" y="308">1</text><text class="sv-m" text-anchor="end" x="52" y="334">2</text><text class="sv-m" text-anchor="end" x="52" y="360">3</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="281">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="292"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="307">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="318"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="333">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="60" y="344"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="73" y="359">D</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="98" x2="136" y1="316" y2="316"></line><path d="M132 312l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="148" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="161" y="281">A</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="176" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="189" y="281">B</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="204" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="217" y="281">C</text>
+<rect fill="#E4F1EE" height="22" rx="3" stroke="#12695C" stroke-width="0.9" width="26" x="232" y="266"></rect><text class="sv-m" fill="#0C3F38" text-anchor="middle" x="245" y="281">D</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="292"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="318"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="110" x="148" y="344"></rect>
+<text class="sv-s" text-anchor="middle" x="73" y="386">antes</text><text class="sv-s" text-anchor="middle" x="203" y="386">después</text>
+<text class="sv-th" x="420" y="242">Reduce · combina con un operador</text>
+<text class="sv-m" text-anchor="end" x="442" y="282">0</text><text class="sv-m" text-anchor="end" x="442" y="308">1</text><text class="sv-m" text-anchor="end" x="442" y="334">2</text><text class="sv-m" text-anchor="end" x="442" y="360">3</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="266"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="281">a</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="292"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="307">b</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="318"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="333">c</text>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="30" x="450" y="344"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="465" y="359">d</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="492" x2="530" y1="316" y2="316"></line><path d="M526 312l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#EDEAFA" height="22" rx="3" stroke="#5B3FB8" stroke-width="0.9" width="112" x="542" y="266"></rect><text class="sv-m" fill="#3B2C82" text-anchor="middle" x="598" y="281">a ⊕ b ⊕ c ⊕ d</text>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="292"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="318"></rect>
+<rect fill="#fff" height="22" rx="3" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="112" x="542" y="344"></rect>
+<text class="sv-s" text-anchor="middle" x="465" y="386">antes</text><text class="sv-s" text-anchor="middle" x="598" y="386">después</text>
+</svg>

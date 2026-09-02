@@ -1,0 +1,88 @@
+---
+lang: es
+order: 14
+part: "Parte III"
+title: "Caso de estudio: el estado GHZ distribuido"
+lead: "Generar un estado de Greenberger–Horne–Zeilinger repartido entre N nodos es el «hola mundo» de la internet cuántica: exige entrelazamiento multipartito y control coordinado, y por eso sirve de banco de pruebas para comparar herramientas.<Ref n={2} />"
+accent: quantum
+---
+### 14.1 El protocolo
+
+El objetivo es el estado máximamente entrelazado |GHZ⟩ = (|00…0⟩ + |11…1⟩)/√2 compartido entre N nodos distintos. El protocolo conceptual tiene tres pasos: un nodo raíz prepara un qubit en superposición aplicando una puerta Hadamard; a continuación ejecuta una secuencia de CNOT cuyo control es su qubit y cuyos objetivos residen en los N−1 nodos restantes; y, dado que no hay memoria compartida, **cada uno de esos CNOT es remoto** y exige por debajo un protocolo de teleportación o de intercambio de entrelazamiento con su correspondiente comunicación clásica y sus correcciones.
+
+<Figure id="ghz-circuit">
+  El circuito lógico es trivial: una Hadamard y N−1 puertas CNOT. Lo que no es trivial es que ninguna de esas CNOT se puede ejecutar localmente, porque control y objetivo están en máquinas distintas. Toda la complejidad del problema está oculta dentro de los recuadros punteados, y es exactamente esa complejidad la que las distintas herramientas gestionan de forma más o menos afortunada.
+</Figure>
+
+### 14.2 La misma tarea, dos herramientas
+
+En NetQMPI el programa es un único fichero cuya lógica no depende de N. La primitiva `expose` se encarga de los CNOT remotos y de la distribución de entrelazamiento subyacente.
+
+```python title="NetQMPI · fichero único, complejidad O(1)"
+def main(app_config=None, rank=0, size=3):
+    comm = QMPICommunicator(rank, size, app_config)
+
+    # 1 · el root crea el qubit base en superposición
+    qubits = []
+    q = Qubit(comm.connection)
+    if rank == 0:
+        q.H()
+    qubits.append(q)
+
+    # 2 · operación colectiva: reparte el control del CNOT remoto
+    comm.expose(qubits, root_rank=0)
+
+    # 3 · operaciones locales en los rangos no raíz
+    if rank != 0:
+        qubits[0].cnot(mi_qubit)
+
+    # 4 · liberar el recurso: obligatorio
+    comm.unexpose(root_rank=0)
+```
+
+Pasar de tres a cincuenta nodos consiste en escribir `netqmpi -n 50`. El fuente no se toca.
+
+<Warning label="Dos precisiones que hay que anticipar">
+  **Primera.** Si el qubit del root está en |+⟩, la propia llamada a `expose` ya produce el estado GHZ sobre los rangos participantes: eso es exactamente lo que dice su definición formal del capítulo 13 con α = β = 1/√2. Conviene dejar claro en la diapositiva qué aportan entonces las CNOT locales posteriores —extender el entrelazamiento a qubits adicionales dentro de cada nodo— porque de lo contrario un asistente atento preguntará dónde se crea realmente el GHZ, y con razón.
+  
+  **Segunda.** El fragmento publicado usa una variable `mi_qubit` que no está declarada en el propio fragmento. Antes de proyectarlo conviene completarlo, o el ejemplo pierde fuerza justo en el momento en que se está argumentando que el código es limpio.
+</Warning>
+
+El contraste con el SDK crudo es el argumento visual más eficaz de todo el bloque. En NetQASM SDK la lógica está separada estrictamente por roles: para tres nodos hacen falta tres ficheros, la creación de sockets es explícita y por pares, y el CNOT remoto no es una primitiva nativa sino un protocolo que hay que implementar a mano.
+
+```python title="NetQASM SDK · un fichero por rol, con sockets explícitos"
+# --- app_alice.py (root) ---
+sock_bob     = EPRSocket("Bob")          # un socket por destino
+sock_charlie = EPRSocket("Charlie")
+csock_bob     = Socket("Alice", "Bob")      # y otro clásico por destino
+csock_charlie = Socket("Alice", "Charlie")
+
+with NetQASMConnection("Alice", epr_sockets=[sock_bob, sock_charlie]) as c:
+    q = Qubit(c); q.H()
+
+    epr_b = sock_bob.create_epr()[0]     # CNOT remoto hacia Bob, a mano
+    q.cnot(epr_b)
+    m_b = epr_b.measure()
+    c.flush()
+    csock_bob.send(str(m_b))
+
+    epr_c = sock_charlie.create_epr()[0] # y la lógica duplicada para Charlie
+    q.cnot(epr_c)
+    m_c = epr_c.measure()
+    c.flush()
+    csock_charlie.send(str(m_c))
+
+# --- app_bob.py --- y --- app_charlie.py --- : ficheros aparte, casi idénticos
+```
+
+Añadir un cuarto nodo obliga a crear un fichero nuevo *y* a modificar el del root para instanciar los dos sockets adicionales y duplicar otra vez el bloque de teleportación. Es código repetitivo, estructuralmente necesario y una fuente inagotable de errores de copiar y pegar.
+
+### 14.3 Cómo escala el código
+
+<Figure id="loc-scaling">
+  Tendencias cualitativas según el análisis comparativo publicado.<Ref n={2} /> En los marcos basados en roles, cada nodo nuevo exige un fichero, la instanciación manual de sockets —que crece cuadráticamente en topologías completamente conectadas— y la duplicación de la lógica de control. NetQMPI mantiene la curva plana porque el bucle está dentro de la primitiva colectiva y recorre dinámicamente el tamaño del communicator.
+</Figure>
+
+<Note label="Advertencia sobre la métrica">
+  Las líneas de código miden esfuerzo de desarrollo y superficie de error, no rendimiento. Que NetQMPI mantenga la curva plana no significa que el coste de comunicación deje de crecer: los pares EPR necesarios siguen siendo los mismos, sólo que ya no los escribe el usuario. Conviene decirlo explícitamente para cerrar el círculo con el capítulo 4: la abstracción reduce el coste de programar, no la fracción serie de Amdahl.
+</Note>

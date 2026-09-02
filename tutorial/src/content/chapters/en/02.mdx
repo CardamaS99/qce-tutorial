@@ -1,0 +1,40 @@
+---
+lang: en
+order: 2
+part: "Part I"
+title: "Anatomy of a distributed system"
+lead: "Before distributing work you need to know what you are distributing it over. The physical hierarchy of a supercomputer determines which operations are cheap and which are expensive, and that hierarchy is what the programming model then reflects — sometimes badly."
+accent: classical
+---
+### 2.1 The physical hierarchy
+
+From the inside out, a contemporary supercomputer is organised in four levels:
+
+- **Core**: the execution unit. It has its own registers and first-level caches.
+- **Socket**: a physical package grouping tens of cores with a shared last-level cache and a memory controller.
+- **Node**: a board with one or more sockets, its DRAM and, increasingly, accelerators (GPUs and — this is the field's bet — QPUs). Everything inside a node shares an address space.
+- **Cluster**: the set of nodes joined by a low-latency interconnect. Between nodes there is *no* shared memory.
+
+That last sentence is the hinge of the whole course. The node boundary is the address-space boundary, and crossing it requires an explicit communication mechanism. Inside the node you can use threads and shared variables; outside, you must send messages.
+
+<Figure id="hierarchy">
+  Inside a node, cores share memory and communication is implicit: writing a variable suffices. Crossing to another node requires packing, sending and receiving. Note the accelerator drawn in node 1: the HPC-QC integration thesis is exactly this, treating the QPU as one more accelerator within the existing hierarchy.<Ref n={1} />
+</Figure>
+
+### 2.2 Shared memory versus distributed memory
+
+Two programming models with opposite properties follow from this hierarchy.
+
+Under **shared memory** all threads see the same addresses. Communicating means writing to a variable; there is no explicit transfer cost. In exchange, race conditions appear, synchronisation is required (locks, barriers, critical sections), and the model does not scale beyond the node. OpenMP is the reference standard.
+
+Under **distributed memory** each process has its own private address space. There are no data races because there are no shared data; in exchange, all communication is explicit and carries a cost the programmer must account for. The model scales to hundreds of thousands of processes. MPI is the reference standard.<Ref n={15} />
+
+In practice real codes are hybrid: MPI between nodes, OpenMP or CUDA within. But for our purposes the relevant model is pure distributed memory, because that is what describes a QPU network: **each quantum node has its own qubit register and there is no mechanism by which another node reads that register directly**. Distributed memory is not a design choice in distributed quantum computing; it is the only possible topology.
+
+<Note label="A point of terminology">
+  Do not conflate
+  
+  with
+  
+  . MPI launches processes; you can have eight processes on one node or one per node. The standard promises nothing about physical placement; the scheduler decides. This distinction between logical identity and physical resource is exactly the one NetQMPI inherits when it maps ranks to QPUs, and it is worth establishing clearly here.
+</Note>

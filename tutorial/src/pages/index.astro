@@ -1,0 +1,16 @@
+---
+// Reparto por idioma del navegador, con /es/ como destino por defecto.
+---
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Redirigiendo…</title>
+  <link rel="canonical" href="/es/" />
+  <meta http-equiv="refresh" content="0; url=/es/" />
+  <script is:inline>
+    location.replace((navigator.language || 'es').toLowerCase().startsWith('es') ? '/es/' : '/en/');
+  </script>
+</head>
+<body><p><a href="/es/">Español</a> · <a href="/en/">English</a></p></body>
+</html>

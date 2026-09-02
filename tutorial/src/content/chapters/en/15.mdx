@@ -1,0 +1,22 @@
+---
+lang: en
+order: 15
+part: "Part III"
+title: "Closing, and what is left out"
+lead: ""
+accent: quantum
+---
+The whole path, in one sentence: physical limits force replicating units; replicating units forces communicating; communicating is expensive; MPI standardised how that is programmed in the classical world through SPMD, rank and communicator; and NetQMPI carries those three abstractions into the quantum domain, adapting the primitives wherever physics forbids a literal translation.
+
+### 15.1 What this block does not cover
+
+- **Fidelity and noise.** The whole treatment above has been functional. The real cost of a remote operation depends on EPR pair fidelity and decoherence rates, and NetSquid exists precisely to model that.<Ref n={7} />
+- **Circuit partitioning.** Given a monolithic circuit and N QPUs, how do you split it while minimising remote gates? It is a combinatorial optimisation problem and an active research line.<Ref n={24} />
+- **Real network topology.** Full connectivity has been assumed. A realistic quantum network has routers, repeaters and entanglement swapping, and the communicator hides — for now — that structure.<Ref n={13} />
+- **Emulator comparison.** There is specific work benchmarking distributed quantum computing emulators that is worth consulting before choosing a tool.<Ref n={22} />
+
+### 15.2 Link to the second half of the tutorial
+
+CUNQA's three communication models — no communication, classical communication and quantum communication — map neatly onto the three situations described in Part I: the embarrassingly parallel case, the exchange of scalar results, and the movement of state. Quantum phase estimation, the algorithm used to demonstrate the emulator in the literature,<Ref n={1} /> exercises all three.
+
+If the attendee takes away one idea from this ninety minutes, let it be this: **distributed quantum computing is distributed computing**, with a harsher communication cost model and one physical prohibition — no-cloning — that removes one of the four fundamental collectives. Everything else transfers.

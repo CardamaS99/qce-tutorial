@@ -1,0 +1,44 @@
+<svg aria-label="Comparison between data decomposition, where three ranks apply the same operation to different blocks of a vector, and task decomposition, where three ranks run different stages of a pipeline." role="img" viewbox="0 0 800 356">
+<title>Data decomposition versus task decomposition</title>
+<rect fill="#fff" height="238" rx="8" stroke="#C3C7C2" stroke-width="1" width="360" x="30" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="210" y="62">data decomposition</text>
+<text class="sv-s" text-anchor="middle" x="210" y="81">same operation, different data</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="55" y="96"></rect>
+<text class="sv-m" text-anchor="middle" x="210" y="114">vectors a, b · n elements</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="112" x2="112" y1="126" y2="152"></line><path d="M108 147l4 6 4-6" fill="#6B7683"></path>
+<line stroke="#6B7683" stroke-width="1.2" x1="210" x2="210" y1="126" y2="152"></line><path d="M206 147l4 6 4-6" fill="#6B7683"></path>
+<line stroke="#6B7683" stroke-width="1.2" x1="308" x2="308" y1="126" y2="152"></line><path d="M304 147l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="63" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="112" y="178">rank 0</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="112" y="196">block 0</text>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="161" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="210" y="178">rank 1</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="210" y="196">block 1</text>
+<rect fill="#E4F1EE" height="58" rx="5" stroke="#12695C" stroke-width="0.9" width="98" x="259" y="154"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="308" y="178">rank 2</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="308" y="196">block 2</text>
+<rect fill="#F7F8F6" height="30" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="55" y="228"></rect>
+<text class="sv-m" text-anchor="middle" x="210" y="247">all run c[i] = a[i] + b[i]</text>
+<rect fill="#fff" height="238" rx="8" stroke="#C3C7C2" stroke-width="1" width="360" x="410" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="590" y="62">task decomposition</text>
+<text class="sv-s" text-anchor="middle" x="590" y="81">different operations, data in a chain</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="435" y="96"></rect>
+<text class="sv-m" text-anchor="middle" x="590" y="114">incoming data stream</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="484" x2="484" y1="126" y2="152"></line><path d="M480 147l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="437" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="484" y="178">rank 0</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="484" y="196">filter</text>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="543" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="590" y="178">rank 1</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="590" y="196">transform</text>
+<rect fill="#FAEDE6" height="58" rx="5" stroke="#A8451A" stroke-width="0.9" width="94" x="649" y="154"></rect>
+<text class="sv-th" fill="#6B2E10" text-anchor="middle" x="696" y="178">rank 2</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="696" y="196">write</text>
+<line stroke="#A8451A" stroke-width="1.2" x1="533" x2="539" y1="183" y2="183"></line><path d="M536 179l6 4-6 4" fill="#A8451A"></path>
+<line stroke="#A8451A" stroke-width="1.2" x1="639" x2="645" y1="183" y2="183"></line><path d="M642 179l6 4-6 4" fill="#A8451A"></path>
+<rect fill="#F7F8F6" height="30" rx="4" stroke="#C3C7C2" stroke-width="0.8" width="310" x="435" y="228"></rect>
+<text class="sv-m" text-anchor="middle" x="590" y="247">each rank runs a different stage</text>
+<rect fill="#F2F3F1" height="46" rx="6" stroke="#C3C7C2" stroke-width="0.8" width="740" x="30" y="292"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="313">limiting case · embarrassingly parallel</text>
+<text class="sv-s" text-anchor="middle" x="400" y="331">data decomposition with zero inter-rank communication · linear scaling by construction</text>
+</svg>

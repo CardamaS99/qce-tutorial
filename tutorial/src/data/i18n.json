@@ -1,0 +1,42 @@
+{
+  "es": {
+    "htmlTitle": "De circuitos monolíticos a redes multi-QPU",
+    "eyebrow": "IEEE Quantum Week · QCE26 · tutorial de 3 horas · 18 de septiembre",
+    "title": "De circuitos monolíticos a redes multi-QPU",
+    "dek": "Fundamentos de programación distribuida en HPC, el estándar MPI, y su traslación al dominio cuántico con NetQMPI sobre el emulador CUNQA. Material de apoyo del primer bloque del tutorial.",
+    "meta": [
+      ["Bloque", "Primera hora y media"],
+      ["Requisitos", "Python; circuitos cuánticos básicos"],
+      ["Herramientas", "mpi4py · NetQMPI · CUNQA"],
+      ["Objetivo", "Escribir y ejecutar una aplicación distribuida"]
+    ],
+    "toc": "Contenido",
+    "references": "Referencias",
+    "chapter": "Capítulo",
+    "switchTo": "English",
+    "footer": [
+      "Material de apoyo · Practical Distributed Quantum Computing: Programming distributed applications with NetQMPI over the CUNQA emulator — from monolithic circuits to multi-QPU networks · IEEE Quantum Week (QCE26), 18 de septiembre.",
+      "Las figuras son esquemáticas y están pensadas para proyección; los valores numéricos ilustran órdenes de magnitud y tendencias, no medidas. Para cifras citables, acúdase a las fuentes primarias listadas en las referencias."
+    ]
+  },
+  "en": {
+    "htmlTitle": "From monolithic circuits to multi-QPU networks",
+    "eyebrow": "IEEE Quantum Week · QCE26 · 3-hour tutorial · 18 September",
+    "title": "From monolithic circuits to multi-QPU networks",
+    "dek": "Foundations of distributed programming in HPC, the MPI standard, and its translation into the quantum domain with NetQMPI over the CUNQA emulator. Supporting material for the tutorial's first block.",
+    "meta": [
+      ["Block", "First ninety minutes"],
+      ["Prerequisites", "Python; basic quantum circuits"],
+      ["Tools", "mpi4py · NetQMPI · CUNQA"],
+      ["Goal", "Write and run a distributed application"]
+    ],
+    "toc": "Contents",
+    "references": "References",
+    "chapter": "Chapter",
+    "switchTo": "Español",
+    "footer": [
+      "Supporting material · Practical Distributed Quantum Computing: Programming distributed applications with NetQMPI over the CUNQA emulator — from monolithic circuits to multi-QPU networks · IEEE Quantum Week (QCE26), 18 September.",
+      "Figures are schematic and intended for projection; numerical values illustrate orders of magnitude and trends, not measurements. For citable figures, refer to the primary sources listed in the references."
+    ]
+  }
+}

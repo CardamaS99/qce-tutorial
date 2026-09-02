@@ -1,0 +1,33 @@
+---
+lang: en
+order: 3
+part: "Part I"
+title: "How work gets divided"
+lead: "Given a problem and N processors, there are essentially two ways to divide it. The choice between them is not cosmetic: it determines the resulting communication pattern, and the communication pattern determines performance."
+accent: classical
+---
+### 3.1 Data decomposition
+
+You partition the problem *domain* and every process runs the same code on its share. This is the dominant strategy in scientific computing: finite-difference meshes, dense matrices, bodies in a gravitational simulation, pixels of an image. Each process knows its block, operates on it, and only needs to communicate at the block boundaries — what domain-decomposition practitioners call halo or ghost-cell exchange.
+
+Its properties: the code is single and independent of N; communication is concentrated at discrete moments (an initial distribution, a boundary exchange per iteration, a final reduction); and it scales well as long as the local block is large compared with its boundary, that is, as long as the volume-to-surface ratio is favourable.
+
+### 3.2 Task decomposition
+
+You partition the *stages* of the computation and data flow through them. Each process does something different. This is the pipeline model: acquire, filter, transform, write. It is also the model of irregular task graphs.
+
+Its properties are almost complementary: the code differs per rank, communication is continuous rather than discrete, and overall performance is set by the slowest stage, not by the sum of stages. Balancing a pipeline is harder than balancing a domain, because stages rarely cost the same.
+
+### 3.3 The happy case: embarrassingly parallel
+
+The degenerate limit of data decomposition, when inter-process communication is **zero**. Monte Carlo sampling, parameter sweeps, evaluating the same circuit with different seeds. There are no boundaries to exchange because the shares are independent. Scaling is linear by construction and the only cost is the final aggregation of results.
+
+<Figure id="decomposition">
+  The axis separating the two strategies is not «data» versus «tasks» but the communication pattern each induces. On the left, communication concentrated at the ends and proportional to block size. On the right, continuous communication dominated by the latency of small messages. These are two distinct regimes of the cost model introduced in chapter 5.
+</Figure>
+
+<Bridge label="Classical → quantum bridge">
+  The three categories reappear literally as the three execution models CUNQA implements.<Ref n={1} /> The *no-communication* model is the embarrassingly parallel case: N QPUs running independent circuits, with classical aggregation at the end. The *classical-communication* model allows exchanging measurement outcomes between nodes during execution. The *quantum-communication* model allows transferring states, and is the only one that needs distributed entanglement.
+  
+  When those three names appear in the second half of the tutorial, the attendee will already have the mental frame in place.
+</Bridge>

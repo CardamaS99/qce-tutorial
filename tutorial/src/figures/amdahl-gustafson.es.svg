@@ -1,0 +1,36 @@
+<svg aria-label="Dos gráficas comparativas: la ley de Amdahl con curvas que saturan en un techo, y la ley de Gustafson con curvas de crecimiento lineal, para fracciones serie del 5, 10 y 25 por ciento." role="img" viewbox="0 0 800 342">
+<title>Ley de Amdahl frente a ley de Gustafson</title>
+<text class="sv-th" x="60" y="26">Amdahl · problema de tamaño fijo</text>
+<text class="sv-s" x="60" y="43">la aceleración satura en 1/s</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="60" x2="60" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="60" x2="385" y1="280" y2="280"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="60" x2="380" y1="165" y2="165"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="60" x2="380" y1="50" y2="50"></line>
+<text class="sv-m" text-anchor="end" x="54" y="284">0</text><text class="sv-m" text-anchor="end" x="54" y="169">10</text><text class="sv-m" text-anchor="end" x="54" y="54">20</text>
+<polyline fill="none" points="60,268.5 113.3,257 166.7,234 220,188 273.3,96 290.5,50" stroke="#C3C7C2" stroke-dasharray="4 4" stroke-width="1.6"></polyline>
+<polyline fill="none" points="60,268.5 113.3,258.1 166.7,240 220,211.9 273.3,174.9 326.7,135.7 380,102.7" stroke="#12695C" stroke-width="2.2"></polyline>
+<polyline fill="none" points="60,268.5 113.3,259.1 166.7,244.6 220,225.9 273.3,206.4 326.7,190.3 380,179.1" stroke="#5B3FB8" stroke-width="2.2"></polyline>
+<polyline fill="none" points="60,268.5 113.3,261.6 166.7,253.7 220,246.5 273.3,241.3 326.7,237.9 380,236.1" stroke="#A8451A" stroke-width="2.2"></polyline>
+<text class="sv-m" fill="#12695C" x="386" y="106">s=5%</text>
+<text class="sv-m" fill="#5B3FB8" x="386" y="183">s=10%</text>
+<text class="sv-m" fill="#A8451A" x="386" y="240">s=25%</text>
+<text class="sv-m" fill="#8A8F8B" x="296" y="46">ideal</text>
+<text class="sv-m" text-anchor="middle" x="60" y="298">1</text><text class="sv-m" text-anchor="middle" x="166.7" y="298">4</text><text class="sv-m" text-anchor="middle" x="273.3" y="298">16</text><text class="sv-m" text-anchor="middle" x="380" y="298">64</text>
+<text class="sv-s" text-anchor="middle" x="220" y="320">procesadores N · escala log₂</text>
+<text class="sv-th" x="460" y="26">Gustafson · problema que crece con N</text>
+<text class="sv-s" x="460" y="43">la aceleración escalada no satura</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="460" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="735" y1="280" y2="280"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="730" y1="165" y2="165"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="730" y1="50" y2="50"></line>
+<text class="sv-m" text-anchor="end" x="454" y="284">0</text><text class="sv-m" text-anchor="end" x="454" y="169">32</text><text class="sv-m" text-anchor="end" x="454" y="54">64</text>
+<polyline fill="none" points="460,276.4 505,273 550,265.6 595,251.3 640,222.5 685,165 730,50" stroke="#C3C7C2" stroke-dasharray="4 4" stroke-width="1.6"></polyline>
+<polyline fill="none" points="460,276.4 505,273 550,266.2 595,252.5 640,225.2 685,170.6 730,61.3" stroke="#12695C" stroke-width="2.2"></polyline>
+<polyline fill="none" points="460,276.4 505,273.2 550,266.7 595,253.8 640,227.9 685,176.1 730,72.6" stroke="#5B3FB8" stroke-width="2.2"></polyline>
+<polyline fill="none" points="460,276.4 505,273.7 550,268.3 595,257.5 640,236 685,192.9 730,106.6" stroke="#A8451A" stroke-width="2.2"></polyline>
+<text class="sv-m" fill="#12695C" x="736" y="65">5%</text>
+<text class="sv-m" fill="#5B3FB8" x="736" y="76">10%</text>
+<text class="sv-m" fill="#A8451A" x="736" y="110">25%</text>
+<text class="sv-m" text-anchor="middle" x="460" y="298">1</text><text class="sv-m" text-anchor="middle" x="550" y="298">4</text><text class="sv-m" text-anchor="middle" x="640" y="298">16</text><text class="sv-m" text-anchor="middle" x="730" y="298">64</text>
+<text class="sv-s" text-anchor="middle" x="595" y="320">procesadores N · escala log₂</text>
+</svg>

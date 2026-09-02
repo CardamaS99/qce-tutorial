@@ -1,0 +1,33 @@
+---
+lang: es
+order: 3
+part: "Parte I"
+title: "Cómo se reparte el trabajo"
+lead: "Dado un problema y N procesadores, hay esencialmente dos formas de dividirlo. La elección entre ambas no es estética: determina el patrón de comunicación resultante, y el patrón de comunicación determina el rendimiento."
+accent: classical
+---
+### 3.1 Descomposición de datos
+
+Se reparte el *dominio* del problema y todos los procesos ejecutan el mismo código sobre su porción. Es la estrategia dominante en cálculo científico: mallas de diferencias finitas, matrices densas, cuerpos en una simulación gravitatoria, píxeles de una imagen. Cada proceso conoce su bloque, opera sobre él y sólo necesita comunicarse en las fronteras del bloque —lo que en simulación por dominios se llama intercambio de *halo* o *ghost cells*.
+
+Sus propiedades: el código es único y no depende de N; la comunicación se concentra en momentos discretos (una distribución inicial, un intercambio de fronteras por iteración, una reducción final); y escala bien mientras el bloque local sea grande comparado con su frontera, es decir, mientras la razón volumen/superficie sea favorable.
+
+### 3.2 Descomposición de tareas
+
+Se reparten las *etapas* del cálculo y los datos fluyen a través de ellas. Cada proceso hace algo distinto. Es el modelo de un cauce de procesamiento: adquirir, filtrar, transformar, escribir. También el de los grafos de tareas irregulares.
+
+Sus propiedades son casi complementarias: el código es distinto en cada rank, la comunicación es continua en lugar de discreta, y el rendimiento global lo fija la etapa más lenta, no la suma de las etapas. Balancear un cauce es más difícil que balancear un dominio, porque las etapas rara vez cuestan lo mismo.
+
+### 3.3 El caso feliz: *embarrassingly parallel*
+
+El límite degenerado de la descomposición de datos, cuando la comunicación entre procesos es **nula**. Muestreo Monte Carlo, barridos de parámetros, evaluación de un mismo circuito con distintas semillas. No hay fronteras que intercambiar porque las porciones son independientes. El escalado es lineal por construcción y el único coste es la agregación final de resultados.
+
+<Figure id="decomposition">
+  El eje que separa ambas estrategias no es «datos» frente a «tareas» sino el patrón de comunicación que inducen. A la izquierda, comunicación concentrada en los extremos y proporcional al tamaño del bloque. A la derecha, comunicación continua y dominada por la latencia de mensajes pequeños. Son dos regímenes distintos del modelo de coste que se introduce en el capítulo 5.
+</Figure>
+
+<Bridge label="Puente clásico → cuántico">
+  Las tres categorías reaparecen literalmente como los tres modelos de ejecución que implementa CUNQA.<Ref n={1} /> El modelo *sin comunicación* es el caso *embarrassingly parallel*: N QPU ejecutando circuitos independientes, con agregación clásica al final. El modelo de *comunicación clásica* permite intercambiar resultados de medida entre nodos durante la ejecución. El modelo de *comunicación cuántica* permite transferir estados, y es el único que necesita entrelazamiento distribuido.
+  
+  Cuando en la segunda mitad del tutorial aparezcan esos tres nombres, el asistente ya tendrá el marco mental montado.
+</Bridge>

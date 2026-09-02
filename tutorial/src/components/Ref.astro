@@ -1,0 +1,9 @@
+---
+/** Llamada bibliográfica: <Ref n={3} /> */
+import references from '../data/references.json';
+interface Props { n: number }
+const { n } = Astro.props;
+const entry = references[n - 1];
+if (!entry) throw new Error(`No existe la referencia ${n}: hay ${references.length}.`);
+---
+<sup class="ref-call"><a href={`#${entry.id}`}>{n}</a></sup>

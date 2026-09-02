@@ -1,0 +1,29 @@
+<svg aria-label="A single source file launched with mpirun produces three identical processes, each with a different injected rank value, running different branches of the same code." role="img" viewbox="0 0 800 280">
+<title>The SPMD paradigm</title>
+<rect fill="#141C24" height="176" rx="6" width="240" x="30" y="52"></rect>
+<text class="sv-m" fill="#7E9089" x="46" y="76">script.py</text>
+<text class="sv-m" fill="#8ECBE8" x="46" y="100">rank = comm.Get_rank()</text>
+<text class="sv-m" fill="#8ECBE8" x="46" y="118">size = comm.Get_size()</text>
+<text class="sv-m" fill="#C6A6F5" x="46" y="146">if</text><text class="sv-m" fill="#E4E8E4" x="70" y="146">rank == 0:</text>
+<text class="sv-m" fill="#E4E8E4" x="62" y="164">distribute_data()</text>
+<text class="sv-m" fill="#C6A6F5" x="46" y="182">else</text><text class="sv-m" fill="#E4E8E4" x="78" y="182">:</text>
+<text class="sv-m" fill="#E4E8E4" x="62" y="200">process_block()</text>
+<text class="sv-s" text-anchor="middle" x="150" y="248">one single source</text>
+<line stroke="#6B7683" stroke-width="1.4" x1="278" x2="304" y1="140" y2="140"></line><path d="M300 136l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#F2F3F1" height="44" rx="5" stroke="#3B4754" stroke-width="1" width="126" x="308" y="118"></rect>
+<text class="sv-m" text-anchor="middle" x="371" y="145">mpirun -n 3</text>
+<text class="sv-s" text-anchor="middle" x="371" y="248">the launcher injects rank</text>
+<path d="M440 140 L456 140 L456 90 L470 90" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 86l6 4-6 4" fill="#6B7683"></path>
+<path d="M440 140 L470 140" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 136l6 4-6 4" fill="#6B7683"></path>
+<path d="M440 140 L456 140 L456 190 L470 190" fill="none" stroke="#6B7683" stroke-width="1.2"></path><path d="M466 186l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="66"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="88">rank 0</text>
+<text class="sv-m" fill="#12695C" x="556" y="88">size 3 → runs distribute_data()</text>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="166"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="188">rank 2</text>
+<text class="sv-m" fill="#12695C" x="556" y="188">size 3 → runs process_block()</text>
+<rect fill="#E4F1EE" height="48" rx="5" stroke="#12695C" stroke-width="0.9" width="292" x="474" y="116"></rect>
+<text class="sv-th" fill="#0C3F38" x="490" y="138">rank 1</text>
+<text class="sv-m" fill="#12695C" x="556" y="138">size 3 → runs process_block()</text>
+<text class="sv-s" text-anchor="middle" x="620" y="248">three processes, same code image</text>
+</svg>

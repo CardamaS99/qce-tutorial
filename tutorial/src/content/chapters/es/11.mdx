@@ -1,0 +1,28 @@
+---
+lang: es
+order: 11
+part: "Parte III"
+title: "La pila software"
+lead: "Antes de ver código conviene situar cada pieza. El ecosistema de software para redes cuánticas está estratificado de forma muy parecida al de HPC, y confundir los niveles es la fuente principal de malentendidos."
+accent: quantum
+---
+### 11.1 Los niveles
+
+De abajo arriba:
+
+- **Simuladores de eventos discretos**. NetSquid modela la física: emisión de fotones, pérdida en fibra, decoherencia de memorias, temporización.<Ref n={7} /> SeQUeNCe hace lo propio con más énfasis en la capa de red y el encaminamiento.<Ref n={10} /> Son herramientas para arquitectos de red, no para programadores de aplicaciones: el código está dominado por definiciones de hardware.
+- **NetQASM**, una arquitectura de conjunto de instrucciones de bajo nivel, independiente de plataforma, para programas híbridos clásico-cuánticos en una internet cuántica.<Ref n={6} /> Cumple aquí el papel que cumple un ISA en computación clásica: desacopla el software del hardware. Su SDK en Python ofrece la abstracción del *EPR socket*.
+- **Backends de ejecución**. SquidASM traduce NetQASM a eventos de NetSquid, dando simulación físicamente realista. SimulaQron ejecuta cada nodo como un proceso separado comunicándose por sockets, lo que impone una separación de memoria estricta muy útil para validar lógica distribuida.<Ref n={8} />
+- **NetQMPI**, la capa que nos ocupa: middleware sobre el SDK de NetQASM que aporta el paradigma SPMD, el communicator y las primitivas semánticas.<Ref n={2} />
+
+Al margen de esta pila existen herramientas de alto nivel con filosofías distintas —QuNetSim, con una API centralizada muy accesible pero sin camino a hardware real;<Ref n={9} /> Interlinq, que automatiza el particionado de circuitos<Ref n={23} />— y, en el nivel de representación intermedia, NetQIR, una extensión de QIR para computación cuántica distribuida desarrollada por el mismo grupo que NetQMPI y de donde proceden las primitivas `expose`/`unexpose`.<Ref n={3} />
+
+<Figure id="stack">
+  NetQMPI se apoya en el SDK de NetQASM y, por tanto, en sus backends. CUNQA es un desarrollo independiente, orientado a emular QPU distribuidas dentro de un entorno HPC real, con su propia API y sus tres modelos de comunicación.<Ref n={1} /> Que ambos se combinen en el título del tutorial exige explicitar por dónde se conectan.
+</Figure>
+
+<Warning label="Punto a resolver antes de impartir">
+  La literatura publicada describe NetQMPI como middleware sobre el SDK de NetQASM, con SquidASM y SimulaQron como backends de ejecución.<Ref n={2} /> CUNQA, por su parte, se publica como emulador de computación cuántica distribuida para HPC con su propia interfaz de gestión de QPU.<Ref n={1} /> El título del tutorial promete «NetQMPI sobre el emulador CUNQA», lo que presupone una ruta de integración entre ambos.
+  
+  Conviene dedicar una diapositiva explícita a esa ruta: si existe un backend de CUNQA para NetQMPI, dibujarlo en la pila; si la integración va por otro camino —por ejemplo, a través de NetQIR como representación intermedia común, o mediante una capa de traducción—, decirlo con claridad. Un asistente con formación en la materia lo va a preguntar, y la respuesta debería estar en las diapositivas y no en el turno de preguntas.
+</Warning>

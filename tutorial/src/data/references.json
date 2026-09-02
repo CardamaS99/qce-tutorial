@@ -1,0 +1,122 @@
+[
+  {
+    "id": "r1",
+    "es": "<b>J. Vázquez-Pérez, D. Expósito-Patiño, M. Losada, Á. Carballido, A. Gómez, T. F. Pena.</b> CUNQA: a Distributed Quantum Computing emulator for HPC. arXiv:2511.05209 [quant-ph], 2025. <a href=\"https://arxiv.org/abs/2511.05209\">arxiv.org/abs/2511.05209</a> · documentación y código en <a href=\"https://github.com/CESGA-Quantum-Spain/cunqa\">github.com/CESGA-Quantum-Spain/cunqa</a>",
+    "en": "<b>J. Vázquez-Pérez, D. Expósito-Patiño, M. Losada, Á. Carballido, A. Gómez, T. F. Pena.</b> CUNQA: a Distributed Quantum Computing emulator for HPC. arXiv:2511.05209 [quant-ph], 2025. <a href=\"https://arxiv.org/abs/2511.05209\">arxiv.org/abs/2511.05209</a> · documentation and code at <a href=\"https://github.com/CESGA-Quantum-Spain/cunqa\">github.com/CESGA-Quantum-Spain/cunqa</a>"
+  },
+  {
+    "id": "r2",
+    "es": "<b>F. J. Cardama, T. F. Pena.</b> NetQMPI: An MPI-Inspired library for programming Distributed Quantum Applications over Quantum Networks using NetQASM SDK. arXiv:2512.11483 [quant-ph], 2025. <a href=\"https://arxiv.org/abs/2512.11483\">arxiv.org/abs/2512.11483</a> · código en <a href=\"https://github.com/netqir/netqmpi\">github.com/netqir/netqmpi</a>",
+    "en": "<b>F. J. Cardama, T. F. Pena.</b> NetQMPI: An MPI-Inspired library for programming Distributed Quantum Applications over Quantum Networks using NetQASM SDK. arXiv:2512.11483 [quant-ph], 2025. <a href=\"https://arxiv.org/abs/2512.11483\">arxiv.org/abs/2512.11483</a> · código en <a href=\"https://github.com/netqir/netqmpi\">github.com/netqir/netqmpi</a>"
+  },
+  {
+    "id": "r3",
+    "es": "<b>F. J. Cardama, J. Vázquez-Pérez, C. Piñeiro, T. F. Pena, J. C. Pichel, A. Gómez.</b> NetQIR: An extension of QIR for distributed quantum computing. <em>Future Generation Computer Systems</em>, 174:107989, 2026.",
+    "en": "<b>F. J. Cardama, J. Vázquez-Pérez, C. Piñeiro, T. F. Pena, J. C. Pichel, A. Gómez.</b> NetQIR: An extension of QIR for distributed quantum computing. <em>Future Generation Computer Systems</em>, 174:107989, 2026."
+  },
+  {
+    "id": "r4",
+    "es": "<b>T. Häner, D. S. Steiger, T. Hoefler, M. Troyer.</b> Distributed quantum computing with QMPI. <em>Proc. SC'21</em>, 2021.",
+    "en": "<b>T. Häner, D. S. Steiger, T. Hoefler, M. Troyer.</b> Distributed quantum computing with QMPI. <em>Proc. SC'21</em>, 2021."
+  },
+  {
+    "id": "r5",
+    "es": "<b>Y. Shi et al.</b> A Reference Implementation for a Quantum Message Passing Interface. <em>Proc. SC-W '23</em>, pp. 1420–1425, 2023.",
+    "en": "<b>Y. Shi et al.</b> A Reference Implementation for a Quantum Message Passing Interface. <em>Proc. SC-W '23</em>, pp. 1420–1425, 2023."
+  },
+  {
+    "id": "r6",
+    "es": "<b>A. Dahlberg, B. van der Vecht, C. Delle Donne, M. Skrzypczyk, I. te Raa, W. Kozlowski, S. Wehner.</b> NetQASM — a low-level instruction set architecture for hybrid quantum-classical programs in a quantum internet. <em>Quantum Science and Technology</em>, 7(3):035023, 2022.",
+    "en": "<b>A. Dahlberg, B. van der Vecht, C. Delle Donne, M. Skrzypczyk, I. te Raa, W. Kozlowski, S. Wehner.</b> NetQASM — a low-level instruction set architecture for hybrid quantum-classical programs in a quantum internet. <em>Quantum Science and Technology</em>, 7(3):035023, 2022."
+  },
+  {
+    "id": "r7",
+    "es": "<b>T. Coopmans et al.</b> NetSquid, a NETwork Simulator for QUantum Information using Discrete events. <em>Communications Physics</em>, 4:164, 2021.",
+    "en": "<b>T. Coopmans et al.</b> NetSquid, a NETwork Simulator for QUantum Information using Discrete events. <em>Communications Physics</em>, 4:164, 2021."
+  },
+  {
+    "id": "r8",
+    "es": "<b>A. Dahlberg, S. Wehner.</b> SimulaQron — a simulator for developing quantum internet software. <em>Quantum Science and Technology</em>, 4(1):015001, 2018.",
+    "en": "<b>A. Dahlberg, S. Wehner.</b> SimulaQron — a simulator for developing quantum internet software. <em>Quantum Science and Technology</em>, 4(1):015001, 2018."
+  },
+  {
+    "id": "r9",
+    "es": "<b>S. DiAdamo, J. Nötzel, B. Zanger, M. M. Beşe.</b> QuNetSim: A Software Framework for Quantum Networks. <em>IEEE Transactions on Quantum Engineering</em>, 2, 2021.",
+    "en": "<b>S. DiAdamo, J. Nötzel, B. Zanger, M. M. Beşe.</b> QuNetSim: A Software Framework for Quantum Networks. <em>IEEE Transactions on Quantum Engineering</em>, 2, 2021."
+  },
+  {
+    "id": "r10",
+    "es": "<b>X. Wu et al.</b> SeQUeNCe: a customizable discrete-event simulator of quantum networks. <em>Quantum Science and Technology</em>, 6(4):045027, 2021.",
+    "en": "<b>X. Wu et al.</b> SeQUeNCe: a customizable discrete-event simulator of quantum networks. <em>Quantum Science and Technology</em>, 6(4):045027, 2021."
+  },
+  {
+    "id": "r11",
+    "es": "<b>D. Barral, F. J. Cardama, G. Díaz-Camacho, D. Faílde, I. F. Llovo, M. Mussa-Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J. C. Pichel, T. F. Pena, A. Gómez.</b> Review of Distributed Quantum Computing: From single QPU to High Performance Quantum Computing. <em>Computer Science Review</em>, 57:100747, 2025.",
+    "en": "<b>D. Barral, F. J. Cardama, G. Díaz-Camacho, D. Faílde, I. F. Llovo, M. Mussa-Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J. C. Pichel, T. F. Pena, A. Gómez.</b> Review of Distributed Quantum Computing: From single QPU to High Performance Quantum Computing. <em>Computer Science Review</em>, 57:100747, 2025."
+  },
+  {
+    "id": "r12",
+    "es": "<b>M. Caleffi, M. Amoretti, D. Ferrari, J. Illiano, A. Manzalini, A. S. Cacciapuoti.</b> Distributed quantum computing: A survey. <em>Computer Networks</em>, 254:110672, 2024.",
+    "en": "<b>M. Caleffi, M. Amoretti, D. Ferrari, J. Illiano, A. Manzalini, A. S. Cacciapuoti.</b> Distributed quantum computing: A survey. <em>Computer Networks</em>, 254:110672, 2024."
+  },
+  {
+    "id": "r13",
+    "es": "<b>S. Wehner, D. Elkouss, R. Hanson.</b> Quantum internet: A vision for the road ahead. <em>Science</em>, 362(6412), 2018.",
+    "en": "<b>S. Wehner, D. Elkouss, R. Hanson.</b> Quantum internet: A vision for the road ahead. <em>Science</em>, 362(6412), 2018."
+  },
+  {
+    "id": "r14",
+    "es": "<b>J. Preskill.</b> Quantum Computing in the NISQ era and beyond. <em>Quantum</em>, 2:79, 2018.",
+    "en": "<b>J. Preskill.</b> Quantum Computing in the NISQ era and beyond. <em>Quantum</em>, 2:79, 2018."
+  },
+  {
+    "id": "r15",
+    "es": "<b>MPI Forum.</b> MPI: A Message-Passing Interface Standard. Versión 4.1, 2023. <a href=\"https://www.mpi-forum.org/docs/\">mpi-forum.org/docs</a>",
+    "en": "<b>MPI Forum.</b> MPI: A Message-Passing Interface Standard. Version 4.1, 2023. <a href=\"https://www.mpi-forum.org/docs/\">mpi-forum.org/docs</a>"
+  },
+  {
+    "id": "r16a",
+    "es": "<b>G. M. Amdahl.</b> Validity of the single processor approach to achieving large scale computing capabilities. <em>AFIPS Spring Joint Computer Conference</em>, pp. 483–485, 1967. — <b id=\"r16b\">J. L. Gustafson.</b> Reevaluating Amdahl's Law. <em>Communications of the ACM</em>, 31(5):532–533, 1988.",
+    "en": "<b>G. M. Amdahl.</b> Validity of the single processor approach to achieving large scale computing capabilities. <em>AFIPS Spring Joint Computer Conference</em>, pp. 483–485, 1967. — <b id=\"r16b\">J. L. Gustafson.</b> Reevaluating Amdahl's Law. <em>Communications of the ACM</em>, 31(5):532–533, 1988."
+  },
+  {
+    "id": "r17",
+    "es": "<b>J. L. Hennessy, D. A. Patterson.</b> <em>Computer Architecture: A Quantitative Approach.</em> 6.ª ed., Morgan Kaufmann, 2019. — Para el modelo roofline: S. Williams, A. Waterman, D. Patterson, <em>Communications of the ACM</em>, 52(4):65–76, 2009.",
+    "en": "<b>J. L. Hennessy, D. A. Patterson.</b> <em>Computer Architecture: A Quantitative Approach.</em> 6th ed., Morgan Kaufmann, 2019. — For the roofline model: S. Williams, A. Waterman, D. Patterson, <em>Communications of the ACM</em>, 52(4):65–76, 2009."
+  },
+  {
+    "id": "r18",
+    "es": "<b>W. A. Wulf, S. A. McKee.</b> Hitting the Memory Wall: Implications of the Obvious. <em>ACM SIGARCH Computer Architecture News</em>, 23(1):20–24, 1995.",
+    "en": "<b>W. A. Wulf, S. A. McKee.</b> Hitting the Memory Wall: Implications of the Obvious. <em>ACM SIGARCH Computer Architecture News</em>, 23(1):20–24, 1995."
+  },
+  {
+    "id": "r19",
+    "es": "<b>R. H. Dennard, F. H. Gaensslen, H.-N. Yu, V. L. Rideout, E. Bassous, A. R. LeBlanc.</b> Design of ion-implanted MOSFET's with very small physical dimensions. <em>IEEE Journal of Solid-State Circuits</em>, 9(5):256–268, 1974.",
+    "en": "<b>R. H. Dennard, F. H. Gaensslen, H.-N. Yu, V. L. Rideout, E. Bassous, A. R. LeBlanc.</b> Design of ion-implanted MOSFET's with very small physical dimensions. <em>IEEE Journal of Solid-State Circuits</em>, 9(5):256–268, 1974."
+  },
+  {
+    "id": "r20",
+    "es": "<b>K. Rupp.</b> Microprocessor Trend Data. Conjunto de datos abierto, licencia CC-BY. <a href=\"https://github.com/karlrupp/microprocessor-trend-data\">github.com/karlrupp/microprocessor-trend-data</a> — fuente recomendada si se proyectan cifras concretas en la figura 1.",
+    "en": "<b>K. Rupp.</b> Microprocessor Trend Data. Open dataset, CC-BY licence. <a href=\"https://github.com/karlrupp/microprocessor-trend-data\">github.com/karlrupp/microprocessor-trend-data</a> — recommended source if concrete figures are projected in figure 1."
+  },
+  {
+    "id": "r21",
+    "es": "<b>L. Dalcín, R. Paz, M. Storti, J. D'Elía.</b> MPI for Python: Performance improvements and MPI-2 extensions. <em>Journal of Parallel and Distributed Computing</em>, 68(5):655–662, 2008. · documentación en <a href=\"https://mpi4py.readthedocs.io\">mpi4py.readthedocs.io</a>",
+    "en": "<b>L. Dalcín, R. Paz, M. Storti, J. D'Elía.</b> MPI for Python: Performance improvements and MPI-2 extensions. <em>Journal of Parallel and Distributed Computing</em>, 68(5):655–662, 2008. · documentation at <a href=\"https://mpi4py.readthedocs.io\">mpi4py.readthedocs.io</a>"
+  },
+  {
+    "id": "r22",
+    "es": "<b>G. Díaz-Camacho, I. F. Llovo, F. J. Cardama, I. Bautista, D. Faílde, M. M. Juane, J. Vázquez-Pérez, N. Costas, T. F. Pena, A. Gómez.</b> Benchmarking Distributed Quantum Computing Emulators. arXiv:2512.01807, 2025.",
+    "en": "<b>G. Díaz-Camacho, I. F. Llovo, F. J. Cardama, I. Bautista, D. Faílde, M. M. Juane, J. Vázquez-Pérez, N. Costas, T. F. Pena, A. Gómez.</b> Benchmarking Distributed Quantum Computing Emulators. arXiv:2512.01807, 2025."
+  },
+  {
+    "id": "r23",
+    "es": "<b>R. Parekh, A. Ricciardi, A. Darwish, S. DiAdamo.</b> Quantum Algorithms and Simulation for Parallel and Distributed Quantum Computing. <em>Proc. QCS 2021 (SC21)</em>, pp. 9–19, 2021.",
+    "en": "<b>R. Parekh, A. Ricciardi, A. Darwish, S. DiAdamo.</b> Quantum Algorithms and Simulation for Parallel and Distributed Quantum Computing. <em>Proc. QCS 2021 (SC21)</em>, pp. 9–19, 2021."
+  },
+  {
+    "id": "r24",
+    "es": "<b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023.",
+    "en": "<b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023."
+  }
+]

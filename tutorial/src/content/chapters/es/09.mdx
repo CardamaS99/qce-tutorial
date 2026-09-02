@@ -1,0 +1,96 @@
+---
+lang: es
+order: 9
+part: "Parte II"
+title: "Ejercicios con mpi4py"
+lead: "Cuatro ejercicios en orden creciente de dificultad. El tercero es opcional; el cuarto es el que conecta con la segunda parte del tutorial y merece hacerse aunque no dé tiempo a los demás."
+accent: classical
+---
+<Exercise label="Ejercicio 0 · comprobación de entorno">
+  #### Hola, rank
+  
+  Ejecutar el esqueleto del capítulo 6 con cuatro procesos y observar que la salida sale desordenada. Modificarlo después para que el rank 0 recoja los mensajes de todos e imprima ordenado. Objetivo: verificar la instalación y comprobar que se entiende que no hay orden garantizado.
+</Exercise>
+
+<Exercise label="Ejercicio 1 · obligatorio">
+  #### Suma de vectores distribuida
+  
+  Dados dos vectores `a` y `b` de *n* elementos, calcular `c = a + b` repartiendo el trabajo entre los procesos. Es el caso canónico de descomposición de datos del capítulo 3.
+</Exercise>
+
+```python title="Solución de referencia · Scatter y Gather sobre búferes NumPy"
+from mpi4py import MPI
+import numpy as np
+
+comm = MPI.COMM_WORLD
+rank, size = comm.Get_rank(), comm.Get_size()
+
+N = 1_000_000
+assert N % size == 0, "usa Scatterv si N no es divisible"
+local_n = N // size
+
+# sólo el root materializa los vectores completos
+if rank == 0:
+    a = np.arange(N, dtype=np.float64)
+    b = np.ones(N,      dtype=np.float64)
+    c = np.empty(N,     dtype=np.float64)
+else:
+    a = b = c = None
+
+a_local = np.empty(local_n, dtype=np.float64)
+b_local = np.empty(local_n, dtype=np.float64)
+
+comm.Scatter(a, a_local, root=0)      # reparte
+comm.Scatter(b, b_local, root=0)
+
+c_local = a_local + b_local           # cálculo puramente local
+
+comm.Gather(c_local, c, root=0)       # recoge
+
+if rank == 0:
+    print("correcto:", np.allclose(c, np.arange(N) + 1.0))
+```
+
+Puntos de discusión al corregirlo. Primero: `Scatter` con mayúscula, porque los datos son arrays de NumPy y no queremos que `pickle` los serialice. Segundo: los no-root pasan `None` como búfer de envío, lo cual es correcto —sólo el root necesita tenerlo. Tercero, y es el punto pedagógico importante: **este programa no acelera nada**. La suma de vectores tiene intensidad aritmética ínfima, así que el tiempo lo domina el `Scatter` y el `Gather`. Es un ejercicio de mecánica de la API, no de rendimiento, y conviene decirlo en voz alta para no crear una expectativa falsa.
+
+<Exercise label="Ejercicio 2">
+  #### Producto escalar con reducción
+  
+  Modificar el anterior para calcular `a·b`. Cada rank computa la suma parcial de su bloque y se combinan con `Reduce` y el operador `MPI.SUM`. Introduce la última de las cuatro colectivas fundamentales.
+</Exercise>
+
+```python title="Núcleo de la solución"
+parcial = np.array(np.dot(a_local, b_local))
+total   = np.empty(1) if rank == 0 else None
+comm.Reduce(parcial, total, op=MPI.SUM, root=0)
+```
+
+Merece la pena señalar aquí que el resultado en coma flotante *puede* diferir del secuencial, porque la suma en punto flotante no es asociativa y el orden de acumulación depende del algoritmo interno de la reducción. No es un error del programa: es una propiedad del cálculo distribuido que sorprende a mucha gente la primera vez.
+
+<Exercise label="Ejercicio 3 · opcional pero muy recomendable">
+  #### Ping-pong: medir α y β
+  
+  Enviar un mensaje de *n* bytes del rank 0 al 1 y devolverlo, cronometrando el ciclo completo. Repetir para *n* desde 8 bytes hasta unos megabytes, y representar tiempo frente a tamaño. La ordenada en el origen da α; la pendiente asintótica da β. Verificar dónde queda el *n<sub>½</sub>* de la red de la máquina.
+</Exercise>
+
+```python title="Bucle de medida"
+REPS = 200
+for nbytes in [8, 64, 512, 4096, 32768, 262144, 2097152]:
+    buf = np.zeros(nbytes // 8, dtype=np.float64)
+    comm.Barrier()
+    t0 = MPI.Wtime()
+    for _ in range(REPS):
+        if rank == 0:
+            comm.Send(buf, dest=1); comm.Recv(buf, source=1)
+        elif rank == 1:
+            comm.Recv(buf, source=0); comm.Send(buf, dest=0)
+    dt = (MPI.Wtime() - t0) / (2 * REPS)
+    if rank == 0:
+        print(f"{nbytes:>9} B  {dt*1e6:8.2f} us  {nbytes/dt/1e9:7.2f} GB/s")
+```
+
+Este es el ejercicio que más rendimiento pedagógico da por minuto invertido, porque produce números concretos de la máquina que se está usando y hace tangible el capítulo 5. Y tiene una segunda vida: en la parte cuántica del tutorial se puede plantear el equivalente —medir el tiempo de establecer un par EPR y compararlo con el de una puerta local— para que el asistente vea con sus propios datos cuántos órdenes de magnitud separan ambos costes.
+
+<Note label="Nota logística para el ponente">
+  Noventa minutos con ejercicios en vivo son muy justos. Recomendación: entorno preinstalado (contenedor o cuadernos en un JupyterHub del centro), ejercicio 0 verificado antes de empezar, y sólo el ejercicio 1 como obligatorio en sala. Los demás, material para llevarse. Si hay que sacrificar algo, que sea el ejercicio 2, nunca la parte III.
+</Note>

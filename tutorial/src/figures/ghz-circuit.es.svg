@@ -1,0 +1,37 @@
+<svg aria-label="Circuito del estado GHZ distribuido: el rango cero aplica una Hadamard y después tres CNOT remotos hacia los rangos uno, dos y tres, cada uno de los cuales requiere un par entrelazado y comunicación clásica." role="img" viewbox="0 0 800 306">
+<title>Generación distribuida de un estado GHZ</title>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="76">rank 0</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="126">rank 1</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="176">rank 2</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="end" x="98" y="226">rank 3</text>
+<text class="sv-m" x="106" y="52">|0⟩</text><text class="sv-m" x="106" y="102">|0⟩</text><text class="sv-m" x="106" y="152">|0⟩</text><text class="sv-m" x="106" y="202">|0⟩</text>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="72" y2="72"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="122" y2="122"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="172" y2="172"></line>
+<line stroke="#3B4754" stroke-width="1.2" x1="106" x2="580" y1="222" y2="222"></line>
+<rect fill="#EDEAFA" height="28" rx="3" stroke="#5B3FB8" stroke-width="1.2" width="28" x="140" y="58"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="154" y="77">H</text>
+<rect fill="#F7F8F6" height="90" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="222" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="252" x2="252" y1="72" y2="122"></line>
+<circle cx="252" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="252" cy="122" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="243" x2="261" y1="122" y2="122"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="252" x2="252" y1="113" y2="131"></line>
+<rect fill="#F7F8F6" height="140" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="330" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="360" x2="360" y1="72" y2="172"></line>
+<circle cx="360" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="360" cy="172" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="351" x2="369" y1="172" y2="172"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="360" x2="360" y1="163" y2="181"></line>
+<rect fill="#F7F8F6" height="190" rx="4" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.8" width="60" x="438" y="46"></rect>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="468" x2="468" y1="72" y2="222"></line>
+<circle cx="468" cy="72" fill="#5B3FB8" r="4.5"></circle>
+<circle cx="468" cy="222" fill="#fff" r="9" stroke="#5B3FB8" stroke-width="1.4"></circle>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="459" x2="477" y1="222" y2="222"></line>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="468" x2="468" y1="213" y2="231"></line>
+<path d="M584 60 Q596 147 584 234" fill="none" stroke="#12695C" stroke-width="1.4"></path>
+<text class="sv-m" fill="#0C3F38" x="608" y="140">(|0000⟩ + |1111⟩) / √2</text>
+<text class="sv-m" fill="#12695C" x="608" y="160">estado GHZ compartido</text>
+<text class="sv-s" fill="#5B3FB8" text-anchor="middle" x="360" y="272">cada recuadro punteado es un CNOT remoto</text>
+<text class="sv-s" fill="#6B7683" text-anchor="middle" x="360" y="292">= 1 par EPR consumido + 2 bits clásicos + correcciones de Pauli</text>
+</svg>

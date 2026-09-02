@@ -1,0 +1,88 @@
+---
+lang: en
+order: 14
+part: "Part III"
+title: "Case study: the distributed GHZ state"
+lead: "Generating a Greenberger–Horne–Zeilinger state shared across N nodes is the «hello world» of the quantum internet: it requires multipartite entanglement and coordinated control, which is why it serves as a benchmark for comparing tools.<Ref n={2} />"
+accent: quantum
+---
+### 14.1 The protocol
+
+The goal is the maximally entangled state |GHZ⟩ = (|00…0⟩ + |11…1⟩)/√2 shared among N distinct nodes. The conceptual protocol has three steps: a root node prepares a qubit in superposition by applying a Hadamard gate; it then executes a sequence of CNOTs whose control is its qubit and whose targets live on the remaining N−1 nodes; and, since there is no shared memory, **each of those CNOTs is remote** and requires underneath a teleportation or entanglement-swapping protocol with its corresponding classical communication and corrections.
+
+<Figure id="ghz-circuit">
+  The logical circuit is trivial: one Hadamard and N−1 CNOT gates. What is not trivial is that none of those CNOTs can run locally, because control and target sit on different machines. All of the problem's complexity is hidden inside the dashed boxes, and it is exactly that complexity which the various tools handle more or less gracefully.
+</Figure>
+
+### 14.2 The same task, two tools
+
+In NetQMPI the program is a single file whose logic does not depend on N. The `expose` primitive takes care of the remote CNOTs and the underlying entanglement distribution.
+
+```python title="NetQMPI · single file, O(1) complexity"
+def main(app_config=None, rank=0, size=3):
+    comm = QMPICommunicator(rank, size, app_config)
+
+    # 1 · the root creates the base qubit in superposition
+    qubits = []
+    q = Qubit(comm.connection)
+    if rank == 0:
+        q.H()
+    qubits.append(q)
+
+    # 2 · collective operation: spreads the remote CNOT control
+    comm.expose(qubits, root_rank=0)
+
+    # 3 · local operations on the non-root ranks
+    if rank != 0:
+        qubits[0].cnot(my_qubit)
+
+    # 4 · release the resource: mandatory
+    comm.unexpose(root_rank=0)
+```
+
+Going from three to fifty nodes means typing `netqmpi -n 50`. The source is untouched.
+
+<Warning label="Two points to anticipate">
+  **First.** If the root's qubit is in |+⟩, the `expose` call itself already produces the GHZ state across the participating ranks: that is exactly what its formal definition in chapter 13 says with α = β = 1/√2. The slide should then make clear what the subsequent local CNOTs contribute — extending the entanglement to additional qubits within each node — because otherwise an attentive attendee will ask where the GHZ is actually created, and rightly so.
+  
+  **Second.** The published snippet uses a variable `my_qubit` that is not declared within the snippet itself. It is worth completing before projecting it, or the example loses force precisely at the moment you are arguing that the code is clean.
+</Warning>
+
+The contrast with the raw SDK is the most effective visual argument in the whole block. In the NetQASM SDK the logic is split strictly by role: three nodes need three files, socket creation is explicit and pairwise, and the remote CNOT is not a native primitive but a protocol to implement by hand.
+
+```python title="NetQASM SDK · one file per role, with explicit sockets"
+# --- app_alice.py (root) ---
+sock_bob     = EPRSocket("Bob")          # one socket per destination
+sock_charlie = EPRSocket("Charlie")
+csock_bob     = Socket("Alice", "Bob")      # and one classical per destination
+csock_charlie = Socket("Alice", "Charlie")
+
+with NetQASMConnection("Alice", epr_sockets=[sock_bob, sock_charlie]) as c:
+    q = Qubit(c); q.H()
+
+    epr_b = sock_bob.create_epr()[0]     # remote CNOT to Bob, by hand
+    q.cnot(epr_b)
+    m_b = epr_b.measure()
+    c.flush()
+    csock_bob.send(str(m_b))
+
+    epr_c = sock_charlie.create_epr()[0] # and the logic duplicated for Charlie
+    q.cnot(epr_c)
+    m_c = epr_c.measure()
+    c.flush()
+    csock_charlie.send(str(m_c))
+
+# --- app_bob.py --- and --- app_charlie.py --- : separate, nearly identical files
+```
+
+Adding a fourth node forces you to create a new file *and* modify the root's to instantiate the two extra sockets and duplicate the teleportation block once more. It is boilerplate, structurally necessary, and an inexhaustible source of copy-paste errors.
+
+### 14.3 How the code scales
+
+<Figure id="loc-scaling">
+  Qualitative trends following the published comparative analysis.<Ref n={2} /> In role-based frameworks, each new node requires a file, manual socket instantiation — which grows quadratically in fully connected topologies — and duplication of the control logic. NetQMPI keeps the curve flat because the loop lives inside the collective primitive and iterates dynamically over the communicator size.
+</Figure>
+
+<Note label="A caveat about the metric">
+  Lines of code measure development effort and error surface, not performance. NetQMPI keeping the curve flat does not mean the communication cost stops growing: the required EPR pairs are the same, they are simply no longer written by the user. Saying this explicitly closes the loop with chapter 4: the abstraction reduces the cost of programming, not Amdahl's serial fraction.
+</Note>

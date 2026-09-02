@@ -1,0 +1,40 @@
+---
+lang: es
+order: 2
+part: "Parte I"
+title: "Anatomía de un sistema distribuido"
+lead: "Antes de repartir trabajo hay que saber sobre qué se reparte. La jerarquía física de un supercomputador determina qué operaciones son baratas y cuáles caras, y esa jerarquía es la que después se refleja —a veces mal— en el modelo de programación."
+accent: classical
+---
+### 2.1 La jerarquía física
+
+De dentro hacia fuera, un supercomputador contemporáneo se organiza en cuatro niveles:
+
+- **Núcleo** (*core*): la unidad de ejecución. Tiene sus propios registros y sus cachés de primer nivel.
+- **Socket**: un encapsulado físico que agrupa decenas de núcleos con una caché de último nivel compartida y un controlador de memoria.
+- **Nodo**: una placa con uno o varios sockets, su memoria DRAM y, cada vez más, aceleradores (GPU y —esta es la apuesta del campo— QPU). Todo lo que hay dentro de un nodo comparte un espacio de direcciones.
+- **Clúster**: el conjunto de nodos unidos por una red de interconexión de baja latencia. Entre nodos *no* hay memoria compartida.
+
+Esa última frase es la bisagra de todo el curso. La frontera del nodo es la frontera del espacio de direcciones, y cruzarla exige un mecanismo explícito de comunicación. Dentro del nodo puedes usar hilos y variables compartidas; fuera, tienes que enviar mensajes.
+
+<Figure id="hierarchy">
+  Dentro de un nodo, los núcleos comparten memoria y la comunicación es implícita: escribir una variable basta. Al cruzar a otro nodo hay que empaquetar, enviar y recibir. Nótese el acelerador dibujado en el nodo 1: la tesis de la integración HPC-QC es exactamente esta, tratar la QPU como un acelerador más dentro de la jerarquía existente.<Ref n={1} />
+</Figure>
+
+### 2.2 Memoria compartida frente a memoria distribuida
+
+De la jerarquía se derivan dos modelos de programación con propiedades opuestas.
+
+En **memoria compartida** todos los hilos ven las mismas direcciones. Comunicar es escribir en una variable; no hay coste explícito de transferencia. A cambio, aparecen las condiciones de carrera, hace falta sincronización (cerrojos, barreras, secciones críticas) y el modelo no escala más allá del nodo. OpenMP es el estándar de referencia.
+
+En **memoria distribuida** cada proceso tiene su propio espacio de direcciones privado. No hay carreras de datos porque no hay datos compartidos; a cambio, toda comunicación es explícita y tiene un coste que el programador debe contabilizar. El modelo escala a cientos de miles de procesos. MPI es el estándar de referencia.<Ref n={15} />
+
+En la práctica los códigos reales son híbridos: MPI entre nodos, OpenMP o CUDA dentro. Pero para lo que nos ocupa aquí, el modelo relevante es el distribuido puro, porque es el que describe una red de QPU: **cada nodo cuántico tiene su propio registro de qubits y no existe ningún mecanismo por el que otro nodo lea ese registro directamente**. La memoria distribuida no es una elección de diseño en computación cuántica distribuida; es la única topología posible.
+
+<Note label="Precisión terminológica">
+  No confundir
+  
+  con
+  
+  . MPI lanza procesos; puedes tener ocho procesos en un solo nodo o uno por nodo. El estándar no promete nada sobre la ubicación física; lo decide el planificador. Esta distinción entre identidad lógica y recurso físico es exactamente la que NetQMPI hereda cuando mapea ranks a QPU, y merece la pena establecerla aquí con claridad.
+</Note>

@@ -1,0 +1,28 @@
+/* Fichas de diseño. Cambiar aquí afecta a todo el documento. */
+:root {
+  --ink: #141C24;
+  --ink-2: #3B4754;
+  --ink-3: #6B7683;
+  --paper: #FCFCFB;
+  --paper-2: #F2F3F1;
+  --rule: #DCDFDB;
+  --rule-2: #C3C7C2;
+
+  --classical: #12695C;
+  --classical-bg: #E4F1EE;
+  --classical-ink: #0C3F38;
+  --quantum: #5B3FB8;
+  --quantum-bg: #EDEAFA;
+  --quantum-ink: #2E2450;
+  --warn: #A8451A;
+  --warn-bg: #FAEDE6;
+  --warn-ink: #4A2412;
+
+  --font-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
+
+  --measure: 70ch;
+  --shell: 1180px;
+  --rail: 210px;
+}

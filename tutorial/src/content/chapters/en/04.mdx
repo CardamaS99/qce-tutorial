@@ -1,0 +1,48 @@
+---
+lang: en
+order: 4
+part: "Part I"
+title: "How much there is to gain"
+lead: "There is an upper bound on what parallelisation can give you, and that bound is set by the part of the program that refuses to parallelise. The two classical formulations of that bound do not contradict each other: they answer different questions."
+accent: classical
+---
+### 4.1 Amdahl's law
+
+Gene Amdahl laid out in 1967 the argument that still tempers expectations.<Ref n={16} /> Let *s* be the fraction of execution time that is intrinsically sequential and *1−s* the parallelisable fraction. With N processors, the speedup is
+
+<Formula>
+  S(N) = 1 / ( s + (1 − s)/N )
+</Formula>
+
+As N tends to infinity the second term vanishes and we are left with **S ≤ 1/s**. With 5 % sequential, the maximum speedup achievable with infinitely many processors is 20×. With 25 %, it is 4×. No hardware fixes that.
+
+The correct reading of Amdahl is not «parallelising is not worth it». It is «identify and attack the serial fraction before buying more nodes». In practice that fraction is almost never pure computation: it is usually I/O, initialisation, global synchronisation and — very much in particular — **communication**.
+
+### 4.2 Gustafson's law
+
+John Gustafson observed in 1988 that Amdahl assumes something that is almost never true: that problem size is fixed.<Ref n={16} /> Nobody buys a supercomputer to solve the same problem faster; they buy it to solve a larger problem in the same time. If you grow the problem as you grow N, the parallelisable fraction grows with it while the serial part stays roughly constant. The scaled speedup becomes
+
+<Formula>
+  S(N) = s + (1 − s) · N
+</Formula>
+
+which is linear in N and unbounded. Both laws are true; they describe different scenarios.
+
+<Figure id="amdahl-gustafson">
+  The same serial fraction yields opposite diagnoses depending on what is held fixed. With the problem frozen (left), 25 % sequential makes going beyond eight processors pointless. With the problem scaling (right), that same fraction keeps paying off up to sixty-four. Before quoting either law you must declare which of the two experiments you are running.
+</Figure>
+
+### 4.3 Strong and weak scaling
+
+The two laws above have an experimental counterpart, and these are the only two plots a reviewer will look at in a performance paper:
+
+- **Strong scaling**: problem size held constant while N increases. You measure execution time. This is Amdahl's experiment. Its curve always bends eventually, because as N grows the local work shrinks and communication comes to dominate.
+- **Weak scaling**: problem size *per process* held constant, so the total problem grows with N. You measure whether the time stays flat. This is Gustafson's experiment.
+
+Impeccable weak scaling alongside dismal strong scaling is entirely possible, and it is a common situation. Presenting only one of the two is the most common way to dress up a performance result.
+
+<Bridge label="Classical → quantum bridge">
+  In distributed quantum computing, Amdahl's «serial fraction» has a concrete name: **generating and distributing entanglement**. Local circuit operations are fast; establishing an EPR pair between two nodes is orders of magnitude slower, and it must complete before decoherence renders it useless. If partitioning a circuit across N QPUs requires a number of remote gates that grows with N, you are building an Amdahl case whose *s* gets worse as you scale.
+  
+  Hence the central problem of the discipline is not «how do I run a circuit on several QPUs» — that is already known — but «how do I partition it while minimising remote operations».<Ref n={24} />
+</Bridge>

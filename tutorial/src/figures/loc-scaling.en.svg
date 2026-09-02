@@ -1,0 +1,19 @@
+<svg aria-label="Chart of lines of code needed to generate a GHZ state as a function of node count: NetQMPI stays constant while the NetQASM SDK and the simulators grow quadratically." role="img" viewbox="0 0 800 342">
+<title>Code scaling with node count</title>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="70" y1="40" y2="300"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="700" y1="300" y2="300"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="70" x2="690" y1="70" y2="70"></line>
+<line stroke="#EDEEEB" stroke-width="1" x1="70" x2="690" y1="185" y2="185"></line>
+<text class="sv-m" text-anchor="end" x="62" y="304">0</text>
+<text class="sv-m" text-anchor="end" x="62" y="189">300</text>
+<text class="sv-m" text-anchor="end" x="62" y="74">600</text>
+<polyline fill="none" points="70,287.7 220,254 370,208 520,149.7 670,79.2" stroke="#A8451A" stroke-width="2.4"></polyline>
+<polyline fill="none" points="70,296.9 220,284.7 370,260.1 520,223.3 670,174.3" stroke="#5B3FB8" stroke-dasharray="7 4" stroke-width="2.4"></polyline>
+<polyline fill="none" points="70,295.4 220,295.4 370,295.4 520,295.4 670,295.4" stroke="#12695C" stroke-width="2.8"></polyline>
+<circle cx="670" cy="79.2" fill="#A8451A" r="3.5"></circle><circle cx="670" cy="174.3" fill="#5B3FB8" r="3.5"></circle><circle cx="670" cy="295.4" fill="#12695C" r="3.5"></circle>
+<text class="sv-m" fill="#A8451A" x="678" y="83">NetQASM SDK · O(N²)</text>
+<text class="sv-m" fill="#5B3FB8" x="678" y="178">QuNetSim · O(N²) setup</text>
+<text class="sv-m" fill="#12695C" x="678" y="299">NetQMPI · O(1)</text>
+<text class="sv-m" text-anchor="middle" x="70" y="320">2</text><text class="sv-m" text-anchor="middle" x="220" y="320">6</text><text class="sv-m" text-anchor="middle" x="370" y="320">10</text><text class="sv-m" text-anchor="middle" x="520" y="320">14</text><text class="sv-m" text-anchor="middle" x="670" y="320">18</text>
+<text class="sv-s" text-anchor="middle" x="370" y="338">node count N · logical lines of code, excluding comments and imports</text>
+</svg>

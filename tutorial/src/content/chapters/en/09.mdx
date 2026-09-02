@@ -1,0 +1,96 @@
+---
+lang: en
+order: 9
+part: "Part II"
+title: "Exercises with mpi4py"
+lead: "Four exercises in increasing order of difficulty. The third is optional; the fourth is the one that connects with the second half of the tutorial and is worth doing even if the others do not fit."
+accent: classical
+---
+<Exercise label="Exercise 0 · environment check">
+  #### Hello, rank
+  
+  Run the skeleton from chapter 6 with four processes and observe that the output comes out unordered. Then modify it so rank 0 collects everyone's messages and prints them in order. Purpose: verify the installation and confirm that the absence of ordering guarantees is understood.
+</Exercise>
+
+<Exercise label="Exercise 1 · mandatory">
+  #### Distributed vector addition
+  
+  Given two vectors `a` and `b` of *n* elements, compute `c = a + b` distributing the work across processes. This is the canonical data-decomposition case from chapter 3.
+</Exercise>
+
+```python title="Reference solution · Scatter and Gather over NumPy buffers"
+from mpi4py import MPI
+import numpy as np
+
+comm = MPI.COMM_WORLD
+rank, size = comm.Get_rank(), comm.Get_size()
+
+N = 1_000_000
+assert N % size == 0, "use Scatterv if N is not divisible"
+local_n = N // size
+
+# only the root materialises the full vectors
+if rank == 0:
+    a = np.arange(N, dtype=np.float64)
+    b = np.ones(N,      dtype=np.float64)
+    c = np.empty(N,     dtype=np.float64)
+else:
+    a = b = c = None
+
+a_local = np.empty(local_n, dtype=np.float64)
+b_local = np.empty(local_n, dtype=np.float64)
+
+comm.Scatter(a, a_local, root=0)      # hand out
+comm.Scatter(b, b_local, root=0)
+
+c_local = a_local + b_local           # purely local computation
+
+comm.Gather(c_local, c, root=0)       # collect
+
+if rank == 0:
+    print("correct:", np.allclose(c, np.arange(N) + 1.0))
+```
+
+Discussion points when going over it. First: `Scatter` with a capital S, because the data are NumPy arrays and we do not want `pickle` serialising them. Second: non-root processes pass `None` as the send buffer, which is correct — only the root needs to hold it. Third, and this is the important pedagogical point: **this program accelerates nothing**. Vector addition has negligible arithmetic intensity, so the time is dominated by the `Scatter` and the `Gather`. It is an exercise in API mechanics, not in performance, and saying so out loud avoids creating a false expectation.
+
+<Exercise label="Exercise 2">
+  #### Dot product with a reduction
+  
+  Modify the previous one to compute `a·b`. Each rank computes the partial sum of its block and the results are combined with `Reduce` and the `MPI.SUM` operator. Introduces the last of the four fundamental collectives.
+</Exercise>
+
+```python title="Core of the solution"
+partial = np.array(np.dot(a_local, b_local))
+total   = np.empty(1) if rank == 0 else None
+comm.Reduce(partial, total, op=MPI.SUM, root=0)
+```
+
+It is worth pointing out here that the floating-point result *may* differ from the sequential one, because floating-point addition is not associative and the accumulation order depends on the reduction's internal algorithm. This is not a bug in the program: it is a property of distributed computation that surprises many people the first time.
+
+<Exercise label="Exercise 3 · optional but highly recommended">
+  #### Ping-pong: measuring α and β
+  
+  Send an *n*-byte message from rank 0 to rank 1 and back, timing the full round trip. Repeat for *n* from 8 bytes up to a few megabytes and plot time against size. The intercept gives α; the asymptotic slope gives β. Check where the machine's *n<sub>½</sub>* falls.
+</Exercise>
+
+```python title="Measurement loop"
+REPS = 200
+for nbytes in [8, 64, 512, 4096, 32768, 262144, 2097152]:
+    buf = np.zeros(nbytes // 8, dtype=np.float64)
+    comm.Barrier()
+    t0 = MPI.Wtime()
+    for _ in range(REPS):
+        if rank == 0:
+            comm.Send(buf, dest=1); comm.Recv(buf, source=1)
+        elif rank == 1:
+            comm.Recv(buf, source=0); comm.Send(buf, dest=0)
+    dt = (MPI.Wtime() - t0) / (2 * REPS)
+    if rank == 0:
+        print(f"{nbytes:>9} B  {dt*1e6:8.2f} us  {nbytes/dt/1e9:7.2f} GB/s")
+```
+
+This is the exercise with the highest pedagogical return per minute invested, because it produces concrete numbers from the machine in use and makes chapter 5 tangible. And it has a second life: in the quantum part of the tutorial you can pose the equivalent — measure the time to establish an EPR pair and compare it with a local gate — so the attendee sees from their own data how many orders of magnitude separate the two costs.
+
+<Note label="Logistical note for the presenter">
+  Ninety minutes with live exercises is very tight. Recommendation: pre-installed environment (container or notebooks on the centre's JupyterHub), exercise 0 verified before starting, and only exercise 1 mandatory in the room. The rest as take-home material. If something has to be dropped, drop exercise 2, never Part III.
+</Note>

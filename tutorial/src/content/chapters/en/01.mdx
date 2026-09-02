@@ -1,0 +1,33 @@
+---
+lang: en
+order: 1
+part: "Part I"
+title: "Why we parallelise"
+lead: "Distributed computing is not an advanced optimisation technique you reach for once everything else is exhausted. It is the direct consequence of two physical limits that were hit two decades ago and have not been lifted since. It is worth starting there, because those same two limits reappear — under a different vocabulary — the moment we start connecting several QPUs."
+accent: classical
+---
+### 1.1 Dennard scaling and its end
+
+In 1974, Robert Dennard and his co-authors formulated the rule that governed microprocessor design for thirty years.<Ref n={19} /> Simplified: if you shrink a transistor's linear dimensions by a factor *k* and scale the supply voltage proportionally, the power density per unit area stays constant. Translated into practical consequences: every new process generation gave you more transistors *and* more clock frequency *without* paying more watts per square millimetre.
+
+That was the free lunch. A programmer could write sequential code and trust that, without touching a line, it would run faster on next year's hardware. This was not a marketing promise: it was a physical property of scaling.
+
+Dennard scaling breaks down around 2004–2006. The immediate reason is that transistor threshold voltage cannot keep dropping without leakage current exploding, at which point static power starts to dominate the thermal budget. From then on, raising frequency means raising power superlinearly, and power becomes the binding constraint on design.
+
+Precision of vocabulary matters here, because this is the most common error when telling the story: **what broke was not Moore's law, it was Dennard scaling**. Transistor count per chip has kept growing. What stopped growing was what you could *do* with them while keeping a single thread of execution. The industry's answer was replication: if you cannot make one core faster, add more cores. And the moment there is more than one core, performance stops being the manufacturer's problem and becomes the programmer's.
+
+<Figure id="dennard-memory-wall">
+  The four curves share a single logarithmic axis and arbitrary per-series units: what matters is not the absolute value but the *shape*. The transistor curve does not bend. The frequency curve flattens around 2005 and has been essentially horizontal ever since. The core-count curve sits at 1 for thirty-four years and takes off at precisely the point where frequency stops. Schematic order-of-magnitude values; for auditable figures see Rupp's microprocessor trend dataset.<Ref n={20} />
+</Figure>
+
+### 1.2 The memory wall
+
+The second limit is independent of the first and, in current practice, more binding. Wulf and McKee named it in 1995 in a four-page paper whose argument still holds thirty years later.<Ref n={18} /> The observation is simple: compute speed and main-memory *latency* have improved at radically different rates. Memory bandwidth has grown respectably; latency, barely at all. A DRAM access still costs on the order of tens to hundreds of clock cycles, just as it did decades ago.
+
+The consequence is formalised through **arithmetic intensity**: the number of floating-point operations you perform per byte moved from memory. If your algorithm has low arithmetic intensity, it does not matter how many FLOPS your machine has — you will be limited by data movement, not by computation. On modern accelerators the break-even point sits on the order of tens of FLOP per byte, which leaves most scientific computational kernels on the memory-bound side. The roofline model is the standard tool for visualising this and appears in any serious treatment of the subject.<Ref n={17} />
+
+The operational lesson, worth committing to memory because it reappears almost unchanged in the quantum part: **moving a datum costs more than operating on it**. All parallel algorithm design is, at bottom, about reorganising the computation to move less.
+
+<Bridge label="Classical → quantum bridge">
+  In a QPU network both limits have exact equivalents. The equivalent of the power wall is the limit on coherent qubits per device: you cannot keep growing a single chip indefinitely without degrading fidelity and connectivity, so you replicate and connect.<Ref n={11} /> The equivalent of the memory wall is more severe still: moving a qubit between nodes requires consuming an entangled pair, a resource that is generated slowly, degrades over time, and cannot be stored indefinitely. If moving data is expensive in classical HPC, in distributed quantum computing moving state is *the* dominant cost.
+</Bridge>

@@ -1,0 +1,45 @@
+---
+lang: en
+order: 8
+part: "Part II"
+title: "Collective operations"
+lead: "A collective is an operation in which *every* process of a communicator takes part. All must invoke it; if one omits it, the program hangs. In exchange, collectives express common communication patterns in a single call and let the implementation use optimal algorithms — binomial trees, ring algorithms — instead of the naive loop a user would write."
+accent: classical
+---
+### 8.1 The fundamental four
+
+<Figure id="collectives">
+  Each row is a rank and each cell a buffer slot. `Bcast` **copies**; `Scatter` and `Gather` **move**; `Reduce` **combines** with an associative operator (sum, max, product…). This distinction between copying, moving and combining is what determines which collectives survive the transition to the quantum domain and which do not.
+</Figure>
+
+Variants worth knowing: `Allgather` leaves the result of a `Gather` on every process rather than only the root; `Allreduce` does the same for `Reduce` and is probably the most used collective in the standard; `Barrier` synchronises without transferring data; and `Scatterv`/`Gatherv` accept unequal chunk sizes, which is necessary when the element count is not divisible by the process count.
+
+<Note label="The classic mpi4py trap">
+  The library offers each operation in two forms. The
+  
+  ones (
+  
+  ,
+  
+  ,
+  
+  ,
+  
+  ) accept any Python object and serialise it with
+  
+  : convenient and slow. The
+  
+  ones (
+  
+  ,
+  
+  ,
+  
+  ,
+  
+  ) work directly on buffers exposing the memory protocol, typically NumPy arrays, and do not copy: these are the ones for performance code. Confusing them is the number-one beginner error, because the program works identically and runs ten times slower.
+</Note>
+
+<Bridge label="Classical → quantum bridge">
+  Hold on to the classification in figure 9, because it structures chapter 13. Of the four operations, **only the moving ones survive intact** into the quantum domain. `Scatter` and `Gather` have direct analogues, because teleporting a state moves it rather than copying it. `Bcast` is *physically impossible*: replicating an unknown quantum state violates the no-cloning theorem. And `Reduce` requires applying an operator and keeping a result, which in the quantum case forces a measurement and therefore destroys the superposition.
+</Bridge>

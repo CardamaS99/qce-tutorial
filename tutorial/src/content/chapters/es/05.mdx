@@ -1,0 +1,48 @@
+---
+lang: es
+order: 5
+part: "Parte I"
+title: "Cuánto cuesta comunicar"
+lead: "Este es el capítulo que hay que entender de verdad, porque es el único de la primera parte que se traslada al dominio cuántico casi sin modificaciones. Todo lo demás se adapta; esto se aplica."
+accent: classical
+---
+### 5.1 El modelo latencia–ancho de banda
+
+El coste de enviar un mensaje de *n* bytes entre dos procesos se modela, en primera aproximación, con dos parámetros:
+
+<Formula>
+  T(n) = α + β·n
+</Formula>
+
+donde **α** es la latencia —el coste fijo de iniciar la transferencia, independiente del tamaño— y **β** es el inverso del ancho de banda —el coste marginal por byte. En una red moderna de altas prestaciones, α está en el orden de uno o pocos microsegundos y 1/β en el orden de decenas o centenares de gigabits por segundo.
+
+De este modelo se deriva la magnitud más útil del capítulo: el **tamaño de media potencia**, *n<sub>½</sub>* = α/β. Es el tamaño de mensaje para el cual el coste fijo iguala al coste variable, y por tanto el punto donde alcanzas la mitad del ancho de banda asintótico. Por debajo de *n<sub>½</sub>* estás pagando sobre todo latencia y la red está prácticamente ociosa; por encima, empiezas a explotar el ancho de banda real.
+
+La consecuencia de diseño es contundente y contraintuitiva para quien viene de programar en serie: **enviar mil mensajes de un kilobyte es dramáticamente peor que enviar un mensaje de un megabyte**, aunque el volumen total sea idéntico. Agrupar mensajes (*message aggregation*) es casi siempre la primera optimización que hay que aplicar a un código distribuido que rinde mal.
+
+<Figure id="communication-cost">
+  El mismo modelo visto de dos formas. A la izquierda, la ordenada en el origen α es el peaje que se paga por mensaje enviado, sea cual sea su tamaño. A la derecha, la consecuencia: por debajo del tamaño de media potencia la red entrega una fracción despreciable de su capacidad nominal. Los valores del eje horizontal son ilustrativos; el punto *n<sub>½</sub>* concreto se mide empíricamente con un test de ping-pong.
+</Figure>
+
+### 5.2 Granularidad y razón comunicación/cómputo
+
+La **granularidad** de una descomposición es la cantidad de trabajo que hace un proceso entre dos comunicaciones consecutivas. Grano fino significa mucha comunicación y poco cálculo entre mensajes; grano grueso, lo contrario.
+
+La métrica que gobierna el escalado es la razón entre tiempo de comunicación y tiempo de cómputo. Al aumentar N con el problema fijo, el trabajo por proceso disminuye pero el número de mensajes suele aumentar, así que esta razón empeora inevitablemente. Ese es el mecanismo físico detrás del techo de Amdahl: no es que exista un fragmento místico de código secuencial, es que la comunicación crece hasta comerse el beneficio.
+
+### 5.3 Patologías clásicas
+
+Cuatro fallos que aparecen sistemáticamente en código distribuido y que conviene nombrar antes de escribir la primera línea de MPI:
+
+| Patología | Qué ocurre y cómo se evita |
+| --- | --- |
+| **Interbloqueo** | Dos procesos esperan mutuamente un mensaje que el otro no ha enviado todavía. Se evita ordenando las operaciones, usando primitivas combinadas o pasando a comunicación no bloqueante. |
+| **Desbalanceo** | Un proceso tarda más que el resto y todos esperan en la barrera siguiente. El tiempo total lo fija el más lento, no la media. |
+| **Sobresincronización** | Barreras globales innecesarias que serializan de facto el programa. Cada barrera es una fracción serie regalada a Amdahl. |
+| **Grano demasiado fino** | Muchos mensajes pequeños, todos por debajo de *n<sub>½</sub>*. La red trabaja al 5 % de su capacidad nominal y el perfil de rendimiento parece inexplicable. |
+
+<Bridge label="Puente clásico → cuántico">
+  El modelo α + βn admite una traducción directa. En una red cuántica, α es el tiempo de generar y confirmar un par EPR entre dos nodos, más el viaje de ida y vuelta de los bits clásicos de corrección. Ese α es enorme comparado con el tiempo de una puerta local.
+  
+  Pero hay dos asimetrías que no tienen análogo clásico y conviene enunciar explícitamente. Primera: el «ancho de banda» cuántico no sólo es finito, sino que el recurso **se consume** —un par EPR usado desaparece. Segunda: existe un plazo. Un mensaje clásico retrasado sigue siendo correcto cuando llega; un estado entrelazado que espera demasiado se decohiere y deja de ser útil. La comunicación cuántica tiene, además de coste, fecha de caducidad.
+</Bridge>

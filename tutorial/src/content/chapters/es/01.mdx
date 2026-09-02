@@ -1,0 +1,33 @@
+---
+lang: es
+order: 1
+part: "Parte I"
+title: "Por qué paralelizamos"
+lead: "La computación distribuida no es una técnica de optimización avanzada que se aplica cuando ya no queda nada más que hacer. Es la consecuencia directa de dos límites físicos que se alcanzaron hace dos décadas y que no se han levantado desde entonces. Conviene empezar por ahí, porque exactamente los mismos dos límites reaparecen —con otro vocabulario— cuando hablamos de conectar varias QPU."
+accent: classical
+---
+### 1.1 El escalado de Dennard y su final
+
+En 1974, Robert Dennard y sus coautores formularon la regla que gobernó el diseño de microprocesadores durante treinta años.<Ref n={19} /> El enunciado, simplificado: si reduces las dimensiones lineales de un transistor por un factor *k*, y reduces proporcionalmente la tensión de alimentación, entonces la densidad de potencia por unidad de área se mantiene constante. Traducido a consecuencias prácticas: cada nueva generación de proceso te daba más transistores *y* más frecuencia de reloj *sin* pagar más vatios por milímetro cuadrado.
+
+Eso es lo que se llamó *the free lunch*. Un programador podía escribir código secuencial y confiar en que, sin tocar una línea, ese mismo código iría más rápido en el hardware del año siguiente. No era una promesa de marketing: era una propiedad física del escalado.
+
+El escalado de Dennard se rompe alrededor de 2004–2006. La razón inmediata es que la tensión de umbral de los transistores no puede seguir bajando sin que la corriente de fuga (*leakage*) se dispare, y la potencia estática empieza a dominar el presupuesto térmico. A partir de ahí, subir la frecuencia significa subir la potencia de forma superlineal, y la potencia se convierte en el recurso restrictivo del diseño.
+
+Es importante ser preciso con el vocabulario aquí, porque es el error más común al contar esta historia: **lo que se rompió no fue la ley de Moore, sino el escalado de Dennard**. El número de transistores por chip ha seguido creciendo. Lo que dejó de crecer fue lo que podías *hacer* con ellos manteniendo un único hilo de ejecución. La respuesta de la industria fue replicar: si no puedes hacer que un núcleo vaya más rápido, pon más núcleos. Y en el momento en que hay más de un núcleo, el rendimiento deja de ser un problema del fabricante y pasa a ser un problema del programador.
+
+<Figure id="dennard-memory-wall">
+  Las cuatro curvas comparten un solo eje logarítmico y unidades arbitrarias por serie: lo que importa no es el valor absoluto sino la *forma*. La curva de transistores no se dobla. La de frecuencia se aplana hacia 2005 y desde entonces es esencialmente horizontal. La de núcleos permanece en 1 durante treinta y cuatro años y despega exactamente en el mismo punto donde la frecuencia se detiene. Valores esquemáticos de orden de magnitud; para cifras auditables, véase el conjunto de datos de tendencias de microprocesador de Rupp.<Ref n={20} />
+</Figure>
+
+### 1.2 El muro de memoria
+
+El segundo límite es independiente del primero y, en la práctica actual, más restrictivo. Wulf y McKee lo bautizaron en 1995 con un artículo de cuatro páginas cuyo argumento sigue siendo válido treinta años después.<Ref n={18} /> La observación es sencilla: la velocidad de cómputo y la *latencia* de acceso a memoria principal han mejorado a ritmos radicalmente distintos. El ancho de banda de memoria ha crecido de forma respetable; la latencia, casi nada. Un acceso a DRAM sigue costando del orden de decenas o centenares de ciclos de reloj, igual que hace décadas.
+
+La consecuencia se formaliza con el concepto de **intensidad aritmética**: el número de operaciones en coma flotante que ejecutas por cada byte que mueves desde memoria. Si tu algoritmo tiene intensidad aritmética baja, no importa cuántos FLOPS tenga tu máquina —estarás limitado por el movimiento de datos, no por el cálculo. En aceleradores modernos el punto de equilibrio se sitúa en el orden de decenas de FLOP por byte, lo que deja a la mayoría de los núcleos computacionales científicos del lado limitado por memoria. El modelo *roofline* es la herramienta estándar para visualizar esto y aparece en cualquier tratamiento serio del tema.<Ref n={17} />
+
+La lección operativa, que conviene grabar porque va a reaparecer en la parte cuántica sin apenas cambios: **mover un dato cuesta más que operar con él**. Todo el diseño de algoritmos paralelos consiste, en el fondo, en reorganizar el cálculo para mover menos.
+
+<Bridge label="Puente clásico → cuántico">
+  En una red de QPU los dos límites tienen equivalente exacto. El equivalente al muro de potencia es el límite de qubits coherentes por dispositivo: no puedes seguir agrandando un único chip indefinidamente sin que la fidelidad y la conectividad se degraden, así que replicas y conectas.<Ref n={11} /> El equivalente al muro de memoria es más severo todavía: mover un qubit entre nodos exige consumir un par entrelazado, un recurso que se genera lentamente, se degrada con el tiempo y no se puede almacenar de forma indefinida. Si en HPC clásico mover datos es caro, en computación cuántica distribuida mover estados es *el* coste dominante.
+</Bridge>

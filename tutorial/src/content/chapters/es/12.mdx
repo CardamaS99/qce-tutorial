@@ -1,0 +1,65 @@
+---
+lang: es
+order: 12
+part: "Parte III"
+title: "NetQMPI: la interfaz"
+lead: "Con el marco montado, la API se explica casi sola: es MPI con las restricciones del capítulo 10 aplicadas. Lo interesante no es la sintaxis sino qué decide ocultar y qué decide exponer."
+accent: quantum
+---
+### 12.1 El problema que resuelve
+
+El SDK de NetQASM sigue un modelo *basado en roles*: se escribe un fichero por participante —`app_alice.py`, `app_bob.py`, `app_charlie.py`—. Además, no ofrece una primitiva de transferencia de qubits: para mover un estado hay que implementar la teleportación a mano, paso por paso, incluyendo la creación del socket EPR, las puertas locales, la medida, el envío de los bits por un socket clásico aparte y la aplicación de correcciones en el receptor. Y hay que invocar `flush()` manualmente para sincronizar el flujo cuántico.<Ref n={2} />
+
+El resultado, medido sobre el caso de estudio del capítulo 14, es que el número de ficheros crece con N y la instanciación de sockets crece como N² en topologías completamente conectadas. Ese es el coste que NetQMPI elimina.
+
+### 12.2 Inyección de rank y creación del communicator
+
+El usuario escribe una función `main` que acepta `rank` y `size`. La biblioteca los inyecta en tiempo de ejecución, exactamente como `mpirun` hace con los procesos MPI. El punto de entrada de toda la funcionalidad es el `QMPICommunicator`.
+
+```python title="Estructura mínima de una aplicación NetQMPI"
+from netqmpi.sdk.communicator import QMPICommunicator
+
+def main(app_config=None, rank=0, size=1):
+    # rank y size los inyecta NetQMPI al arrancar
+    COMM_WORLD = QMPICommunicator(rank, size, app_config)
+    print(f"hola, soy el rank {rank} de {size}")
+```
+
+Y se lanza con una interfaz de línea de órdenes deliberadamente calcada de la de MPI:
+
+```bash
+$ netqmpi -n 3 script.py
+hola, soy el rank 0 de 3
+hola, soy el rank 2 de 3
+hola, soy el rank 1 de 3
+```
+
+El paralelismo con `mpirun -n 3` es visualmente evidente y conviene explotarlo en la presentación: el asistente que acaba de hacer el ejercicio 0 reconoce la estructura de inmediato, incluida la salida desordenada.
+
+Lo que el communicator automatiza al construirse: asigna el rank lógico, recorre la configuración de red instanciando la malla de `EPRSocket` necesaria entre los participantes, y guarda esos sockets en una tabla de encaminamiento interna. Además gestiona la sincronización del flujo cuántico, con vaciados implícitos en las primitivas y un `flush()` explícito disponible cuando hace falta.<Ref n={2} /> El programador deja de ver sockets.
+
+### 12.3 `qsend` y `qrecv`
+
+Las dos primitivas punto a punto encapsulan el protocolo de teleportación completo. Desde el punto de vista del programador, la operación es «envía este qubit al rank destino» y nada más: no aparecen pares EPR, ni fidelidades, ni identificadores de QPU, ni señalización clásica.
+
+<Figure id="teleportation">
+  Merece la pena desplegar este diagrama en la presentación en lugar de limitarse a decir que la biblioteca «lo gestiona por ti». Una abstracción cuyo interior no se ha mostrado se percibe como magia, y en una audiencia de investigadores eso cuesta credibilidad. Nótese además que el qubit original queda destruido por la medida del paso 2: la teleportación mueve el estado, no lo duplica, y por tanto es compatible con el no-clonación.
+</Figure>
+
+```python title="Punto a punto en NetQMPI · comparar con el ejemplo MPI del capítulo 7"
+def main(app_config=None, rank=0, size=2):
+    comm = QMPICommunicator(rank, size, app_config)
+
+    if rank == 0:
+        q = Qubit(comm.connection)
+        q.H()                          # prepara |+>
+        comm.qsend(q, 1)               # sin gestionar EPR
+        print("rank 0: qubit enviado")
+
+    elif rank == 1:
+        q = comm.qrecv(0)              # devuelve el estado ya corregido
+        m = q.measure()
+        print(f"rank 1: recibido, medida = {m}")
+```
+
+La simetría estructural con el ejemplo clásico —mismo `if rank == 0`, mismo par enviar/recibir— es intencionada y es el argumento pedagógico central de la biblioteca: si sabes MPI, ya sabes leer esto.

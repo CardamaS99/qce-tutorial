@@ -1,0 +1,35 @@
+<svg aria-label="Cuatro ranks lógicos numerados de cero a tres se corresponden mediante líneas cruzadas con cuatro recursos físicos distribuidos en dos nodos, mostrando que el mapeo no es la identidad." role="img" viewbox="0 0 800 300">
+<title>El communicator como capa de virtualización</title>
+<rect fill="#E4F1EE" height="76" rx="8" stroke="#12695C" stroke-width="1" width="700" x="50" y="42"></rect>
+<text class="sv-m" fill="#0C3F38" x="66" y="63">COMM_WORLD · vista lógica</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="120" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="180" y="94">rank 0</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="272" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="332" y="94">rank 1</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="424" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="484" y="94">rank 2</text>
+<rect fill="#fff" height="34" rx="5" stroke="#12695C" stroke-width="0.9" width="120" x="576" y="72"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="636" y="94">rank 3</text>
+<text class="sv-s" text-anchor="middle" x="400" y="146">el planificador decide el mapeo · el programa no lo sabe ni lo necesita</text>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="180" x2="332" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="332" x2="180" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="484" x2="636" y1="108" y2="192"></line>
+<line stroke="#8A8F8B" stroke-dasharray="4 3" stroke-width="1" x1="636" x2="484" y1="108" y2="192"></line>
+<rect fill="#F7F8F6" height="86" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="50" y="180"></rect>
+<text class="sv-m" fill="#6B7683" x="66" y="201">nodo físico A</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="120" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="180" y="228">socket 0</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="180" y="243">recurso</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="252" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="312" y="228">socket 1</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="312" y="243">recurso</text>
+<rect fill="#F7F8F6" height="86" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="420" y="180"></rect>
+<text class="sv-m" fill="#6B7683" x="436" y="201">nodo físico B</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="424" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="484" y="228">socket 0</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="484" y="243">recurso</text>
+<rect fill="#fff" height="40" rx="5" stroke="#C3C7C2" stroke-width="0.9" width="120" x="576" y="210"></rect>
+<text class="sv-t" text-anchor="middle" x="636" y="228">socket 1</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="636" y="243">recurso</text>
+<text class="sv-s" text-anchor="middle" x="400" y="288">ranks contiguos no implican recursos contiguos</text>
+</svg>

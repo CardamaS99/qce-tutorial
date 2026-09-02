@@ -1,0 +1,41 @@
+<svg aria-label="Ciclo de vida de expose: primero el estado reside sólo en el rank cero, después queda repartido entre los cuatro rangos como estado entrelazado sobre el que se opera colectivamente, y finalmente unexpose libera el recurso." role="img" viewbox="0 0 800 302">
+<title>Ciclo de vida de expose y unexpose</title>
+<text class="sv-th" x="30" y="26">1 · antes</text>
+<text class="sv-s" x="30" y="44">el estado vive en el root</text>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="200" x="30" y="58"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="130" y="79">rank 0 · α|0⟩ + β|1⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="98"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="116">rank 1 · |0⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="132"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="150">rank 2 · |0⟩</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="30" y="166"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="130" y="184">rank 3 · |0⟩</text>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="248" x2="278" y1="126" y2="126"></line><path d="M274 122l6 4-6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="263" y="112">expose</text>
+<text class="sv-th" x="292" y="26">2 · expuesto</text>
+<text class="sv-s" x="292" y="44">un estado, cuatro localizaciones</text>
+<rect fill="#EDEAFA" height="136" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="200" x="292" y="58"></rect>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="70"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="86">rank 0</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="100"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="116">rank 1</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="130"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="146">rank 2</text>
+<rect fill="#fff" height="24" rx="3" stroke="#5B3FB8" stroke-width="0.8" width="176" x="304" y="160"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="392" y="176">rank 3</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="392" y="214">α|0000⟩ + β|1111⟩</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="392" y="232">aquí van las operaciones colectivas</text>
+<line stroke="#5B3FB8" stroke-width="1.4" x1="510" x2="540" y1="126" y2="126"></line><path d="M536 122l6 4-6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="525" y="112">unexpose</text>
+<text class="sv-th" x="556" y="26">3 · liberado</text>
+<text class="sv-s" x="556" y="44">obligatorio, no opcional</text>
+<rect fill="#E4F1EE" height="34" rx="4" stroke="#12695C" stroke-width="1" width="200" x="556" y="58"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="656" y="79">rank 0 · resultado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="98"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="116">rank 1 · liberado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="132"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="150">rank 2 · liberado</text>
+<rect fill="#fff" height="28" rx="4" stroke="#C3C7C2" stroke-dasharray="3 2" stroke-width="0.8" width="200" x="556" y="166"></rect>
+<text class="sv-m" fill="#8A8F8B" text-anchor="middle" x="656" y="184">rank 3 · liberado</text>
+<text class="sv-s" text-anchor="middle" x="400" y="286">no es copiar y descartar: es repartir un estado y devolverlo · el recurso entrelazado se consume</text>
+</svg>

@@ -1,0 +1,65 @@
+---
+lang: en
+order: 12
+part: "Part III"
+title: "NetQMPI: the interface"
+lead: "With the frame in place, the API almost explains itself: it is MPI with the constraints of chapter 10 applied. What is interesting is not the syntax but what it chooses to hide and what it chooses to expose."
+accent: quantum
+---
+### 12.1 The problem it solves
+
+The NetQASM SDK follows a *role-based* model: one file per participant — `app_alice.py`, `app_bob.py`, `app_charlie.py`. Moreover, it offers no qubit-transfer primitive: to move a state you must implement teleportation by hand, step by step, including creating the EPR socket, the local gates, the measurement, sending the bits over a separate classical socket and applying corrections at the receiver. And you must call `flush()` manually to synchronise the quantum flow.<Ref n={2} />
+
+The result, measured on the case study of chapter 14, is that the number of files grows with N and socket instantiation grows as N² in fully connected topologies. That is the cost NetQMPI removes.
+
+### 12.2 Rank injection and communicator creation
+
+The user writes a `main` function taking `rank` and `size`. The library injects them at run time, exactly as `mpirun` does with MPI processes. The entry point for all functionality is the `QMPICommunicator`.
+
+```python title="Minimal structure of a NetQMPI application"
+from netqmpi.sdk.communicator import QMPICommunicator
+
+def main(app_config=None, rank=0, size=1):
+    # rank and size are injected by NetQMPI at start-up
+    COMM_WORLD = QMPICommunicator(rank, size, app_config)
+    print(f"hello, I am rank {rank} of {size}")
+```
+
+And it is launched with a command-line interface deliberately modelled on MPI's:
+
+```bash
+$ netqmpi -n 3 script.py
+hello, I am rank 0 of 3
+hello, I am rank 2 of 3
+hello, I am rank 1 of 3
+```
+
+The parallel with `mpirun -n 3` is visually obvious and worth exploiting in the presentation: an attendee who has just done exercise 0 recognises the structure immediately, unordered output included.
+
+What the communicator automates on construction: it assigns the logical rank, walks the network configuration instantiating the necessary mesh of `EPRSocket` objects between participants, and stores those sockets in an internal routing table. It also manages quantum control-flow synchronisation, with implicit flushes inside the primitives and an explicit `flush()` available when needed.<Ref n={2} /> The programmer stops seeing sockets.
+
+### 12.3 `qsend` and `qrecv`
+
+The two point-to-point primitives encapsulate the full teleportation protocol. From the programmer's point of view the operation is «send this qubit to that rank» and nothing more: no EPR pairs, no fidelities, no QPU identifiers, no classical signalling.
+
+<Figure id="teleportation">
+  It is worth unfolding this diagram in the presentation rather than merely saying the library «handles it for you». An abstraction whose interior has not been shown reads as magic, and with a research audience that costs credibility. Note too that the original qubit is destroyed by the measurement in step 2: teleportation moves the state rather than duplicating it, and is therefore compatible with no-cloning.
+</Figure>
+
+```python title="Point-to-point in NetQMPI · compare with the MPI example in chapter 7"
+def main(app_config=None, rank=0, size=2):
+    comm = QMPICommunicator(rank, size, app_config)
+
+    if rank == 0:
+        q = Qubit(comm.connection)
+        q.H()                          # prepare |+>
+        comm.qsend(q, 1)               # no EPR management
+        print("rank 0: qubit sent")
+
+    elif rank == 1:
+        q = comm.qrecv(0)              # returns the already-corrected state
+        m = q.measure()
+        print(f"rank 1: received, measurement = {m}")
+```
+
+The structural symmetry with the classical example — same `if rank == 0`, same send/receive pair — is deliberate and is the library's central pedagogical argument: if you know MPI, you can already read this.

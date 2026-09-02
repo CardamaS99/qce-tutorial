@@ -1,0 +1,29 @@
+<svg aria-label="One qsend call at the sender and one qrecv call at the receiver hide four steps: EPR pair generation, local Bell measurement, sending two classical bits, and applying Pauli corrections." role="img" viewbox="0 0 800 372">
+<title>What qsend and qrecv hide</title>
+<rect fill="#141C24" height="42" rx="5" width="340" x="40" y="24"></rect>
+<text class="sv-m" fill="#8ECBE8" text-anchor="middle" x="210" y="50">comm.qsend(q, dest_rank=1)</text>
+<rect fill="#141C24" height="42" rx="5" width="340" x="420" y="24"></rect>
+<text class="sv-m" fill="#8ECBE8" text-anchor="middle" x="590" y="50">q = comm.qrecv(source_rank=0)</text>
+<line stroke="#C3C7C2" stroke-dasharray="6 4" stroke-width="1" x1="40" x2="760" y1="84" y2="84"></line>
+<text class="sv-s" fill="#6B7683" text-anchor="middle" x="400" y="102">below this line, the library does everything</text>
+<rect fill="#EDEAFA" height="30" rx="4" stroke="#5B3FB8" stroke-width="1" width="170" x="60" y="118"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="145" y="138">rank 0 · sender</text>
+<rect fill="#EDEAFA" height="30" rx="4" stroke="#5B3FB8" stroke-width="1" width="170" x="570" y="118"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="655" y="138">rank 1 · receiver</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="145" x2="145" y1="148" y2="344"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="655" x2="655" y1="148" y2="344"></line>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="300" x="250" y="162"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="400" y="183">1 · generate and distribute the EPR pair</text>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="145" x2="246" y1="179" y2="179"></line>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="554" x2="655" y1="179" y2="179"></line>
+<rect fill="#fff" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="60" y="212"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="150" y="233">2 · local Bell measurement</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="150" y="262">CNOT + H, then measure</text>
+<line stroke="#12695C" stroke-width="1.6" x1="248" x2="566" y1="290" y2="290"></line><path d="M562 286l6 4-6 4" fill="#12695C"></path>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="283">3 · two classical correction bits</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="306">conventional classical channel</text>
+<rect fill="#fff" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="570" y="212"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="660" y="233">await entanglement</text>
+<rect fill="#EDEAFA" height="34" rx="4" stroke="#5B3FB8" stroke-width="1" width="180" x="570" y="322"></rect>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="660" y="343">4 · X / Z corrections → |ψ⟩</text>
+</svg>

@@ -1,0 +1,48 @@
+---
+lang: es
+order: 4
+part: "Parte I"
+title: "Cuánto se puede ganar"
+lead: "Existe un límite superior a lo que la paralelización puede darte, y ese límite lo fija la parte del programa que se niega a paralelizarse. Las dos formulaciones clásicas de ese límite no se contradicen: responden a preguntas distintas."
+accent: classical
+---
+### 4.1 La ley de Amdahl
+
+Gene Amdahl planteó en 1967 el argumento que aún hoy modera las expectativas.<Ref n={16} /> Sea *s* la fracción del tiempo de ejecución que es intrínsecamente secuencial, y *1−s* la fracción paralelizable. Con N procesadores, la aceleración es
+
+<Formula>
+  S(N) = 1 / ( s + (1 − s)/N )
+</Formula>
+
+Cuando N tiende a infinito, el segundo término se anula y queda **S ≤ 1/s**. Con un 5 % secuencial, la aceleración máxima alcanzable con infinitos procesadores es 20×. Con un 25 %, es 4×. No hay hardware que arregle eso.
+
+La lectura correcta de Amdahl no es «paralelizar no merece la pena». Es «identifica y ataca la fracción serie antes de comprar más nodos». En la práctica, esa fracción serie casi nunca es cálculo puro: suele ser entrada/salida, inicialización, sincronización global y —muy en particular— **comunicación**.
+
+### 4.2 La ley de Gustafson
+
+John Gustafson observó en 1988 que Amdahl asume algo que casi nunca se cumple: que el tamaño del problema es fijo.<Ref n={16} /> Nadie compra un supercomputador para resolver el mismo problema más rápido; lo compra para resolver un problema mayor en el mismo tiempo. Si al aumentar N aumentas también el tamaño del problema, la fracción paralelizable crece con él mientras la serie permanece aproximadamente constante. La aceleración escalada resulta
+
+<Formula>
+  S(N) = s + (1 − s) · N
+</Formula>
+
+que es lineal en N y no está acotada. Ambas leyes son ciertas; describen escenarios distintos.
+
+<Figure id="amdahl-gustafson">
+  La misma fracción serie produce dos diagnósticos opuestos según qué se mantenga fijo. Con el problema congelado (izquierda), un 25 % secuencial hace inútil pasar de ocho procesadores. Con el problema escalando (derecha), esa misma fracción sigue dando retorno hasta sesenta y cuatro. Antes de citar cualquiera de las dos leyes hay que declarar cuál de los dos experimentos se está haciendo.
+</Figure>
+
+### 4.3 Escalado fuerte y escalado débil
+
+Las dos leyes anteriores tienen su contrapartida experimental, y son los dos únicos gráficos que un revisor va a mirar en un artículo de rendimiento:
+
+- **Escalado fuerte** (*strong scaling*): el tamaño del problema se mantiene constante y se aumenta N. Se mide el tiempo de ejecución. Es el experimento que corresponde a Amdahl. Su curva siempre acaba doblándose, porque al aumentar N el trabajo local se reduce y la comunicación acaba dominando.
+- **Escalado débil** (*weak scaling*): el tamaño del problema *por proceso* se mantiene constante, de modo que el problema total crece con N. Se mide si el tiempo permanece plano. Es el experimento que corresponde a Gustafson.
+
+Un resultado de escalado débil impecable con un escalado fuerte pésimo es perfectamente posible, y es una situación común. Presentar sólo uno de los dos es la forma más habitual de maquillar un resultado de rendimiento.
+
+<Bridge label="Puente clásico → cuántico">
+  En computación cuántica distribuida, la «fracción serie» de Amdahl tiene un nombre concreto: **la generación y distribución de entrelazamiento**. Las operaciones locales de un circuito son rápidas; establecer un par EPR entre dos nodos es órdenes de magnitud más lento, y además debe completarse antes de que la decoherencia lo inutilice. Si al particionar un circuito entre N QPU cada partición requiere una cantidad de puertas remotas que crece con N, estás construyendo un caso de Amdahl con una *s* que empeora al escalar.
+  
+  De ahí que el problema central de la disciplina no sea «cómo ejecuto un circuito en varias QPU» —eso ya se sabe hacer— sino «cómo lo particiono minimizando el número de operaciones remotas».<Ref n={24} />
+</Bridge>

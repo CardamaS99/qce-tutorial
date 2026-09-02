@@ -1,0 +1,35 @@
+<svg aria-label="Diagrama de dos nodos de cómputo, cada uno con memoria local y dos sockets de cuatro núcleos, conectados por una red de interconexión común." role="img" viewbox="0 0 800 372">
+<title>Jerarquía núcleo, socket, nodo, clúster</title>
+<rect fill="#F7F8F6" height="209" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="40" y="46"></rect>
+<text class="sv-th" x="56" y="70">nodo 0</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.8" width="290" x="60" y="82"></rect>
+<text class="sv-s" fill="#0C3F38" text-anchor="middle" x="205" y="101">memoria local · un único espacio de direcciones</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="60" y="128"></rect>
+<text class="sv-s" x="70" y="147">socket 0</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="70" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="102" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="134" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="166" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="70" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="131" y="207">caché compartida</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="210" y="128"></rect>
+<text class="sv-s" x="220" y="147">socket 1</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="220" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="252" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="284" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="316" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="220" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="281" y="207">caché compartida</text>
+<rect fill="#F7F8F6" height="209" rx="8" stroke="#C3C7C2" stroke-width="1" width="330" x="430" y="46"></rect>
+<text class="sv-th" x="446" y="70">nodo 1</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.8" width="290" x="450" y="82"></rect>
+<text class="sv-s" fill="#0C3F38" text-anchor="middle" x="595" y="101">memoria local · un único espacio de direcciones</text>
+<rect fill="#fff" height="108" rx="5" stroke="#C3C7C2" stroke-width="0.8" width="140" x="450" y="128"></rect>
+<text class="sv-s" x="460" y="147">socket 0</text>
+<rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="460" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="492" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="524" y="158"></rect><rect fill="#DCE3E0" height="26" rx="3" stroke="#8FA39D" stroke-width="0.6" width="26" x="556" y="158"></rect>
+<rect fill="#F2F3F1" height="18" rx="3" stroke="#C3C7C2" stroke-width="0.6" width="122" x="460" y="194"></rect>
+<text class="sv-m" text-anchor="middle" x="521" y="207">caché compartida</text>
+<rect fill="#EDEAFA" height="108" rx="5" stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="0.9" width="140" x="600" y="128"></rect>
+<text class="sv-s" fill="#3B2C82" x="610" y="147">acelerador</text>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="670" y="188">QPU</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="670" y="207">futuro cercano</text>
+<line stroke="#3B4754" stroke-width="1.4" x1="205" x2="205" y1="255" y2="288"></line>
+<line stroke="#3B4754" stroke-width="1.4" x1="595" x2="595" y1="255" y2="288"></line>
+<rect fill="#141C24" height="34" rx="5" width="720" x="40" y="288"></rect>
+<text class="sv-s" fill="#E4E8E4" text-anchor="middle" x="400" y="309">red de interconexión · paso de mensajes explícito, sin memoria común</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="345">la frontera del nodo es la frontera del espacio de direcciones</text>
+</svg>

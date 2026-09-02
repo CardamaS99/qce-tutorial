@@ -1,0 +1,31 @@
+---
+lang: es
+order: 10
+part: "Parte III"
+title: "Qué se rompe al pasar al dominio cuántico"
+lead: "Todo lo anterior se traslada. Pero no se traslada gratis: cuatro propiedades que dábamos por supuestas en MPI dejan de ser ciertas, y de esas cuatro roturas salen todas las decisiones de diseño de NetQMPI. Este capítulo es el eje del tutorial."
+accent: quantum
+---
+### 10.1 El teorema de no clonación elimina el broadcast
+
+No existe ninguna operación física que, dado un estado cuántico arbitrario y desconocido |ψ⟩, produzca dos copias independientes |ψ⟩⊗|ψ⟩. La demostración es de tres líneas y se sigue de la linealidad de la mecánica cuántica. La consecuencia para nosotros es brutal en su simplicidad: **`MPI_Bcast` no tiene equivalente cuántico**. No es que sea caro, ni que esté sin implementar: es que está prohibido.
+
+Esto no es un detalle menor de la API. Es exactamente la objeción que se le hace a la propuesta teórica QMPI de Häner y coautores, que definió la semántica de un MPI cuántico pero no resolvió cómo expresar las colectivas que implican copia.<Ref n={4} /> Cualquier biblioteca que pretenda ser un «MPI cuántico» tiene que dar una respuesta a esta pregunta, y la respuesta de NetQMPI —las primitivas `expose` y `unexpose`— se detalla en el capítulo 13.
+
+<Figure id="no-cloning">
+  La diferencia no es de eficiencia sino de ontología. A la izquierda habría cuatro estados independientes; a la derecha hay *uno solo*, cuyos grados de libertad están repartidos entre cuatro nodos. Ningún nodo posee el estado, y medir en cualquiera de ellos afecta instantáneamente a lo que verán los demás. Es un recurso compartido, no un dato replicado.
+</Figure>
+
+### 10.2 Las otras tres roturas
+
+| Supuesto de MPI | Qué ocurre en el caso cuántico |
+| --- | --- |
+| **Leer no destruye** | Medir un qubit colapsa su estado. No existe la operación «inspeccionar el búfer sin consumirlo», que es la base de cualquier depuración clásica. Depurar un programa cuántico distribuido es cualitativamente más difícil, y esto justifica por sí solo una capa de abstracción que reduzca la superficie de código. |
+| **El canal es reutilizable** | Cada transferencia consume un par entrelazado, que desaparece al usarse. El «ancho de banda» no es una tasa sostenida sino un inventario de recursos que hay que generar, distribuir y contabilizar. |
+| **Un mensaje retrasado sigue siendo válido** | El entrelazamiento se degrada con el tiempo por decoherencia. Hay un plazo. Un protocolo correcto pero lento puede ser un protocolo incorrecto en la práctica, porque la fidelidad del estado al llegar ya no es aceptable. |
+
+### 10.3 Lo que *no* cambia: el plano de control clásico
+
+Un malentendido frecuente conviene desactivarlo pronto. Transferir un qubit entre nodos se hace por **teleportación**, y la teleportación no es una alternativa a la comunicación clásica: *la necesita*. El protocolo consume un par EPR previamente distribuido, el emisor hace una medida de Bell sobre su qubit y su mitad del par, y envía **dos bits clásicos** por un canal convencional. Sin esos dos bits, el receptor no sabe qué corrección de Pauli aplicar y su qubit es basura.
+
+De modo que una red cuántica es siempre una red doble: un plano cuántico que distribuye entrelazamiento y un plano clásico que transporta resultados de medida y sincroniza. Cualquier biblioteca que abstraiga esto tiene que gestionar los dos, y la mitad de la verbosidad del SDK de NetQASM viene precisamente de tener que orquestar ambos a mano.<Ref n={6} />

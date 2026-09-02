@@ -1,0 +1,11 @@
+---
+import references from '../data/references.json';
+interface Props { lang: 'es' | 'en'; heading: string }
+const { lang, heading } = Astro.props;
+---
+<section class="references" id="refs">
+  <h2>{heading}</h2>
+  <ol>
+    {references.map((r) => <li id={r.id} set:html={r[lang]} />)}
+  </ol>
+</section>

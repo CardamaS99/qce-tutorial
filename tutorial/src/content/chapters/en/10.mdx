@@ -1,0 +1,31 @@
+---
+lang: en
+order: 10
+part: "Part III"
+title: "What breaks in the quantum domain"
+lead: "Everything above carries over. But it does not carry over for free: four properties we took for granted in MPI stop being true, and from those four breakages come all of NetQMPI's design decisions. This chapter is the axis of the tutorial."
+accent: quantum
+---
+### 10.1 No-cloning eliminates broadcast
+
+There is no physical operation that, given an arbitrary and unknown quantum state |ψ⟩, produces two independent copies |ψ⟩⊗|ψ⟩. The proof is three lines and follows from the linearity of quantum mechanics. The consequence for us is brutal in its simplicity: **`MPI_Bcast` has no quantum equivalent**. It is not expensive, nor merely unimplemented: it is forbidden.
+
+This is not a minor API detail. It is precisely the objection levelled at the theoretical QMPI proposal of Häner and co-authors, which defined the semantics of a quantum MPI but did not resolve how to express the collectives that imply copying.<Ref n={4} /> Any library claiming to be a «quantum MPI» must answer this question, and NetQMPI's answer — the `expose` and `unexpose` primitives — is detailed in chapter 13.
+
+<Figure id="no-cloning">
+  The difference is not one of efficiency but of ontology. On the left there would be four independent states; on the right there is *one*, whose degrees of freedom are spread across four nodes. No node owns the state, and measuring at any of them instantly affects what the others will see. It is a shared resource, not a replicated datum.
+</Figure>
+
+### 10.2 The other three breakages
+
+| MPI assumption | What happens in the quantum case |
+| --- | --- |
+| **Reading does not destroy** | Measuring a qubit collapses its state. There is no «inspect the buffer without consuming it» operation, which is the basis of all classical debugging. Debugging a distributed quantum program is qualitatively harder, and this alone justifies an abstraction layer that reduces the code surface. |
+| **The channel is reusable** | Every transfer consumes an entangled pair, which disappears on use. «Bandwidth» is not a sustained rate but an inventory of resources that must be generated, distributed and accounted for. |
+| **A delayed message is still valid** | Entanglement degrades over time through decoherence. There is a deadline. A correct-but-slow protocol can be an incorrect protocol in practice, because the fidelity of the state on arrival is no longer acceptable. |
+
+### 10.3 What does *not* change: the classical control plane
+
+A common misunderstanding is worth defusing early. Transferring a qubit between nodes is done by **teleportation**, and teleportation is not an alternative to classical communication: *it requires it*. The protocol consumes a previously distributed EPR pair, the sender performs a Bell measurement on their qubit and their half of the pair, and sends **two classical bits** over a conventional channel. Without those two bits the receiver does not know which Pauli correction to apply and their qubit is garbage.
+
+So a quantum network is always a double network: a quantum plane distributing entanglement and a classical plane carrying measurement outcomes and synchronisation. Any library abstracting this must manage both, and half the verbosity of the NetQASM SDK comes precisely from having to orchestrate both by hand.<Ref n={6} />

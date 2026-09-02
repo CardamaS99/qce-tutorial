@@ -1,0 +1,52 @@
+---
+lang: es
+order: 6
+part: "Parte II"
+title: "MPI: SPMD, rank y communicator"
+lead: "MPI no es una biblioteca: es una especificación de interfaz, mantenida por el MPI Forum, de la que existen múltiples implementaciones independientes —Open MPI, MPICH, y las variantes de los fabricantes.<Ref n={15} /> Que sea un estándar y no un producto es la razón de que un código escrito en 1996 siga compilando y ejecutando hoy en máquinas que no existían entonces. En Python, el acceso al estándar se hace a través de `mpi4py`.<Ref n={21} />"
+accent: classical
+---
+### 6.1 El paradigma SPMD
+
+La idea que sostiene todo el edificio se llama **Single Program, Multiple Data**. Se escribe *un único* fichero fuente. El lanzador arranca N copias de ese mismo programa como procesos independientes, y a cada copia le inyecta un identificador distinto. El programa consulta ese identificador y decide qué rama de su propia lógica ejecutar.
+
+Conviene subrayar por qué esto es una elección de diseño y no una obviedad. La alternativa —MPMD, escribir un programa distinto por rol— parece más natural al principio y produce código ilegible en cuanto hay más de tres participantes: para pasar de tres a cuatro nodos hay que escribir un fichero nuevo *y* modificar los existentes. SPMD desacopla el código del número de procesos. Ese desacoplo es, literalmente, el argumento central de NetQMPI, y por eso merece la pena insistir aquí.
+
+<Figure id="spmd">
+  El fichero es uno; los procesos, N. El valor de `rank` es lo único que difiere entre ellos, y sobre esa única diferencia se construye toda la asimetría de roles del programa. Cambiar de tres a treinta y dos procesos no toca ni una línea del fuente: sólo el argumento del lanzador.
+</Figure>
+
+### 6.2 Rank: la identidad lógica
+
+El **rank** es un entero en el intervalo [0, size−1] asignado a cada proceso dentro de un communicator. No es un número de nodo, ni un identificador de proceso del sistema operativo, ni una dirección de red. Es una etiqueta lógica, y esa es precisamente su virtud: el programa razona sobre ranks y delega en el entorno de ejecución la correspondencia con recursos físicos.
+
+Por convención universal, el rank 0 hace de coordinador cuando hace falta uno —lee ficheros, distribuye trabajo, recoge resultados—. Es una convención, no una regla del estándar; en MPI, el rank 0 no tiene ningún privilegio.
+
+### 6.3 Communicator: el contexto de comunicación
+
+Un **communicator** encapsula dos cosas: un *grupo* de procesos y un *contexto* de comunicación aislado. Todo mensaje se envía dentro de un communicator, y los mensajes de contextos distintos nunca se confunden entre sí —propiedad que hace posible escribir bibliotecas paralelas seguras sin miedo a colisionar con los mensajes del programa que las usa.
+
+Al arrancar existe `MPI_COMM_WORLD`, que contiene a todos los procesos lanzados. Se pueden derivar subcomunicadores para agrupar procesos por criterios propios.
+
+La lectura conceptual que interesa para lo que viene después: **el communicator es una capa de virtualización**. Presenta al programador un conjunto de participantes numerados de 0 a N−1 sobre lo que en realidad es un conjunto heterogéneo de recursos físicos conectados por una topología concreta. El programa se escribe contra la vista lógica; el mapeo lo resuelve el sistema.
+
+<Figure id="communicator">
+  Las líneas de puntos se cruzan deliberadamente. Que dos ranks sean consecutivos no significa que estén en el mismo nodo ni que su comunicación sea barata: el mapeo lo decide el planificador según la política de asignación. Esta separación entre identidad lógica y recurso físico es idéntica a la que introduce el `QMPICommunicator` de NetQMPI al asociar ranks con QPU.<Ref n={2} />
+</Figure>
+
+```python title="Esqueleto mínimo · mpi4py"
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()      # quién soy
+size = comm.Get_size()      # cuántos somos
+name = MPI.Get_processor_name()
+
+print(f"soy el rank {rank} de {size}, en {name}")
+```
+
+Se ejecuta con `mpirun -n 4 python hello.py`. En `mpi4py` no hace falta llamar a `Init` ni a `Finalize`: la importación del módulo inicializa el entorno y la finalización se registra automáticamente al terminar el intérprete.
+
+<Note label="Detalle que sorprende siempre">
+  La salida de los cuatro procesos aparece desordenada, y el orden cambia entre ejecuciones. No es un error: son cuatro procesos independientes escribiendo al mismo terminal sin ninguna sincronización entre ellos. MPI no ordena la salida estándar. Si el orden importa, hay que forzarlo explícitamente recogiendo los mensajes en el rank 0.
+</Note>

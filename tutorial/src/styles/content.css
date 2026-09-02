@@ -1,0 +1,207 @@
+/* ---------- capítulos ---------- */
+.chapter { margin: 0 0 4.5rem; scroll-margin-top: 1.5rem; }
+.chapter-num {
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  display: block;
+  margin-bottom: .55rem;
+}
+.chapter > h2 {
+  font-size: clamp(1.6rem, 3.4vw, 2.25rem);
+  margin: 0 0 1.1rem;
+  max-width: 26ch;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+.chapter > h2::after {
+  content: "";
+  display: block;
+  width: 60px;
+  height: 3px;
+  margin-top: 1rem;
+  background: var(--classical);
+}
+.chapter[data-accent="quantum"] > h2::after { background: var(--quantum); }
+.chapter h3 { font-size: 1.22rem; margin: 2.6rem 0 .8rem; max-width: 38ch; }
+.chapter h4 { font-size: 1.02rem; margin: 1.9rem 0 .5rem; font-weight: 700; letter-spacing: 0; }
+.lead { font-size: 1.18rem; color: var(--ink-2); max-width: 66ch; line-height: 1.68; }
+
+.ref-call { font-family: var(--font-mono); font-size: .62em; vertical-align: super; line-height: 0; }
+.ref-call a { color: var(--quantum); text-decoration: none; padding: 0 .1em; }
+
+.formula {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 1.02rem;
+  margin: 1.6rem 0;
+  max-width: var(--measure);
+}
+
+/* ---------- figuras ---------- */
+figure {
+  margin: 2.4rem 0;
+  border: 1px solid var(--rule);
+  border-radius: 6px;
+  background: #fff;
+  overflow: hidden;
+  counter-increment: figure;
+}
+figure .canvas { padding: 1.6rem 1.4rem .6rem; }
+figure svg { display: block; width: 100%; height: auto; }
+figcaption {
+  font-family: var(--font-display);
+  font-size: .86rem;
+  line-height: 1.55;
+  color: var(--ink-2);
+  padding: 1rem 1.4rem 1.2rem;
+  border-top: 1px solid var(--rule);
+  background: var(--paper-2);
+}
+figcaption::before {
+  display: block;
+  margin-bottom: .35rem;
+  font-family: var(--font-mono);
+  font-size: .72rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  content: "Figura " counter(figure);
+}
+:root[lang="en"] figcaption::before { content: "Figure " counter(figure); }
+
+/* tipografía dentro de los SVG, heredada del documento */
+.sv-t  { font-family: var(--font-display); font-size: 13px; fill: var(--ink); }
+.sv-th { font-family: var(--font-display); font-size: 13px; font-weight: 700; fill: var(--ink); }
+.sv-s  { font-family: var(--font-display); font-size: 11.5px; fill: var(--ink-3); }
+.sv-m  { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-2); }
+
+/* ---------- avisos ---------- */
+.callout {
+  border-radius: 6px;
+  padding: 1.3rem 1.5rem;
+  margin: 2.4rem 0;
+  max-width: 72ch;
+}
+.callout > :last-child { margin-bottom: 0; }
+.callout p { font-size: .98rem; }
+.callout-label {
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: .5rem;
+  font-weight: 500;
+}
+.callout--bridge { background: var(--quantum-bg); border: 1px solid #D3CBF2; color: var(--quantum-ink); }
+.callout--bridge .callout-label { color: var(--quantum); }
+.callout--warning { background: var(--warn-bg); border: 1px solid #EBCDBC; color: var(--warn-ink); }
+.callout--warning .callout-label { color: var(--warn); }
+.callout--exercise { background: var(--classical-bg); border: 1px solid #C6E0DA; color: #12352F; max-width: 74ch; }
+.callout--exercise .callout-label { color: var(--classical); }
+.callout--exercise h4 { margin-top: 0; color: var(--classical-ink); }
+.callout--note {
+  background: none;
+  border: 0;
+  border-left: 3px solid var(--rule-2);
+  border-radius: 0;
+  padding: .2rem 0 .2rem 1.2rem;
+  margin: 1.8rem 0;
+  font-size: .95rem;
+  color: var(--ink-2);
+  max-width: 64ch;
+}
+.callout--note .callout-label { color: var(--ink-3); font-size: .66rem; }
+
+/* ---------- código ---------- */
+.code-title {
+  font-family: var(--font-mono);
+  font-size: .7rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin: 1.6rem 0 -.9rem;
+}
+pre.astro-code {
+  padding: 1.2rem 1.3rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  font-size: .8rem;
+  line-height: 1.62;
+  margin: 1.5rem 0;
+  /* la paleta de Shiki cede el fondo al del documento */
+  background-color: var(--ink) !important;
+}
+pre.astro-code code { font-size: inherit; }
+pre.astro-code[data-title] { padding-top: .7rem; }
+pre.astro-code[data-title]::before {
+  content: attr(data-title);
+  display: block;
+  position: sticky;
+  left: 0;
+  margin-bottom: .9rem;
+  padding-bottom: .55rem;
+  border-bottom: 1px solid #2C3A46;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #8B979F;
+}
+
+/* ---------- tablas ---------- */
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 74ch;
+  margin: 1.6rem 0;
+  font-size: .9rem;
+  font-family: var(--font-display);
+}
+th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  font-weight: 500;
+  border-bottom: 2px solid var(--ink);
+  padding: .5rem .7rem .5rem 0;
+  vertical-align: bottom;
+}
+td { border-bottom: 1px solid var(--rule); padding: .65rem .7rem .65rem 0; vertical-align: top; line-height: 1.5; }
+td code { font-size: .84em; }
+
+/* ---------- bibliografía ---------- */
+.references { border-top: 3px solid var(--ink); padding-top: 1.8rem; margin-top: 4rem; }
+.references h2 { font-size: 1.5rem; margin: 0 0 1.4rem; }
+.references ol {
+  list-style: none;
+  padding: 0;
+  counter-reset: ref;
+  max-width: 80ch;
+  font-size: .88rem;
+  line-height: 1.6;
+  font-family: var(--font-display);
+}
+.references li {
+  counter-increment: ref;
+  padding-left: 3rem;
+  position: relative;
+  margin-bottom: .95rem;
+  color: var(--ink-2);
+  scroll-margin-top: 2rem;
+}
+.references li::before {
+  content: "[" counter(ref) "]";
+  position: absolute;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: .76rem;
+  color: var(--quantum);
+}
+.references li b { color: var(--ink); font-weight: 600; }

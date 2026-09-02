@@ -1,0 +1,35 @@
+<svg aria-label="On the left, an attempt to replicate a quantum state to three nodes is crossed out for violating the no-cloning theorem. On the right, the physically valid alternative: a single entangled state shared among the four nodes." role="img" viewbox="0 0 800 300">
+<title>The quantum no-broadcast and its alternative</title>
+<text class="sv-th" x="40" y="26">forbidden · copying the state</text>
+<rect fill="#EDEAFA" height="46" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="40" y="120"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="88" y="140">rank 0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="88" y="157">|ψ⟩</text>
+<path d="M140 143 L170 143 L170 70 L200 70" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<path d="M140 143 L200 143" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<path d="M140 143 L170 143 L170 216 L200 216" fill="none" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1.2"></path>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="50"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="75">|ψ⟩ copy</text>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="123"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="148">|ψ⟩ copy</text>
+<rect fill="#fff" height="40" rx="5" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="96" x="204" y="196"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="252" y="221">|ψ⟩ copy</text>
+<line stroke="#A8451A" stroke-width="2.4" x1="150" x2="310" y1="55" y2="235"></line>
+<line stroke="#A8451A" stroke-width="2.4" x1="310" x2="150" y1="55" y2="235"></line>
+<text class="sv-s" fill="#A8451A" text-anchor="middle" x="200" y="272">no-cloning theorem</text>
+<line stroke="#DCDFDB" stroke-width="1" x1="380" x2="380" y1="40" y2="250"></line>
+<text class="sv-th" x="430" y="26">allowed · sharing an entangled state</text>
+<rect fill="#EDEAFA" height="46" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="430" y="120"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="478" y="140">rank 0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="478" y="157">|ψ⟩</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="50"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="75">rank 1</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="123"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="148">rank 2</text>
+<rect fill="#EDEAFA" height="40" rx="5" stroke="#5B3FB8" stroke-width="1" width="96" x="594" y="196"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="642" y="221">rank 3</text>
+<path d="M530 143 L560 143 L560 70 L590 70" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<path d="M530 143 L590 143" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<path d="M530 143 L560 143 L560 216 L590 216" fill="none" stroke="#5B3FB8" stroke-width="1.6"></path>
+<circle cx="560" cy="143" fill="#5B3FB8" r="4"></circle>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="608" y="272">α|0000⟩ + β|1111⟩ · one state, four locations</text>
+</svg>

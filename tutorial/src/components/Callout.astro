@@ -1,0 +1,9 @@
+---
+/** Caja destacada: puente, aviso, nota o ejercicio. */
+interface Props { variant: 'bridge' | 'warning' | 'note' | 'exercise'; label?: string }
+const { variant, label } = Astro.props;
+---
+<aside class={`callout callout--${variant}`}>
+  {label && <span class="callout-label">{label}</span>}
+  <slot />
+</aside>

@@ -1,0 +1,15 @@
+---
+/** Inserta una figura. El SVG se toma de src/figures/<id>.<idioma>.svg */
+interface Props { id: string }
+const { id } = Astro.props;
+const lang = Astro.url.pathname.startsWith('/en') ? 'en' : 'es';
+
+const svgs = import.meta.glob<string>('../figures/*.svg', { query: '?raw', import: 'default', eager: true });
+const key = `../figures/${id}.${lang}.svg`;
+const svg = svgs[key];
+if (!svg) throw new Error(`Falta la figura ${key}. Figuras disponibles: ${Object.keys(svgs).join(', ')}`);
+---
+<figure>
+  <div class="canvas" set:html={svg} />
+  <figcaption><slot /></figcaption>
+</figure>

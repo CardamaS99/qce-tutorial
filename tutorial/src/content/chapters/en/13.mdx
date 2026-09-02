@@ -1,0 +1,68 @@
+---
+lang: en
+order: 13
+part: "Part III"
+title: "Quantum collectives"
+lead: "This is where the analogy with MPI stops being comfortable and must be broken explicitly. Copying MPI's list of collectives and prefixing a «q» does not work, because two of the fundamental four are not physically realisable."
+accent: quantum
+---
+### 13.1 The survivors: `qscatter` and `qgather`
+
+`qscatter` takes a list of qubits at the root process and distributes them, one per rank in the communicator. `qgather` performs the inverse. Both are legitimate because they **move** states rather than copying them, and their implementation is a loop of point-to-point operations: a `qscatter` is equivalent to the root running one `qsend` per destination rank.<Ref n={2} />
+
+It is worth being honest about this in the presentation: in their current form they are syntactic sugar over point-to-point, not optimised collectives with tree algorithms like MPI's. That is a real difference from the classical standard and an obvious line of future work.
+
+```python title="qscatter · the root prepares N qubits in |+⟩ and hands them out"
+def main(app_config=None, rank=0, size=4):
+    comm = QMPICommunicator(rank, size, app_config)
+    conn = comm.connection
+    ROOT = 0
+
+    qubits = []
+    if rank == ROOT:
+        qubits = [Qubit(conn) for _ in range(size)]
+        for q in qubits:
+            q.H()
+        conn.flush()
+
+    local_qs = comm.qscatter(qubits, ROOT)   # returns this rank's qubit
+    m = local_qs[0].measure()
+    conn.flush()
+    print(f"rank {rank}: measured {m}")
+```
+
+### 13.2 The one that does not exist: `Bcast`
+
+From chapter 10 it follows that there is no `qbcast` and there cannot be one. The theoretical QMPI proposal left this gap unresolved, and it is its most-cited limitation.<Ref n={4} />
+
+### 13.3 NetQMPI's answer: `expose` and `unexpose`
+
+Instead of copying, NetQMPI **distributes**. The `expose` primitive, taken from the NetQIR architectural framework,<Ref n={3} /> transforms a state residing at the root
+
+<Formula>
+  |ψ⟩ = α|0⟩<sub>R₀</sub> + β|1⟩<sub>R₀</sub>
+</Formula>
+
+into a global state spread across all participating ranks
+
+<Formula>
+  α (|0⟩<sub>R₀</sub> ⊗ … ⊗ |0⟩<sub>Rₙ</sub>) + β (|1⟩<sub>R₀</sub> ⊗ … ⊗ |1⟩<sub>Rₙ</sub>)
+</Formula>
+
+The implementation entangles the root's qubit with a pre-shared GHZ state across all nodes, followed by local measurements and classical corrections.<Ref n={2} /> The result is not a copy: it is a *single* state whose degrees of freedom are distributed. Collective controlled operations can be run on it, which is the use it was designed for.
+
+Hence the counterpart: because the operation alters the accessibility scope of the qubits, releasing the resource when finished is **mandatory**. `unexpose` returns the system to a consistent state in which the qubits are private to their owner again. This is not politeness: it is resource release, and omitting it leaves the communicator inconsistent. The right analogy is not `Bcast` but the acquire/release pair of a lock.
+
+<Figure id="expose-lifecycle">
+  The full cycle. Between steps 2 and 3 is where the algorithm does its work, applying controlled operations on the distributed quantum information. Omitting `unexpose` is the quantum equivalent of a memory leak, with the aggravating factor that the leaked resource also degrades through decoherence.
+</Figure>
+
+### 13.4 Correspondence table
+
+| MPI | NetQMPI | Comment |
+| --- | --- | --- |
+| `Send` / `Recv` | `qsend` / `qrecv` | Direct correspondence. Internally teleportation, and the original state is destroyed. |
+| `Scatter` / `Gather` | `qscatter` / `qgather` | Direct correspondence. Implemented as point-to-point loops. |
+| `Bcast` | — | **Does not exist.** Forbidden by the no-cloning theorem. Its functional place is taken by `expose`, with different semantics: it spreads rather than replicates. |
+| `Reduce` / `Allreduce` | — | Would require measuring to obtain combinable values, destroying the superposition. Reducing classical post-measurement results is possible, but that is already classical MPI. |
+| `Barrier` | `flush()` | Not exact equivalents: `flush` synchronises the quantum instruction stream, it is not a process barrier. |

@@ -1,0 +1,40 @@
+---
+import { getCollection, render } from 'astro:content';
+import Book from '../../layouts/Book.astro';
+import Toc from '../../components/Toc.astro';
+import References from '../../components/References.astro';
+import Figure from '../../components/Figure.astro';
+import Bridge from '../../components/Bridge.astro';
+import Warning from '../../components/Warning.astro';
+import Note from '../../components/Note.astro';
+import Exercise from '../../components/Exercise.astro';
+import Formula from '../../components/Formula.astro';
+import Ref from '../../components/Ref.astro';
+import i18n from '../../data/i18n.json';
+
+const lang = 'es' as const;
+const strings = i18n[lang];
+const components = { Figure, Bridge, Warning, Note, Exercise, Formula, Ref };
+
+const entries = (await getCollection('chapters', (c) => c.data.lang === lang))
+  .sort((a, b) => a.data.order - b.data.order);
+
+const rendered = await Promise.all(
+  entries.map(async (e) => ({ data: e.data, slug: `c${e.data.order}`, Content: (await render(e)).Content }))
+);
+const tocItems = rendered.map((r) => ({
+  slug: r.slug, order: r.data.order, title: r.data.title, part: r.data.part, accent: r.data.accent,
+}));
+---
+<Book lang={lang} strings={strings} other="/en/">
+  <Toc slot="toc" heading={strings.toc} refsLabel={strings.references} chapters={tocItems} />
+  {rendered.map(({ data, slug, Content }) => (
+    <section class="chapter" id={slug} data-accent={data.accent}>
+      <span class="chapter-num">{data.part} · {strings.chapter} {data.order}</span>
+      <h2>{data.title}</h2>
+      <p class="lead">{data.lead}</p>
+      <Content components={components} />
+    </section>
+  ))}
+  <References lang={lang} heading={strings.references} />
+</Book>

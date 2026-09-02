@@ -1,0 +1,35 @@
+<svg aria-label="A la izquierda, el tiempo de transferencia como recta con ordenada en el origen alfa y pendiente beta. A la derecha, el ancho de banda efectivo creciendo con el tamaño de mensaje y saturando en el asintótico, con el punto de media potencia marcado." role="img" viewbox="0 0 800 342">
+<title>Modelo de coste de comunicación</title>
+<text class="sv-th" x="70" y="26">coste de un mensaje</text>
+<text class="sv-s" x="70" y="43">T(n) = α + β·n</text>
+<rect fill="#FAEDE6" height="230" width="72" x="70" y="50"></rect>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="70" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="70" x2="390" y1="280" y2="280"></line>
+<line stroke="#12695C" stroke-width="2.4" x1="70" x2="380" y1="240" y2="70"></line>
+<line stroke="#C3C7C2" stroke-dasharray="3 3" stroke-width="1" x1="70" x2="380" y1="240" y2="240"></line>
+<line stroke="#A8451A" stroke-width="1.4" x1="58" x2="58" y1="280" y2="240"></line>
+<path d="M54 244l4-6 4 6" fill="#A8451A"></path><path d="M54 276l4 6 4-6" fill="#A8451A"></path>
+<text class="sv-m" fill="#A8451A" text-anchor="end" x="46" y="264">α</text>
+<line stroke="#12695C" stroke-dasharray="3 3" stroke-width="1" x1="250" x2="310" y1="141" y2="141"></line>
+<line stroke="#12695C" stroke-dasharray="3 3" stroke-width="1" x1="310" x2="310" y1="141" y2="108"></line>
+<text class="sv-m" fill="#12695C" x="316" y="130">pendiente β</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="106" y="300">dominado</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="106" y="313">por latencia</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="290" y="300">dominado por ancho de banda</text>
+<text class="sv-s" text-anchor="middle" x="230" y="332">tamaño del mensaje n</text>
+<text class="sv-th" x="460" y="26">ancho de banda efectivo</text>
+<text class="sv-s" x="460" y="43">n / T(n), normalizado a 1/β</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="460" y1="50" y2="280"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="460" x2="745" y1="280" y2="280"></line>
+<line stroke="#A8451A" stroke-dasharray="5 4" stroke-width="1.2" x1="460" x2="735" y1="50" y2="50"></line>
+<text class="sv-m" fill="#A8451A" x="740" y="54">1/β</text>
+<line stroke="#EDEEEB" stroke-width="1" x1="460" x2="595" y1="165" y2="165"></line>
+<text class="sv-m" text-anchor="end" x="454" y="169">50%</text>
+<text class="sv-m" text-anchor="end" x="454" y="284">0</text>
+<line stroke="#5B3FB8" stroke-dasharray="4 3" stroke-width="1.2" x1="595" x2="595" y1="165" y2="280"></line>
+<circle cx="595" cy="165" fill="#5B3FB8" r="4"></circle>
+<text class="sv-m" fill="#5B3FB8" x="601" y="197">n½ = α/β</text>
+<polyline fill="none" points="460,279.8 505,277.7 550,259.1 595,165 640,70.9 685,52.3 730,50.2" stroke="#12695C" stroke-width="2.4"></polyline>
+<text class="sv-m" text-anchor="middle" x="460" y="298">1 B</text><text class="sv-m" text-anchor="middle" x="550" y="298">100 B</text><text class="sv-m" text-anchor="middle" x="640" y="298">10 kB</text><text class="sv-m" text-anchor="middle" x="730" y="298">1 MB</text>
+<text class="sv-s" text-anchor="middle" x="595" y="332">tamaño del mensaje · escala log₁₀</text>
+</svg>

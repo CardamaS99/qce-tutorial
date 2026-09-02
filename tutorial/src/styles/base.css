@@ -1,0 +1,40 @@
+*, *::before, *::after { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 18px;
+  line-height: 1.72;
+  font-variant-numeric: oldstyle-nums;
+}
+@media (max-width: 900px) { body { font-size: 17px; } }
+
+h1, h2, h3, h4 {
+  font-family: var(--font-display);
+  font-weight: 500;
+  letter-spacing: -0.015em;
+  line-height: 1.18;
+}
+p { margin: 0 0 1.15rem; max-width: var(--measure); }
+ul, ol { max-width: 68ch; padding-left: 1.3rem; margin: 0 0 1.2rem; }
+li { margin-bottom: .55rem; }
+strong { font-weight: 600; }
+a {
+  color: var(--classical);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+}
+code, pre { font-family: var(--font-mono); font-variant-numeric: lining-nums tabular-nums; }
+:not(pre) > code {
+  font-size: .86em;
+  background: var(--paper-2);
+  padding: .12em .38em;
+  border-radius: 3px;
+  color: var(--ink);
+}
+:focus-visible { outline: 2px solid var(--quantum); outline-offset: 2px; }

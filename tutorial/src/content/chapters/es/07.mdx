@@ -1,0 +1,38 @@
+---
+lang: es
+order: 7
+part: "Parte II"
+title: "Comunicación punto a punto"
+lead: "La operación elemental de MPI es el envío de un mensaje de un rank a otro. Todo lo demás —incluidas las colectivas— se puede construir sobre ella."
+accent: classical
+---
+### 7.1 Send y Recv
+
+Un envío especifica el destino, y una recepción especifica el origen. Ambos llevan una *etiqueta* (`tag`) que permite distinguir mensajes distintos entre la misma pareja de procesos, y ambos ocurren dentro de un communicator. Una recepción sólo casa con un envío si coinciden origen, destino, etiqueta y communicator.
+
+```python title="Punto a punto elemental"
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+
+if rank == 0:
+    datos = {"iteracion": 7, "residuo": 1e-6}
+    comm.send(datos, dest=1, tag=11)
+elif rank == 1:
+    datos = comm.recv(source=0, tag=11)
+    print("recibido:", datos)
+```
+
+### 7.2 Bloqueante frente a no bloqueante
+
+Las operaciones bloqueantes (`send`, `recv`) no retornan hasta que es seguro reutilizar el búfer. Las no bloqueantes (`Isend`, `Irecv`) retornan inmediatamente devolviendo un objeto *request*, y el programa debe esperar más tarde con `Wait` o comprobar con `Test`. Las no bloqueantes permiten solapar comunicación y cálculo —empezar a enviar, hacer trabajo útil mientras el mensaje viaja, y esperar sólo cuando se necesita el dato—, que es la técnica estándar para ocultar la latencia α del capítulo anterior.
+
+### 7.3 Interbloqueo: el error canónico
+
+Considérese el intercambio de fronteras entre dos vecinos, escrito de la forma aparentemente más natural: cada proceso envía primero y recibe después. Si la implementación de MPI no dispone de espacio de *buffering* suficiente —y con mensajes grandes no lo tendrá—, `send` bloquea hasta que el destinatario ejecute su `recv`. Pero el destinatario está bloqueado en su propio `send`, esperando lo mismo. Ninguno de los dos llegará jamás a su `recv`.
+
+Lo pernicioso de este fallo es que puede funcionar en pruebas y colgarse en producción: con mensajes pequeños la implementación los almacena en un búfer interno y el `send` retorna, ocultando el error. El programa es incorrecto en ambos casos; simplemente no se manifiesta hasta que el tamaño del problema crece.
+
+<Figure id="deadlock">
+  Tres soluciones válidas al mismo problema, en orden de preferencia: usar `Sendrecv`, que delega en la implementación la ordenación segura; usar comunicación no bloqueante con `Isend`/`Irecv` seguida de `Waitall`; o alternar manualmente el orden según la paridad del rank, como muestra el panel derecho. La tercera funciona pero es frágil y no generaliza bien a topologías complejas.
+</Figure>

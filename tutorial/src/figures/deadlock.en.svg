@@ -1,0 +1,44 @@
+<svg aria-label="On the left, two processes that both send first end up blocked waiting for each other. On the right, alternating the order of send and receive lets both complete." role="img" viewbox="0 0 800 296">
+<title>Deadlock in a bidirectional exchange and its fix</title>
+<text class="sv-th" x="40" y="26">wrong · both send first</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="70" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="125" y="65">rank 0</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="245" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="300" y="65">rank 1</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="125" x2="125" y1="74" y2="248"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="300" x2="300" y1="74" y2="248"></line>
+<rect fill="#fff" height="30" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="70" y="88"></rect>
+<text class="sv-m" text-anchor="middle" x="125" y="108">send(→1)</text>
+<rect fill="#fff" height="30" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="245" y="88"></rect>
+<text class="sv-m" text-anchor="middle" x="300" y="108">send(→0)</text>
+<rect fill="#FAEDE6" height="76" rx="4" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="110" x="70" y="130"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="125" y="165">blocked</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="125" y="182">waiting</text>
+<rect fill="#FAEDE6" height="76" rx="4" stroke="#A8451A" stroke-dasharray="4 3" stroke-width="1" width="110" x="245" y="130"></rect>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="300" y="165">blocked</text>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="300" y="182">waiting</text>
+<line stroke="#A8451A" stroke-dasharray="3 3" stroke-width="1" x1="185" x2="240" y1="152" y2="152"></line>
+<line stroke="#A8451A" stroke-dasharray="3 3" stroke-width="1" x1="185" x2="240" y1="184" y2="184"></line>
+<text class="sv-m" fill="#A8451A" text-anchor="middle" x="212" y="146">✕</text>
+<text class="sv-s" fill="#A8451A" text-anchor="middle" x="212" y="234">no recv is ever reached</text>
+<text class="sv-s" text-anchor="middle" x="212" y="272">may pass the tests with small messages</text>
+<text class="sv-th" x="420" y="26">correct · the order is alternated</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="450" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="505" y="65">rank 0</text>
+<rect fill="#F2F3F1" height="28" rx="4" stroke="#3B4754" stroke-width="0.9" width="110" x="625" y="46"></rect>
+<text class="sv-t" text-anchor="middle" x="680" y="65">rank 1</text>
+<line stroke="#C3C7C2" stroke-width="1" x1="505" x2="505" y1="74" y2="248"></line>
+<line stroke="#C3C7C2" stroke-width="1" x1="680" x2="680" y1="74" y2="248"></line>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="450" y="88"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="505" y="108">send(→1)</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="625" y="88"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="680" y="108">recv(←0)</text>
+<line stroke="#12695C" stroke-width="1.4" x1="564" x2="620" y1="103" y2="103"></line><path d="M616 99l6 4-6 4" fill="#12695C"></path>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="450" y="150"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="505" y="170">recv(←1)</text>
+<rect fill="#E4F1EE" height="30" rx="4" stroke="#12695C" stroke-width="0.9" width="110" x="625" y="150"></rect>
+<text class="sv-m" fill="#0C3F38" text-anchor="middle" x="680" y="170">send(→0)</text>
+<line stroke="#12695C" stroke-width="1.4" x1="620" x2="564" y1="165" y2="165"></line><path d="M568 161l-6 4 6 4" fill="#12695C"></path>
+<text class="sv-s" fill="#12695C" text-anchor="middle" x="592" y="234">both make progress</text>
+<text class="sv-s" text-anchor="middle" x="592" y="272">or, better, a single call to Sendrecv</text>
+</svg>

@@ -1,0 +1,45 @@
+---
+lang: es
+order: 8
+part: "Parte II"
+title: "Operaciones colectivas"
+lead: "Una colectiva es una operación en la que participan *todos* los procesos de un communicator. Todos deben invocarla; si uno la omite, el programa se cuelga. A cambio, expresan patrones de comunicación habituales en una sola llamada y permiten a la implementación usar algoritmos óptimos —árboles binomiales, algoritmos en anillo— en lugar del bucle ingenuo que escribiría el usuario."
+accent: classical
+---
+### 8.1 Las cuatro fundamentales
+
+<Figure id="collectives">
+  Cada fila es un rank y cada celda una posición de su búfer. `Bcast` **copia**; `Scatter` y `Gather` **mueven**; `Reduce` **combina** con un operador asociativo (suma, máximo, producto…). Esta distinción entre copiar, mover y combinar es la que va a determinar qué colectivas sobreviven a la transición al dominio cuántico y cuáles no.
+</Figure>
+
+Variantes que conviene conocer: `Allgather` deja el resultado de un `Gather` en todos los procesos, no sólo en el root; `Allreduce` hace lo propio con `Reduce` y es probablemente la colectiva más usada del estándar; `Barrier` sincroniza sin transferir datos; y `Scatterv`/`Gatherv` admiten porciones de tamaño desigual, necesarias cuando el número de elementos no es divisible entre el número de procesos.
+
+<Note label="La trampa clásica de mpi4py">
+  La biblioteca ofrece cada operación en dos formas. Las de
+  
+  (
+  
+  ,
+  
+  ,
+  
+  ,
+  
+  ) aceptan cualquier objeto Python y lo serializan con
+  
+  : son cómodas y lentas. Las de
+  
+  (
+  
+  ,
+  
+  ,
+  
+  ,
+  
+  ) trabajan directamente sobre búferes que exponen el protocolo de memoria, típicamente arrays de NumPy, y no copian: son las que hay que usar en código de rendimiento. Confundirlas es el error número uno de quien empieza, porque el programa funciona igual y rinde diez veces peor.
+</Note>
+
+<Bridge label="Puente clásico → cuántico">
+  Reténgase la clasificación de la figura 9, porque es la que estructura el capítulo 13. De las cuatro operaciones, **sólo las de mover sobreviven intactas** al dominio cuántico. `Scatter` y `Gather` tienen análogo directo, porque teletransportar un estado es moverlo, no copiarlo. `Bcast` es *físicamente imposible*: replicar un estado cuántico desconocido viola el teorema de no clonación. Y `Reduce` exige aplicar un operador y quedarse con un resultado, lo que en el caso cuántico obliga a medir y por tanto a destruir la superposición.
+</Bridge>

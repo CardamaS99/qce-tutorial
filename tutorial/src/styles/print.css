@@ -1,0 +1,13 @@
+@media print {
+  .toc, .lang-switch { display: none; }
+  .shell { display: block; padding: 0; max-width: none; }
+  .masthead { background: none; color: var(--ink); border-bottom: 2px solid var(--ink); padding: 0 0 1.5rem; }
+  .masthead .eyebrow, .masthead .dek, .meta div { color: var(--ink-2); }
+  .meta strong { color: var(--ink); }
+  .site-footer { background: none; color: var(--ink-2); padding: 1.5rem 0 0; border-top: 1px solid var(--rule); }
+  figure, .chapter, .callout, pre { break-inside: avoid; }
+  .chapter { break-before: page; }
+  .chapter:first-of-type { break-before: auto; }
+  a { color: var(--ink); }
+  body { font-size: 11pt; }
+}

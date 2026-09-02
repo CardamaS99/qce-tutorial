@@ -1,0 +1,28 @@
+---
+interface Props {
+  heading: string;
+  refsLabel: string;
+  chapters: { slug: string; order: number; title: string; part: string; accent: string }[];
+}
+const { heading, refsLabel, chapters } = Astro.props;
+
+// Agrupa por parte conservando el orden de aparición
+const groups: { part: string; accent: string; items: typeof chapters }[] = [];
+for (const c of chapters) {
+  const last = groups.at(-1);
+  if (last && last.part === c.part) last.items.push(c);
+  else groups.push({ part: c.part, accent: c.accent, items: [c] });
+}
+---
+<nav class="toc" aria-label={heading}>
+  <p class="toc-head">{heading}</p>
+  {groups.map((g) => (
+    <>
+      <div class="toc-group" data-accent={g.accent}>{g.part}</div>
+      {g.items.map((c) => (
+        <a href={`#${c.slug}`}><b>{c.order}</b>{c.title}</a>
+      ))}
+    </>
+  ))}
+  <a href="#refs"><b>§</b>{refsLabel}</a>
+</nav>

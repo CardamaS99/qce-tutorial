@@ -1,0 +1,42 @@
+<svg aria-label="Pila de capas software: aplicación del usuario sobre NetQMPI, sobre el SDK de NetQASM, sobre el ISA de NetQASM, y por debajo los backends SquidASM, SimulaQron y hardware futuro. A la derecha, CUNQA como emulador independiente para entornos HPC." role="img" viewbox="0 0 800 392">
+<title>La pila software de NetQMPI y la posición de CUNQA</title>
+<rect fill="#F7F8F6" height="46" rx="6" stroke="#C3C7C2" stroke-width="1" width="480" x="40" y="34"></rect>
+<text class="sv-th" text-anchor="middle" x="280" y="55">aplicación del usuario</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="71">un único fichero, paradigma SPMD</text>
+<rect fill="#EDEAFA" height="60" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="480" x="40" y="90"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="280" y="112">NetQMPI</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="280" y="129">QMPICommunicator · qsend / qrecv</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="280" y="144">qscatter / qgather · expose / unexpose</text>
+<rect fill="#F7F8F6" height="50" rx="6" stroke="#C3C7C2" stroke-width="1" width="480" x="40" y="160"></rect>
+<text class="sv-th" text-anchor="middle" x="280" y="181">NetQASM SDK</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="198">EPRSocket · NetQASMConnection · flush()</text>
+<rect fill="#141C24" height="42" rx="6" width="480" x="40" y="220"></rect>
+<text class="sv-th" fill="#E4E8E4" text-anchor="middle" x="280" y="240">NetQASM ISA</text>
+<text class="sv-m" fill="#8B979F" text-anchor="middle" x="280" y="255">conjunto de instrucciones independiente de plataforma</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="280" x2="280" y1="262" y2="284"></line><path d="M276 279l4 6 4-6" fill="#6B7683"></path>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-width="1" width="152" x="40" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="116" y="311">SquidASM</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="116" y="328">sobre NetSquid</text>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-width="1" width="152" x="204" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="280" y="311">SimulaQron</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="280" y="328">un proceso por nodo</text>
+<rect fill="#fff" height="56" rx="6" stroke="#C3C7C2" stroke-dasharray="4 3" stroke-width="1" width="152" x="368" y="288"></rect>
+<text class="sv-t" text-anchor="middle" x="444" y="311">hardware</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="444" y="328">futuro, si soporta el ISA</text>
+<rect fill="#E4F1EE" height="254" rx="6" stroke="#12695C" stroke-dasharray="6 4" stroke-width="1.4" width="200" x="560" y="90"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="660" y="116">CUNQA</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="660" y="134">emulador DQC para HPC</text>
+<line stroke="#A8C4BD" stroke-width="1" x1="580" x2="740" y1="148" y2="148"></line>
+<text class="sv-m" fill="#12695C" x="580" y="170">· QPU emuladas como</text>
+<text class="sv-m" fill="#12695C" x="590" y="185">trabajos del planificador</text>
+<text class="sv-m" fill="#12695C" x="580" y="209">· tres modelos:</text>
+<text class="sv-m" fill="#12695C" x="590" y="224">sin comunicación,</text>
+<text class="sv-m" fill="#12695C" x="590" y="239">clásica, cuántica</text>
+<text class="sv-m" fill="#12695C" x="580" y="263">· API propia de gestión</text>
+<text class="sv-m" fill="#12695C" x="590" y="278">y despliegue</text>
+<text class="sv-m" fill="#12695C" x="580" y="302">· pensado para el</text>
+<text class="sv-m" fill="#12695C" x="590" y="317">supercomputador</text>
+<line stroke="#6B7683" stroke-dasharray="4 3" stroke-width="1.2" x1="524" x2="556" y1="120" y2="120"></line>
+<path d="M552 116l6 4-6 4" fill="#6B7683"></path><path d="M528 116l-6 4 6 4" fill="#6B7683"></path>
+<text class="sv-s" text-anchor="middle" x="400" y="374">el punto de integración es el objeto del tutorial · confirmar la ruta exacta antes de la sesión</text>
+</svg>

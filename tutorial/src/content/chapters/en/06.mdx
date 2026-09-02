@@ -1,0 +1,52 @@
+---
+lang: en
+order: 6
+part: "Part II"
+title: "MPI: SPMD, rank and communicator"
+lead: "MPI is not a library: it is an interface specification, maintained by the MPI Forum, with multiple independent implementations — Open MPI, MPICH, and vendor variants.<Ref n={15} /> That it is a standard rather than a product is why code written in 1996 still compiles and runs on machines that did not exist then. In Python, access to the standard goes through `mpi4py`.<Ref n={21} />"
+accent: classical
+---
+### 6.1 The SPMD paradigm
+
+The idea holding up the whole edifice is called **Single Program, Multiple Data**. You write *one* source file. The launcher starts N copies of that same program as independent processes and injects a distinct identifier into each. The program reads that identifier and decides which branch of its own logic to execute.
+
+It is worth underlining why this is a design choice and not an obvious one. The alternative — MPMD, writing one program per role — seems more natural at first and produces unreadable code the moment there are more than three participants: going from three to four nodes means writing a new file *and* modifying the existing ones. SPMD decouples the code from the number of processes. That decoupling is, literally, NetQMPI's central argument, which is why it is worth insisting on here.
+
+<Figure id="spmd">
+  One file; N processes. The value of `rank` is the only thing that differs between them, and on that single difference the program's entire asymmetry of roles is built. Going from three to thirty-two processes touches not one line of source: only the launcher argument.
+</Figure>
+
+### 6.2 Rank: logical identity
+
+The **rank** is an integer in [0, size−1] assigned to each process within a communicator. It is not a node number, nor an operating-system process id, nor a network address. It is a logical label, and that is precisely its virtue: the program reasons about ranks and delegates the correspondence with physical resources to the runtime environment.
+
+By universal convention, rank 0 acts as coordinator when one is needed — reading files, distributing work, collecting results. It is a convention, not a rule of the standard; in MPI, rank 0 holds no privilege.
+
+### 6.3 Communicator: the communication context
+
+A **communicator** encapsulates two things: a *group* of processes and an isolated communication *context*. Every message is sent within a communicator, and messages from different contexts never get confused with each other — a property that makes it possible to write safe parallel libraries without fear of colliding with the messages of the program using them.
+
+At start-up there is `MPI_COMM_WORLD`, containing every launched process. Sub-communicators can be derived to group processes by criteria of your own.
+
+The conceptual reading that matters for what follows: **the communicator is a virtualisation layer**. It presents the programmer with a set of participants numbered 0 to N−1 on top of what is in reality a heterogeneous set of physical resources connected by a specific topology. The program is written against the logical view; the mapping is resolved by the system.
+
+<Figure id="communicator">
+  The dotted lines cross deliberately. Two ranks being consecutive does not mean they sit on the same node or that communication between them is cheap: the mapping is decided by the scheduler according to its allocation policy. This separation between logical identity and physical resource is identical to the one NetQMPI's `QMPICommunicator` introduces when associating ranks with QPUs.<Ref n={2} />
+</Figure>
+
+```python title="Minimal skeleton · mpi4py"
+from mpi4py import MPI
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()      # who am I
+size = comm.Get_size()      # how many are we
+name = MPI.Get_processor_name()
+
+print(f"I am rank {rank} of {size}, on {name}")
+```
+
+Run it with `mpirun -n 4 python hello.py`. In `mpi4py` there is no need to call `Init` or `Finalize`: importing the module initialises the environment and finalisation is registered automatically when the interpreter exits.
+
+<Note label="The detail that always surprises">
+  The output from the four processes comes out unordered, and the order changes between runs. This is not a bug: they are four independent processes writing to the same terminal with no synchronisation between them. MPI does not order standard output. If order matters, you must force it explicitly by collecting the messages at rank 0.
+</Note>

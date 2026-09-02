@@ -1,0 +1,38 @@
+---
+lang: en
+order: 7
+part: "Part II"
+title: "Point-to-point communication"
+lead: "MPI's elementary operation is sending a message from one rank to another. Everything else — collectives included — can be built on top of it."
+accent: classical
+---
+### 7.1 Send and Recv
+
+A send specifies the destination, and a receive specifies the source. Both carry a *tag* that distinguishes different messages between the same pair of processes, and both occur within a communicator. A receive matches a send only if source, destination, tag and communicator all agree.
+
+```python title="Elementary point-to-point"
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+
+if rank == 0:
+    data = {"iteration": 7, "residual": 1e-6}
+    comm.send(data, dest=1, tag=11)
+elif rank == 1:
+    data = comm.recv(source=0, tag=11)
+    print("received:", data)
+```
+
+### 7.2 Blocking versus non-blocking
+
+Blocking operations (`send`, `recv`) do not return until it is safe to reuse the buffer. Non-blocking ones (`Isend`, `Irecv`) return immediately with a request object, and the program must later wait with `Wait` or poll with `Test`. Non-blocking calls allow overlapping communication with computation — start sending, do useful work while the message travels, and wait only when the data is needed — which is the standard technique for hiding the α latency from the previous chapter.
+
+### 7.3 Deadlock: the canonical error
+
+Consider a boundary exchange between two neighbours, written in the apparently most natural way: each process sends first and receives afterwards. If the MPI implementation lacks sufficient buffering — and with large messages it will — `send` blocks until the recipient executes its `recv`. But the recipient is blocked in its own `send`, waiting for the same thing. Neither will ever reach its `recv`.
+
+What makes this failure pernicious is that it can pass in testing and hang in production: with small messages the implementation buffers them internally and `send` returns, hiding the error. The program is incorrect either way; it simply does not manifest until the problem size grows.
+
+<Figure id="deadlock">
+  Three valid solutions to the same problem, in order of preference: use `Sendrecv`, which delegates safe ordering to the implementation; use non-blocking communication with `Isend`/`Irecv` followed by `Waitall`; or manually alternate the order by rank parity, as the right-hand panel shows. The third works but is fragile and does not generalise well to complex topologies.
+</Figure>

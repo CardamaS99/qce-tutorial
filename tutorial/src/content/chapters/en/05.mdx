@@ -1,0 +1,48 @@
+---
+lang: en
+order: 5
+part: "Part I"
+title: "What communication costs"
+lead: "This is the chapter to understand properly, because it is the only one in Part I that carries over to the quantum domain almost unmodified. Everything else adapts; this applies."
+accent: classical
+---
+### 5.1 The latency–bandwidth model
+
+The cost of sending an *n*-byte message between two processes is modelled, to first order, with two parameters:
+
+<Formula>
+  T(n) = α + β·n
+</Formula>
+
+where **α** is latency — the fixed cost of initiating the transfer, independent of size — and **β** is the inverse of bandwidth, the marginal cost per byte. On a modern high-performance network, α sits in the range of one to a few microseconds and 1/β in the tens or hundreds of gigabits per second.
+
+From this model comes the most useful quantity in the chapter: the **half-power message size**, *n<sub>½</sub>* = α/β. It is the message size at which the fixed cost equals the variable cost, and therefore the point where you reach half the asymptotic bandwidth. Below *n<sub>½</sub>* you are paying mostly latency and the network is essentially idle; above it, you start to exploit real bandwidth.
+
+The design consequence is blunt, and counterintuitive to anyone coming from serial programming: **sending a thousand one-kilobyte messages is dramatically worse than sending one one-megabyte message**, even though the total volume is identical. Message aggregation is almost always the first optimisation to apply to a distributed code that performs badly.
+
+<Figure id="communication-cost">
+  The same model seen two ways. On the left, the intercept α is the toll paid per message sent, whatever its size. On the right, the consequence: below the half-power size the network delivers a negligible fraction of its nominal capacity. Horizontal-axis values are illustrative; the actual *n<sub>½</sub>* is measured empirically with a ping-pong test.
+</Figure>
+
+### 5.2 Granularity and the communication-to-computation ratio
+
+**Granularity** is the amount of work a process does between two consecutive communications. Fine grain means a lot of communication and little computation between messages; coarse grain, the reverse.
+
+The metric governing scaling is the ratio of communication time to computation time. As N grows with the problem fixed, work per process falls while the number of messages usually rises, so this ratio inevitably worsens. That is the physical mechanism behind Amdahl's ceiling: it is not that some mystical fragment of sequential code exists, it is that communication grows until it eats the benefit.
+
+### 5.3 Classic pathologies
+
+Four failures that appear systematically in distributed code and are worth naming before writing the first line of MPI:
+
+| Pathology | What happens and how to avoid it |
+| --- | --- |
+| **Deadlock** | Two processes each wait for a message the other has not yet sent. Avoided by ordering the operations, using combined primitives, or switching to non-blocking communication. |
+| **Load imbalance** | One process takes longer than the rest and everyone waits at the next barrier. Total time is set by the slowest, not the average. |
+| **Over-synchronisation** | Unnecessary global barriers that effectively serialise the program. Every barrier is a serial fraction handed to Amdahl for free. |
+| **Grain too fine** | Many small messages, all below *n<sub>½</sub>*. The network runs at 5 % of nominal capacity and the performance profile looks inexplicable. |
+
+<Bridge label="Classical → quantum bridge">
+  The α + βn model translates directly. In a quantum network, α is the time to generate and confirm an EPR pair between two nodes, plus the round trip of the classical correction bits. That α is enormous compared with the time of a local gate.
+  
+  But there are two asymmetries with no classical analogue, worth stating explicitly. First: quantum «bandwidth» is not merely finite — the resource is **consumed**; a used EPR pair is gone. Second: there is a deadline. A delayed classical message is still correct when it arrives; an entangled state that waits too long decoheres and stops being useful. Quantum communication has, on top of a cost, an expiry date.
+</Bridge>

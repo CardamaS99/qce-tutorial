@@ -1,0 +1,5 @@
+---
+import Callout from './Callout.astro';
+const { label } = Astro.props;
+---
+<Callout variant="warning" label={label}><slot /></Callout>

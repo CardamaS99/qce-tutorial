@@ -1,0 +1,22 @@
+---
+lang: es
+order: 15
+part: "Parte III"
+title: "Cierre y qué queda fuera"
+lead: ""
+accent: quantum
+---
+El recorrido completo, en una frase: los límites físicos obligan a replicar unidades; replicar unidades obliga a comunicar; comunicar es caro; MPI estandarizó cómo se programa eso en el mundo clásico mediante SPMD, rank y communicator; y NetQMPI traslada esas tres abstracciones al dominio cuántico, adaptando las primitivas allí donde la física prohíbe la traducción literal.
+
+### 15.1 Lo que este bloque no cubre
+
+- **Fidelidad y ruido.** Todo el tratamiento anterior ha sido funcional. El coste real de una operación remota depende de la fidelidad del par EPR y de la tasa de decoherencia, y NetSquid existe precisamente para modelar eso.<Ref n={7} />
+- **Particionado de circuitos.** Dado un circuito monolítico y N QPU, ¿cómo se reparte minimizando puertas remotas? Es un problema de optimización combinatoria y una línea de investigación activa.<Ref n={24} />
+- **Topología real de red.** Se ha asumido conectividad completa. Una red cuántica realista tiene encaminadores, repetidores e intercambio de entrelazamiento, y el communicator oculta —por ahora— esa estructura.<Ref n={13} />
+- **Comparativa de emuladores.** Existe trabajo específico de evaluación comparativa de emuladores de computación cuántica distribuida que conviene consultar antes de elegir herramienta.<Ref n={22} />
+
+### 15.2 Enlace con la segunda mitad del tutorial
+
+Los tres modelos de comunicación de CUNQA —sin comunicación, comunicación clásica y comunicación cuántica— corresponden ordenadamente a las tres situaciones descritas en la parte I: el caso *embarrassingly parallel*, el intercambio de resultados escalares, y el movimiento de estado. La estimación de fase cuántica, que es el algoritmo con el que se demuestra el emulador en la literatura,<Ref n={1} /> ejercita los tres.
+
+Si el asistente se lleva una sola idea de esta hora y media, que sea esta: **la computación cuántica distribuida es computación distribuida**, con un modelo de coste de comunicación más severo y una prohibición física —el no clonado— que elimina una de las cuatro colectivas fundamentales. Todo lo demás es transferible.
