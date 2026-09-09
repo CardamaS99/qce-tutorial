@@ -1,0 +1,43 @@
+# Minimal single-node config. __NODENAME__ and __NODELINE__ are substituted at
+# startup by entrypoint.sh: Docker assigns a random hostname per run, and the
+# CPU topology depends on the host.
+
+ClusterName=tutorial
+SlurmctldHost=__NODENAME__
+
+AuthType=auth/munge
+
+# No cgroups at all: these two keep jobs unconfined, and cgroup.conf sets
+# CgroupPlugin=disabled so slurmd never touches /sys/fs/cgroup either.
+ProctrackType=proctrack/linuxproc
+TaskPlugin=task/none
+SelectType=select/linear
+
+SlurmctldPidFile=/run/slurmctld.pid
+SlurmdPidFile=/run/slurmd.pid
+SlurmdSpoolDir=/var/spool/slurmd
+StateSaveLocation=/var/spool/slurmctld
+SlurmUser=slurm
+SlurmdUser=root
+
+ReturnToService=2
+InactiveLimit=0
+KillWait=30
+MinJobAge=300
+SlurmctldTimeout=120
+SlurmdTimeout=300
+Waittime=0
+SchedulerType=sched/backfill
+MailProg=/bin/true
+
+# Logging
+SlurmctldDebug=info
+SlurmctldLogFile=/var/log/slurm/slurmctld.log
+SlurmdDebug=info
+SlurmdLogFile=/var/log/slurm/slurmd.log
+
+# __NODELINE__ comes from `slurmd -C`, so it always matches the hardware the
+# container sees and slurmd.log stays free of "Node configuration differs from
+# hardware".
+__NODELINE__ State=UNKNOWN
+PartitionName=debug Nodes=__NODENAME__ Default=YES MaxTime=INFINITE State=UP
