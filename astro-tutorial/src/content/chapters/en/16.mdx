@@ -1,0 +1,65 @@
+---
+lang: en
+order: 16
+part: "Part IV"
+title: "What CUNQA emulates"
+lead: "Part III finished with an interface and nothing underneath it. CUNQA is what goes underneath — or rather, the emulated infrastructure that stands in for a machine nobody can yet buy. Knowing exactly what it replicates faithfully and what it merely reproduces behaviourally is the difference between reading its output correctly and over-reading it."
+accent: quantum
+---
+### 16.1 Emulation is not simulation
+
+The two words are used interchangeably and they are not the same thing. **Emulation** aims to replicate a system faithfully; **simulation** aims to reproduce its behaviour. In classical computing, emulating a device means translating the instructions of the emulated machine into native instructions of the host. That route is closed for a quantum computer: there are no classical instructions to translate a quantum one into, because the computing paradigms do not share a vocabulary. What is left is the approach Willsch set out — have the classical counterpart solve the physical equations governing the quantum system, so its behaviour is reproduced rather than its instructions translated.<Ref n={26} />
+
+CUNQA applies both notions, at different heights of the stack.<Ref n={1} />
+
+- **At the architectural level it emulates.** QPUs are first-class components, deployed and queried through the same interfaces a physical installation would expose. Their integration into the HPC system is also designed to mimic faithfully how an actual QPU would be integrated.
+- **At the device level it simulates.** Third-party libraries reproduce the outcome of the quantum tasks; the channels reproduce the effect of the links on what they carry.
+
+In one sentence: *CUNQA emulates DQC infrastructures whose QPUs and communication channels are simulated in order to execute the quantum tasks.*
+
+<Figure id="cunqa-layers">
+  The split is what licenses the word «emulator» even when every channel is ideal. What is replicated is the *structure*: processes that own their resources, are scheduled, queried and addressed exactly as an accelerator of the machine would be. What is reproduced is the *physics*, and physics is delegated. Noise belongs to the lower half — it is a behavioural property, not a structural one — which is why a perfect-fidelity channel is still a first-class channel.
+</Figure>
+
+### 16.2 The two kinds of noise
+
+Because noise sits at the device level, it splits along the same line as the components:
+
+- **Device noise.** Gate and qubit errors — decoherence, readout. Supported, but under a restriction that will be made precise in chapter 17: only when AerSimulator runs the shots loop unassisted.
+- **Communication noise.** Latency on the links, entanglement fidelity, heralded loss, memory decoherence while entanglement is distributed. **Not modelled in version 3.0.0.** The channels are ideal.<Ref n={1} />
+
+<Warning label="A disclaimer before you read any number in this book">
+  Every number the emulator produces here comes from an ideal, noiseless channel. That is not a footnote: it is the boundary of what you may conclude from it. Timings measure the classical cost of emulating the infrastructure, not the runtime of a hypothetical physical one; fidelities are not degraded because nothing degrades them. If you are coming from a quantum-network simulator such as NetSquid,<Ref n={7} /> this is the first difference you will notice — so read every result that follows with that boundary in mind.
+</Warning>
+
+### 16.3 Where the QPUs sit
+
+There are three ways to place a QPU relative to an HPC installation, following the classification of Elsharkawy et al.<Ref n={27} /> with the two co-located variants merged:
+
+| Model | What it means | CUNQA |
+| --- | --- | --- |
+| **Standalone** | No HPC integration at all; the environment is purely quantum. | Discarded — it falls outside the accelerator paradigm. |
+| **Co-located** | The QPUs live inside the HPC environment but separate from the classical nodes. | Supported, via the `--co-located` flag. |
+| **On-node** | The QPUs are devices of a classical node, like a GPU. | Supported, and the default. |
+
+The choice is not cosmetic: it decides which nodes can reach a given vQPU, and therefore how the job you launch in chapter 18 must be sized.
+
+### 16.4 The three communication models
+
+These are the same three situations Part I described in classical terms, and chapter 15 already anticipated the correspondence:
+
+- **No communication.** Independent QPUs. This is the *embarrassingly parallel* case of chapter 3: different quantum tasks on different QPUs, in parallel, with no exchange.
+- **Classical communication.** QPUs exchange classical bits at run time. Structurally identical to the previous one, except that a QPU may now receive classical information mid-execution and condition an instruction on it. This introduces the synchronisation problem the previous model did not have — and, with it, the deadlock risk of chapter 7.
+- **Quantum communication.** QPUs are entangled through a quantum channel while keeping the classical link. This is the model that lets several limited QPUs act as one larger machine, and it is the one the vendor roadmaps point at.
+
+To the best of the authors' knowledge, CUNQA is the only tool that emulates DQC infrastructures with all three models inside an HPC environment.<Ref n={1} /> The HPCQC integration frameworks — QFw, MQSS, QCCP, XACC — expose no inter-QPU communication model at all; the quantum-network tools — NetSquid, SeQUeNCe, QuISP, SimulaQron, QuNetSim — offer full communication but no HPC integration.<Ref n={22} /> CUNQA occupies the intersection, and pays for it in noise modelling, which is where those network tools are strongest.
+
+### 16.5 Why you manage the resources yourself
+
+There are two ways to draw a quantum software stack. In the usual one, resource management lives inside the middleware and is opaque to the user. CUNQA deliberately takes the other: **resource management is the user's responsibility and sits outside the execution workflow.**<Ref n={1} />
+
+The reasoning is HPC practice rather than quantum computing. Compute time on a shared machine is an accounted resource governed per user by the scheduler. A tool that allocated resources on its own would spend an allocation without the restraint its owner would have applied — greedily rather than deliberately. The consequence for the programmer is the two-step workflow of chapter 18: **first you raise the infrastructure, then you run against it.**
+
+<Bridge label="Where this is going">
+  Chapter 17 opens up the vQPU, the unit this infrastructure is made of. Chapter 18 covers the commands that create and destroy it. Chapter 19 covers the Python that talks to it. Chapter 20 puts the three models to work on a single algorithm. Part V then returns to the question chapter 11 left open: how NetQMPI and CUNQA fit together.
+</Bridge>

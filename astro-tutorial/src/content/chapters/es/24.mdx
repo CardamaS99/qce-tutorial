@@ -1,0 +1,56 @@
+---
+lang: es
+order: 24
+part: "Parte V"
+title: "Lanzarlo"
+lead: "El diccionario del capítulo 23 cubre lo que dice el programa. Este capítulo cubre lo que se teclea, que es donde los dos modelos se diferencian de forma más visible: NetQMPI espera una orden y CUNQA espera dos, y la razón es la decisión de pila del capítulo 16."
+accent: quantum
+---
+### 24.1 Dos órdenes, no una
+
+Una aplicación NetQMPI sobre sus backends publicados se lanza como se lanza una aplicación MPI:
+
+```bash title="Sobre un backend de simulador de red"
+$ netqmpi -n 3 app.py
+```
+
+Sobre CUNQA la infraestructura no nace cuando arranca el programa: se levantó antes y le sobrevive (capítulo 18). Así que la secuencia es:
+
+```bash title="Sobre el backend de CUNQA"
+$ qraise -n 3 -t 00:30:00 --quantum_comm --co-located --family qce26
+$ qinfo
+$ netqmpi -n 3 app.py --cunqa --shots 1024
+$ qdrop --family qce26
+```
+
+Cuatro observaciones que merecen una diapositiva propia.
+
+- **`-n` aparece dos veces y tienen que coincidir.** `qraise -n 3` reserva tres vQPU; `netqmpi -n 3` arranca tres ranks. Si no coinciden, o hay vQPU ociosas ya pagadas o hay ranks sin dónde ejecutar. El capítulo 23 explicó por qué: `size` es `len(get_QPUs(...))`.
+- **El modelo DQC se elige al levantar, no al ejecutar.** `--quantum_comm` es una propiedad de la infraestructura. Un programa que llame a `expose` contra una infraestructura levantada sin ella falla, y falla en la vQPU y no en tu código.
+- **`--shots` pertenece a la ejecución, no al levantamiento.** Es un argumento de ejecución que se reenvía a `run` (capítulo 19): el único número de la línea de órdenes que habla del algoritmo y no de la máquina.
+- **`qdrop` no es opcional.** Las vQPU viven hasta que expire el tiempo de pared, las use alguien o no. Es la pieza del flujo con un coste real asociado, y por la que un público de usuarios de HPC te va a juzgar.
+
+### 24.2 Dimensionar la petición
+
+Las opciones del capítulo 18 son donde una demostración vive o muere, y la regla de dimensionamiento depende por completo del modelo, por lo que decía el capítulo 17:
+
+| Modelo levantado | Qué son las vQPU | Cómo dimensionar |
+| --- | --- | --- |
+| Sin comunicación | N simulaciones independientes | La memoria por vQPU escala con los qubits *de un solo* circuito. Añadir vQPU añade rendimiento a coste lineal. |
+| `--classical_comm` | N simulaciones independientes más una capa de mensajes | Mismo dimensionamiento por vQPU. Lo que crece es el tiempo, no la memoria, y crece con la cadena de dependencias, no con N. |
+| `--quantum_comm` | un estado conjunto detrás de N intermediarias | La memoria por vQPU **no** es el modelo mental correcto: el ejecutor centralizado sostiene un único estado cuya dimensión la fija el número *total* de qubits de todas las vQPU implicadas. |
+
+Esa última fila es la que hay que decir en voz alta. En el modelo de comunicación cuántica, pasar de dos vQPU de 10 qubits a cuatro vQPU de 10 qubits no duplica la memoria: eleva dos veces al cuadrado la dimensión del vector de estado. Una sala llena de gente levantando cada una cuatro vQPU con `--quantum_comm` sobre una asignación compartida es una manera previsible de perder la segunda mitad de la sesión.
+
+### 24.3 Cuando no funciona
+
+Los modos de fallo son pocos y todos identificables desde fuera. Esta es la diapositiva de diagnóstico que conviene llevar preparada en lugar de improvisar.
+
+| Síntoma | Causa más probable | Comprobación |
+| --- | --- | --- |
+| El programa no encuentra QPU | Nada levantado, tiempo de pared expirado, o desajuste de `--co-located` | `qinfo`. Si la familia aparece pero es invisible, estás en un nodo distinto del de las vQPU y se levantaron en modo on-node. |
+| Menos ranks de los esperados | Desacuerdo del `-n` entre `qraise` y `netqmpi` | Comparar las dos líneas de órdenes antes de leer código. |
+| Un `expose` se cuelga | Qubits de comunicación agotados: falta un `unexpose` | Capítulo 23. La detención es por diseño: la petición espera a que se libere un recurso. |
+| El programa se cuelga sin error | Un ciclo de `recv` bloqueantes, o dos mitades de una transferencia que no se nombran igual | Capítulo 7, ejercicio 6b. Nada lo va a diagnosticar; lo termina el tiempo de pared. |
+| Las opciones de ruido parecen no hacer nada | Ruido pedido fuera de sus condiciones soportadas | Capítulos 16 y 18: sin comunicación, sin `CIF`, AerSimulator. |
+| Funciona, pero absurdamente lento | `--quantum_comm` con más qubits de los previstos | La cuarta fila del capítulo 20 es el comportamiento esperado, no un error. |

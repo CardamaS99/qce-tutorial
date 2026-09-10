@@ -1,0 +1,32 @@
+<svg aria-label="El punto de integración entre NetQMPI y CUNQA. Por encima de la línea discontinua, el modelo de programación de NetQMPI sin cambios: un fichero, SPMD, ranks y primitivas. Por debajo, un adaptador de backend que asigna ranks a las vQPU levantadas y traduce las primitivas a directivas de CUNQA, sobre la capa de sistema de CUNQA." role="img" viewbox="0 0 800 386">
+<title>Dónde se encuentran NetQMPI y CUNQA</title>
+<rect fill="#F7F8F6" height="46" rx="6" stroke="#C3C7C2" stroke-width="1" width="720" x="40" y="24"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="45">aplicación de usuario</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="61">un fichero · SPMD · igual en todos los backends</text>
+<rect fill="#EDEAFA" height="66" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="720" x="40" y="80"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="400" y="102">NetQMPI</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="400" y="119">Environment · comm · rank / size · qsend / qrecv</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="400" y="135">qscatter / qgather · expose / unexpose</text>
+<line stroke="#6B7683" stroke-dasharray="6 4" stroke-width="1.4" x1="40" x2="760" y1="162" y2="162"></line>
+<text class="sv-s" text-anchor="middle" x="400" y="157">todo lo de arriba es igual para cualquier backend</text>
+<rect fill="#fff" height="72" rx="6" stroke="#141C24" stroke-width="1.6" width="720" x="40" y="176"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="198">adaptador de backend</text>
+<text class="sv-m" fill="#6B7683" x="60" y="218">rank → vQPU de get_QPUs()</text>
+<text class="sv-m" fill="#6B7683" x="60" y="234">create_circuit → CunqaCircuit + id</text>
+<text class="sv-m" fill="#6B7683" x="330" y="218">qsend / qrecv → teledata</text>
+<text class="sv-m" fill="#6B7683" x="330" y="234">expose → gen_ent + cat_entangler</text>
+<text class="sv-m" fill="#6B7683" x="580" y="218">cierre de ámbito → run()</text>
+<text class="sv-m" fill="#6B7683" x="580" y="234">resultados → gather()</text>
+<line stroke="#141C24" stroke-width="1.2" x1="400" x2="400" y1="248" y2="272"></line>
+<path d="M396 267l4 6 4-6" fill="#141C24"></path>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="470" y="264">JSON sobre un socket</text>
+<rect fill="#E4F1EE" height="74" rx="6" stroke="#12695C" stroke-width="1.6" width="720" x="40" y="276"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="400" y="298">CUNQA · la infraestructura levantada</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="60" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="160" y="327">vQPU · rank 0</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="300" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="327">vQPU · rank 1</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="540" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="640" y="327">vQPU · rank 2</text>
+<text class="sv-s" text-anchor="middle" x="400" y="372">levantada de antemano con qraise · el único punto de contacto es un esquema JSON documentado</text>
+</svg>

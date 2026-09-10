@@ -1,0 +1,65 @@
+---
+lang: es
+order: 16
+part: "Parte IV"
+title: "Qué emula CUNQA"
+lead: "La parte III terminó con una interfaz y nada debajo. CUNQA es lo que va debajo —o, más exactamente, la infraestructura emulada que sustituye a una máquina que todavía no se puede comprar—. Saber exactamente qué replica con fidelidad y qué se limita a reproducir en comportamiento es la diferencia entre leer bien sus resultados y leerlos de más."
+accent: quantum
+---
+### 16.1 Emular no es simular
+
+Las dos palabras se usan indistintamente y no son lo mismo. La **emulación** busca replicar un sistema fielmente; la **simulación** busca reproducir su comportamiento. En computación clásica, emular un dispositivo consiste en traducir las instrucciones de la máquina emulada a instrucciones nativas del anfitrión. Esa vía está cerrada para un ordenador cuántico: no hay instrucción clásica a la que traducir una cuántica, porque los paradigmas de cómputo no comparten vocabulario. Queda el camino que planteó Willsch: que la contraparte clásica resuelva las ecuaciones físicas que gobiernan el sistema cuántico, de modo que se reproduzca su comportamiento en lugar de traducir sus instrucciones.<Ref n={26} />
+
+CUNQA aplica ambas nociones, a alturas distintas de la pila.<Ref n={1} />
+
+- **A nivel arquitectónico, emula.** Las QPU son componentes de primera clase, desplegadas y consultadas a través de las mismas interfaces que expondría una instalación física. Su integración en el sistema HPC está diseñada también para imitar con fidelidad cómo se integraría una QPU real.
+- **A nivel de dispositivo, simula.** Bibliotecas de terceros reproducen el resultado de las tareas cuánticas; los canales reproducen el efecto de los enlaces sobre lo que transportan.
+
+En una frase: *CUNQA emula infraestructuras de DQC cuyas QPU y canales de comunicación se simulan para ejecutar las tareas cuánticas.*
+
+<Figure id="cunqa-layers">
+  Esa división es la que autoriza la palabra «emulador» aun cuando todos los canales sean ideales. Lo que se replica es la *estructura*: procesos que poseen sus recursos, se planifican, se consultan y se direccionan exactamente como lo haría un acelerador de la máquina. Lo que se reproduce es la *física*, y la física se delega. El ruido pertenece a la mitad inferior —es una propiedad de comportamiento, no estructural—, y por eso un canal de fidelidad perfecta sigue siendo un canal de primera clase.
+</Figure>
+
+### 16.2 Los dos tipos de ruido
+
+Como el ruido vive en el nivel de dispositivo, se reparte por la misma línea que los componentes:
+
+- **Ruido de dispositivo.** Errores de puerta y de qubit —decoherencia, lectura—. Está soportado, pero bajo una restricción que el capítulo 17 precisará: solo cuando AerSimulator ejecuta el bucle de *shots* sin asistencia.
+- **Ruido de comunicación.** Latencia de los enlaces, fidelidad del entrelazamiento, pérdida heraldada, decoherencia de memoria mientras se distribuye el entrelazamiento. **No modelado en la versión 3.0.0.** Los canales son ideales.<Ref n={1} />
+
+<Warning label="Un aviso antes de leer cualquier número de este libro">
+  Todos los números que produce aquí el emulador vienen de un canal ideal y sin ruido. No es una nota al pie: es el límite de lo que puedes concluir a partir de ellos. Los tiempos miden el coste clásico de emular la infraestructura, no el tiempo de ejecución de una hipotética infraestructura física; las fidelidades no se degradan porque nada las degrada. Si vienes de un simulador de redes cuánticas como NetSquid,<Ref n={7} /> esta es la primera diferencia que vas a notar: lee con ese límite en mente todos los resultados que siguen.
+</Warning>
+
+### 16.3 Dónde se colocan las QPU
+
+Hay tres maneras de situar una QPU respecto de una instalación HPC, siguiendo la clasificación de Elsharkawy et al.<Ref n={27} /> con las dos variantes co-localizadas fundidas en una:
+
+| Modelo | Qué significa | CUNQA |
+| --- | --- | --- |
+| **Standalone** | Ninguna integración con HPC; el entorno es puramente cuántico. | Descartado: queda fuera del paradigma de acelerador. |
+| **Co-localizado** | Las QPU viven dentro del entorno HPC pero separadas de los nodos clásicos. | Soportado, mediante la opción `--co-located`. |
+| **On-node** | Las QPU son dispositivos de un nodo clásico, como una GPU. | Soportado, y es el modo por defecto. |
+
+La elección no es cosmética: decide qué nodos pueden alcanzar una vQPU dada y, por tanto, cómo hay que dimensionar el trabajo que se lanza en el capítulo 18.
+
+### 16.4 Los tres modelos de comunicación
+
+Son las tres situaciones que la parte I describió en términos clásicos, y el capítulo 15 ya anticipó la correspondencia:
+
+- **Sin comunicación.** QPU independientes. Es el caso *embarrassingly parallel* del capítulo 3: distintas tareas cuánticas en distintas QPU, en paralelo, sin intercambio.
+- **Comunicación clásica.** Las QPU intercambian bits clásicos en tiempo de ejecución. Estructuralmente idéntico al anterior, salvo que ahora una QPU puede recibir información clásica a mitad de ejecución y condicionar una instrucción a ella. Esto introduce el problema de sincronización que el modelo anterior no tenía y, con él, el riesgo de interbloqueo del capítulo 7.
+- **Comunicación cuántica.** Las QPU se entrelazan a través de un canal cuántico manteniendo el enlace clásico. Es el modelo que permite que varias QPU limitadas actúen como una máquina mayor, y al que apuntan las hojas de ruta de los fabricantes.
+
+Hasta donde saben los autores, CUNQA es la única herramienta que emula infraestructuras de DQC con los tres modelos dentro de un entorno HPC.<Ref n={1} /> Los marcos de integración HPCQC —QFw, MQSS, QCCP, XACC— no exponen ningún modelo de comunicación entre QPU; las herramientas de red cuántica —NetSquid, SeQUeNCe, QuISP, SimulaQron, QuNetSim— ofrecen comunicación completa pero ninguna integración con HPC.<Ref n={22} /> CUNQA ocupa la intersección, y lo paga en modelado de ruido, que es justo donde esas herramientas de red son más fuertes.
+
+### 16.5 Por qué los recursos los gestiona uno mismo
+
+Hay dos maneras de dibujar una pila de software cuántico. En la habitual, la gestión de recursos vive dentro del middleware y es opaca al usuario. CUNQA toma deliberadamente la otra: **la gestión de recursos es responsabilidad del usuario y queda fuera del flujo de ejecución.**<Ref n={1} />
+
+El razonamiento es de práctica HPC, no de computación cuántica. El tiempo de cómputo en una máquina compartida es un recurso contabilizado que el planificador gobierna por usuario. Una herramienta que reservase recursos por su cuenta gastaría una asignación sin la contención que aplicaría su dueño: con avidez en lugar de con deliberación. La consecuencia para el programador es el flujo en dos pasos del capítulo 18: **primero se levanta la infraestructura, después se ejecuta contra ella.**
+
+<Bridge label="Hacia dónde va esto">
+  El capítulo 17 abre la vQPU, la unidad de la que está hecha esta infraestructura. El 18 cubre las órdenes que la crean y la destruyen. El 19, el Python que habla con ella. El 20 pone los tres modelos a trabajar sobre un único algoritmo. La parte V vuelve entonces a la pregunta que dejó abierta el capítulo 11: cómo encajan NetQMPI y CUNQA.
+</Bridge>

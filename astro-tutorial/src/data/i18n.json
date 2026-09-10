@@ -3,12 +3,24 @@
     "htmlTitle": "De circuitos monolíticos a redes multi-QPU",
     "eyebrow": "IEEE Quantum Week · QCE26 · tutorial de 3 horas · 18 de septiembre",
     "title": "De circuitos monolíticos a redes multi-QPU",
-    "dek": "Fundamentos de programación distribuida en HPC, el estándar MPI, y su traslación al dominio cuántico con NetQMPI sobre el emulador CUNQA. Material de apoyo del primer bloque del tutorial.",
+    "dek": "Fundamentos de programación distribuida en HPC, el estándar MPI, su traslación al dominio cuántico con NetQMPI, el emulador CUNQA por dentro, y la integración de ambos. Material de apoyo de las dos sesiones del tutorial.",
     "meta": [
-      ["Bloque", "Primera hora y media"],
-      ["Requisitos", "Python; circuitos cuánticos básicos"],
-      ["Herramientas", "mpi4py · NetQMPI · CUNQA"],
-      ["Objetivo", "Escribir y ejecutar una aplicación distribuida"]
+      [
+        "Bloques",
+        "Las dos sesiones · tres horas"
+      ],
+      [
+        "Requisitos",
+        "Python; circuitos cuánticos básicos"
+      ],
+      [
+        "Herramientas",
+        "mpi4py · NetQMPI · CUNQA"
+      ],
+      [
+        "Objetivo",
+        "Escribir, desplegar y ejecutar una aplicación distribuida"
+      ]
     ],
     "toc": "Contenido",
     "references": "Referencias",
@@ -23,12 +35,24 @@
     "htmlTitle": "From monolithic circuits to multi-QPU networks",
     "eyebrow": "IEEE Quantum Week · QCE26 · 3-hour tutorial · 18 September",
     "title": "From monolithic circuits to multi-QPU networks",
-    "dek": "Foundations of distributed programming in HPC, the MPI standard, and its translation into the quantum domain with NetQMPI over the CUNQA emulator. Supporting material for the tutorial's first block.",
+    "dek": "Foundations of distributed programming in HPC, the MPI standard, its translation into the quantum domain with NetQMPI, the CUNQA emulator from the inside, and the integration of the two. Supporting material for both sessions of the tutorial.",
     "meta": [
-      ["Block", "First ninety minutes"],
-      ["Prerequisites", "Python; basic quantum circuits"],
-      ["Tools", "mpi4py · NetQMPI · CUNQA"],
-      ["Goal", "Write and run a distributed application"]
+      [
+        "Blocks",
+        "Both sessions · three hours"
+      ],
+      [
+        "Prerequisites",
+        "Python; basic quantum circuits"
+      ],
+      [
+        "Tools",
+        "mpi4py · NetQMPI · CUNQA"
+      ],
+      [
+        "Goal",
+        "Write, deploy and run a distributed application"
+      ]
     ],
     "toc": "Contents",
     "references": "References",

@@ -1,0 +1,113 @@
+---
+lang: es
+order: 19
+part: "Parte IV"
+title: "El paquete cunqa"
+lead: "Con la infraestructura levantada, la API de Python cubre dos cosas y solo dos: diseñar tareas cuánticas distribuidas y ejecutarlas. En el lado del diseño viven las directivas DQC; el lado de la ejecución es deliberadamente delgado."
+accent: quantum
+---
+### 19.1 `CunqaCircuit`
+
+El punto de entrada del diseño es una clase cuyo constructor le resultará familiar a cualquiera que haya escrito Qiskit:
+
+```python title="Un circuito con tres registros cuánticos y tres clásicos"
+from cunqa.circuit import CunqaCircuit
+
+circuit = CunqaCircuit(num_qubits=3, num_clbits=3, id="circuit_id")
+```
+
+El `id` no es decoración. Bajo cualquier modelo de comunicación, los circuitos se direccionan entre sí **por identificador**, no por rank ni por QPU: un envío nombra al circuito receptor, y una generación de entrelazamiento nombra a los circuitos que entrelaza. Es una diferencia real respecto de MPI, donde el destinatario es un rank dentro de un communicator, y conviene señalarla pronto porque es lo primero con lo que tropieza quien llega de la parte II.
+
+Más allá del catálogo habitual de puertas locales, la clase implementa las directivas de comunicación.
+
+### 19.2 Comunicación clásica: `send`, `recv`, `cif`
+
+Dos circuitos, uno identificado como emisor y otro como receptor. El emisor empuja el contenido de uno o más registros clásicos; el receptor declara de antemano dónde van a aterrizar.
+
+```python title="Comunicación clásica entre dos circuitos"
+send_circuit.send(clbits=sending_cregs, recving_circuit="recving_circuit_id")
+
+recv_circuit.recv(clbits=recving_cregs, sending_circuit="sending_circuit_id")
+```
+
+Un bit recibido solo sirve si algo puede condicionarse a él, que es lo que proporcionan `cif` / `endcif`: un bloque controlado clásicamente que aplica las puertas encerradas cuando el bit de control vale 1.
+
+**`recv` bloquea.** Es la misma semántica que `MPI_Recv` en el capítulo 7, con la misma consecuencia: una cadena de recepciones en la que cada una espera a la anterior serializa el cómputo, y un ciclo de ellas produce interbloqueo. El capítulo 20 muestra un caso en el que esto no es un error, sino la estructura real del algoritmo.
+
+### 19.3 Comunicación cuántica: `gen_ent`
+
+Los circuitos que vayan a comunicar información cuántica deben distinguir sus dos clases de qubit, y lo hacen pasando un par ordenado como `num_qubits`:
+
+```python title="Tres qubits de datos y dos de comunicación"
+circuit_0 = CunqaCircuit(num_qubits=(3, 2), num_clbits=3, id="circuit_0_id")
+circuit_1 = CunqaCircuit(num_qubits=(1, 1), num_clbits=1, id="circuit_1_id")
+```
+
+El entrelazamiento se genera después llamando ambos circuitos a `gen_ent` de forma consistente, cada uno nombrando al otro:
+
+```python title="Un par de Bell entre dos qubits de comunicación"
+circuit_0.gen_ent(comm_qubit=1, circuits="circuit_1_id")
+
+circuit_1.gen_ent(comm_qubit=0, circuits="circuit_0_id")
+```
+
+Dos circuitos dan un par de Bell. Una lista consistente de identificadores en el argumento `circuits` da un estado GHZ compartido entre todos sus qubits de comunicación. Esta es la directiva `GEN_ENT` del capítulo 17 vista desde la capa de aplicación, y es el bloque básico con el que puede montarse cualquier protocolo de comunicación cuántica.
+
+### 19.4 Los dos protocolos que no hay que escribir
+
+No hace falta construir los protocolos a partir de `gen_ent`. Los dos estándar vienen con la biblioteca.<Ref n={1} />
+
+- **Teledata** —teleportación cuántica— mueve el estado de un qubit de datos de un circuito a otro. Lo proporcionan `qsend` y `qrecv`.
+- **Telegate** —teleportación de puerta cuántica— comparte el estado de un qubit de control con un qubit de comunicación de un circuito remoto, de modo que una puerta local colocada en medio actúa como *puerta controlada no local*. Lo proporcionan `cat_entangler` y `cat_disentangler`.
+
+En ambos casos la generación de entrelazamiento, las correcciones clásicas y la contabilidad de qubits de comunicación ocurren dentro. El programador escribe las fronteras del protocolo y la operación que va entre ellas.
+
+<Note label="Los mismos dos protocolos, dos vocabularios">
+  El capítulo 12 presentó `qsend` y `qrecv` como primitivas de NetQMPI, y el 13 presentó `expose` / `unexpose` como su manera de repartir un control. La correspondencia no es casual: `qsend`/`qrecv` es teledata en ambos lados, y `expose` es un cat-entangler generalizado a N ranks con liberación obligatoria. El nombre difiere porque una biblioteca habla MPI y la otra habla protocolo. La parte V construye el diccionario completo; advertir el solapamiento ahora hace ese capítulo más corto.
+</Note>
+
+### 19.5 Componer circuitos
+
+Tres funciones libres construyen circuitos grandes a partir de pequeños, lo que importa más de lo que parece cuando los circuitos son la unidad que se distribuye:
+
+- **`add`** compone en *profundidad*: las instrucciones del primer operando seguidas de las del segundo.
+- **`union`** compone en *anchura*: los registros del primer operando con sus puertas, y a continuación los del segundo con las suyas.
+- **`hsplit`** invierte `union`: corta un circuito a lo largo del eje de registros en subcircuitos que actúan sobre bloques contiguos, dado un tamaño de partición o un conjunto explícito de puntos de corte.
+
+`hsplit` es lo más parecido en la API al particionado automático de circuitos, y conviene ser preciso sobre lo que no es: corta donde se le diga. Decidir *dónde* cortar para minimizar puertas remotas es el problema abierto que el capítulo 15 dejaba fuera.<Ref n={24} />
+
+### 19.6 Ejecución
+
+Conectarse a la infraestructura levantada devuelve una lista de manejadores:
+
+```python title="Engancharse, ejecutar, recoger"
+from cunqa.qpu import get_QPUs, run
+from cunqa.qjob import gather
+
+qpus = get_QPUs(co_located=True, family="qft_demo")
+
+qjobs = run(circuits, qpus, shots=1000)
+results = gather(qjobs)
+
+for r in results:
+    print(r.counts, r.time_taken)
+```
+
+Cuatro cosas de ese bloque merecen decirse explícitamente.
+
+- **`get_QPUs` filtra, no crea.** `co_located` decide si son visibles las vQPU de otros nodos; `family` selecciona por el nombre dado en el `qraise`. Ambos conceptos quedaron fijados en el capítulo 18.
+- **`run` asigna circuitos a vQPU en el orden de la lista.** Ese es todo el algoritmo de planificación. Es un marcador de posición deliberado: trivial, predecible, y deja sitio para un planificador de verdad por encima.
+- **`run` es asíncrona.** Despacha y devuelve un `QJob` por circuito. Los resultados llegan por `QJob.result` —un `Result` con `counts` y `time_taken`— o en bloque por `gather`.
+- **`upgrade_parameters`** actualiza in situ los valores de un circuito paramétrico. Para un algoritmo variacional que ejecuta el mismo *ansatz* mil veces con ángulos distintos, es la diferencia entre retransmitir el circuito y retransmitir los números.
+
+### 19.7 Qué hace el middleware, y por qué es delgado
+
+Entre el Python anterior y las vQPU en C++ hay un middleware cuyo trabajo es deliberadamente pequeño: convertir un `CunqaCircuit` en una representación intermedia JSON con un esquema fijo, y conectar al usuario con la vQPU a través de un único punto: un cliente enganchado al servidor de la vQPU.<Ref n={25} />
+
+De ahí se siguen dos consecuencias, y ambas conviene conocerlas.
+
+**JSON se eligió por compatibilidad, no por eficiencia.** Simuladores como AerSimulator ya consumen ese tipo de representación. Es también ineficiente en memoria comparado con cualquier cosa que evite literales de cadena, y por eso el capítulo 26 incluye una codificación binaria entre los puntos de la hoja de ruta.
+
+**Un único punto de contacto implica que la capa de Python es opcional.** Quien quiera otra interfaz puede descartar el paquete `cunqa` por completo; el único requisito es enviar JSON con la forma correcta al servidor de la vQPU. **Esa es la puerta por la que entra la parte V.**
+
+La compilación, mientras tanto, no es asunto de CUNQA: se soporta y se aprovecha la transpilación de Qiskit, y no se desarrolla maquinaria de optimización propia. El propósito del proyecto es la integración de DQC en HPC, no la compilación óptima de circuitos, y la simplicidad del middleware es la decisión de diseño que mantiene el esfuerzo apuntando a lo primero.

@@ -1,0 +1,67 @@
+---
+lang: en
+order: 17
+part: "Part IV"
+title: "The vQPU"
+lead: "The infrastructure of chapter 16 is made of one repeated unit. A virtual QPU is not a simulator instance that appears when you call it and vanishes when it returns: it is a process that exists, holds resources, and is queried — and that distinction is the whole point."
+accent: quantum
+---
+### 17.1 What a vQPU is
+
+A **vQPU** is a process running in an HPC environment, with its own allocated set of classical resources, that stands in for a real QPU in the system and executes the quantum tasks submitted to it.<Ref n={1} /> The concept is not entirely new — Claudino et al. worked with virtualised quantum accelerators before<Ref n={32} /> — but the emphasis here is on ownership: because the vQPU owns its resources, **its lifetime is independent of the tasks that run on it**.
+
+That independence is what makes it behave like hardware. You can ask whether it is up, ask what it is made of, send it work, and send it more work later. From the programmer's seat it is another accelerator that happens to be in the machine, exactly like a GPU or an FPGA: it receives tasks, executes them, and returns results.
+
+The contrast with the usual quantum-simulation workflow is worth making explicit on a slide. `AerSimulator()` is an object you construct inside your script; a vQPU is a job that was already running before your script started and will still be running after it ends.
+
+### 17.2 Three components
+
+<Figure id="vqpu">
+  Server, backend and simulator. The first two are what makes the vQPU addressable as a device; the third is what makes it compute. Server and simulator are decoupled from any specific third-party implementation, so the underlying libraries can be swapped or extended; the backend is fixed within a CUNQA version but is trivially editable to expose new QPU characteristics.
+</Figure>
+
+- **Server.** Connects the vQPU to the user: receives quantum tasks, queues them, returns results. A conventional client–server structure over a standard socket library — Asio or ZMQ in the current version.
+- **Backend.** Holds what the user needs to know about the simulated QPU: coupling map, number of qubits, basis gates, noise model, and — under the quantum-communication model — the communication qubits. Some fields are generic; others only acquire meaning under a particular DQC model.
+- **Simulator.** Does the actual execution. Version 3.0.0 supports seven: six third-party — AerSimulator, MQT-DDSIM, Maestro, Qulacs, Qsim, QuEST — and CunqaSimulator, a lightweight one written inside the project for testing.<Ref n={1} />
+
+### 17.3 How execution changes with the model
+
+This is the part that surprises people. The DQC model being emulated does not only determine what the user may write: **it changes how the system executes underneath.**
+
+**No communication.** Nothing changes with respect to an ordinary circuit run. The simulator does all the work and CUNQA treats it as a black box. There is exactly one exception: a classical `if` on a gate — `CIF`. Most simulators do not support it, so CUNQA takes over, runs the shots loop itself, and checks the control bit classically before deciding whether to apply the gate.
+
+That exception is the origin of the noise restriction announced in chapter 16. Noise modelling relies on AerSimulator, which injects noise at the simulator level with no documented mechanism for doing it gate by gate. The moment CUNQA takes the shots loop, the simulator's noise machinery is bypassed. Hence: **noisy vQPUs exist only where AerSimulator runs unassisted — no communication, and no `CIF`.**<Ref n={1} />
+
+**Classical communication.** The same reasoning applies for the same reason: no supported simulator understands communication directives. `SEND` and `RECV` are therefore executed inside a shots loop that CUNQA controls, through an extra element in the simulator component — the classical communication channel, available over ZMQ or MPI.
+
+**Quantum communication.** Here the scheme above breaks down entirely. Both previous models rest on the same unstated assumption: each vQPU holds its own state, so each can run its own shots loop and the only thing crossing between them is classical. A quantum channel breaks that assumption at the root — once two vQPUs are entangled they no longer have two states, they have one — and no arrangement of independent simulators can represent a state that does not decompose. Something other than the vQPUs has to do the executing, which is what the next section is about.
+
+### 17.4 The centralised executor
+
+Under no- and classical-communication, each vQPU simulates its own state independently: the distribution is purely classical. Under quantum communication that stops being possible. Quantum protocols between vQPUs can entangle their qubits, and an entangled state is by definition not separable — so **the state of all participating vQPUs must be simulated as a single state.**
+
+The consequence is structural. A single state needs a single executor aware of every operation, because an operation aimed at one vQPU may affect another. So in this model the vQPUs stop being executors and become **proxies**: they keep the interface a user would have with a real system, forward instructions to a centralised executor, and hand back that executor's results.
+
+<Figure id="execution-models">
+  The same infrastructure, executing in two different ways. Above, the two models of chapter 16 that need no quantum channel: three vQPUs, three states, three executors, and only classical bits crossing between them. Below, what quantum communication forces: one joint state, therefore one executor, and vQPUs reduced to the interface. Nothing changes in what the user writes — the proxies expose exactly what the executors exposed — and everything changes in what runs underneath.
+</Figure>
+
+<Note label="Two objections worth pre-empting">
+  **«The states *may* be entangled, not *must* be — keep them separate when they are not.»** True, and it would require deciding whether the resulting state is separable, which is a strongly NP-hard problem.<Ref n={28} /> The check costs more than the thing it would save.
+
+  **«A single state can still be simulated across several processes.»** Also true, and perfectly compatible with CUNQA — but that distribution belongs to the simulator, not to the emulator. CUNQA controls how instructions are executed and stays agnostic about how the state is stored. Some supported simulators do offer distributed state vectors (QuEST, AerSimulator under MPI); version 3.0.0 does not yet exploit them, so the joint state lives in one process.
+
+  This looks contradictory for a *distributed* model and is not: the distributed nature of the quantum system and the distribution of its classical simulation are orthogonal. That they diverge here is the clearest possible illustration of how expensive entanglement is to handle classically.
+</Note>
+
+The centralised executor accepts every directive of the two previous models plus one of its own: **`GEN_ENT`**, the generation of an entangled state between QPUs. With a centralised executor, generating entanglement is nothing more than preparing a GHZ state across the selected communication qubits — but defining it as an atomic instruction lets CUNQA lift it out of the stream of quantum operations, which is what makes entanglement generation and communication-qubit bookkeeping modellable at all. It was chosen as the semantic minimum of a quantum communication: every known quantum-communication protocol needs it as a building block.<Ref n={11} />
+
+### 17.5 Data qubits and communication qubits
+
+The quantum-communication model introduces a backend field the other two do not have. **Communication qubits** are a subset of a vQPU's qubits reserved exclusively for communication with other vQPUs, as opposed to **data qubits**, which do the computing. The distinction goes back to the earliest work on distributed quantum computing<Ref n={31} /> and has been kept ever since.<Ref n={11} />
+
+CUNQA adopts it for two reasons. The first is fidelity to the state of the art. The second is management: separating the two resources means that asking for more communication qubits than the machine has **stalls execution until some are freed**, rather than silently eating the data qubits. Nothing prevents a user who dislikes the split from simply using communication qubits as data qubits.
+
+<Bridge label="Before writing any code">
+  Everything so far exists before your program does. Chapter 18 is about bringing it into existence.
+</Bridge>

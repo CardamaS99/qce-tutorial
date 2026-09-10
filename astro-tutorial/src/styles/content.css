@@ -27,7 +27,7 @@
 .chapter[data-accent="quantum"] > h2::after { background: var(--quantum); }
 .chapter h3 { font-size: 1.22rem; margin: 2.6rem 0 .8rem; max-width: 38ch; }
 .chapter h4 { font-size: 1.02rem; margin: 1.9rem 0 .5rem; font-weight: 700; letter-spacing: 0; }
-.lead { font-size: 1.18rem; color: var(--ink-2); max-width: 66ch; line-height: 1.68; }
+.lead { font-size: 1.18rem; color: var(--ink-2); max-width: var(--measure); line-height: 1.68; }
 
 .ref-call { font-family: var(--font-mono); font-size: .62em; vertical-align: super; line-height: 0; }
 .ref-call a { color: var(--quantum); text-decoration: none; padding: 0 .1em; }
@@ -43,13 +43,14 @@
 /* ---------- figuras ---------- */
 figure {
   margin: 2.4rem 0;
+  max-width: var(--measure);
   border: 1px solid var(--rule);
   border-radius: 6px;
   background: #fff;
   overflow: hidden;
   counter-increment: figure;
 }
-figure .canvas { padding: 1.6rem 1.4rem .6rem; }
+figure .canvas { padding: 1.1rem .9rem .5rem; }
 figure svg { display: block; width: 100%; height: auto; }
 figcaption {
   font-family: var(--font-display);
@@ -83,7 +84,7 @@ figcaption::before {
   border-radius: 6px;
   padding: 1.3rem 1.5rem;
   margin: 2.4rem 0;
-  max-width: 72ch;
+  max-width: var(--measure);
 }
 .callout > :last-child { margin-bottom: 0; }
 .callout p { font-size: .98rem; }
@@ -100,7 +101,7 @@ figcaption::before {
 .callout--bridge .callout-label { color: var(--quantum); }
 .callout--warning { background: var(--warn-bg); border: 1px solid #EBCDBC; color: var(--warn-ink); }
 .callout--warning .callout-label { color: var(--warn); }
-.callout--exercise { background: var(--classical-bg); border: 1px solid #C6E0DA; color: #12352F; max-width: 74ch; }
+.callout--exercise { background: var(--classical-bg); border: 1px solid #C6E0DA; color: #12352F; }
 .callout--exercise .callout-label { color: var(--classical); }
 .callout--exercise h4 { margin-top: 0; color: var(--classical-ink); }
 .callout--note {
@@ -112,12 +113,13 @@ figcaption::before {
   margin: 1.8rem 0;
   font-size: .95rem;
   color: var(--ink-2);
-  max-width: 64ch;
+  max-width: var(--measure);
 }
 .callout--note .callout-label { color: var(--ink-3); font-size: .66rem; }
 
 /* ---------- código ---------- */
 .code-title {
+  max-width: var(--measure);
   font-family: var(--font-mono);
   font-size: .7rem;
   letter-spacing: .1em;
@@ -127,6 +129,7 @@ figcaption::before {
 }
 pre.astro-code {
   padding: 1.2rem 1.3rem;
+  max-width: var(--measure);
   border-radius: 6px;
   overflow-x: auto;
   font-size: .8rem;
@@ -156,7 +159,7 @@ pre.astro-code[data-title]::before {
 table {
   border-collapse: collapse;
   width: 100%;
-  max-width: 74ch;
+  max-width: var(--measure);
   margin: 1.6rem 0;
   font-size: .9rem;
   font-family: var(--font-display);
@@ -183,7 +186,7 @@ td code { font-size: .84em; }
   list-style: none;
   padding: 0;
   counter-reset: ref;
-  max-width: 80ch;
+  max-width: var(--measure);
   font-size: .88rem;
   line-height: 1.6;
   font-family: var(--font-display);

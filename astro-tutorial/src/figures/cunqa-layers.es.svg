@@ -1,0 +1,32 @@
+<svg aria-label="CUNQA dividido en una mitad superior emulada —la infraestructura: las interfaces de vQPU, su integración en el sistema HPC y la interacción entre QPU— y una mitad inferior simulada —los dispositivos: simuladores de terceros y comportamiento de los canales—. El ruido pertenece a la mitad inferior." role="img" viewbox="0 0 800 340">
+<title>Qué emula CUNQA y qué simula</title>
+<rect fill="#E4F1EE" height="126" rx="8" stroke="#12695C" stroke-width="1.6" width="720" x="40" y="30"></rect>
+<text class="sv-th" fill="#0C3F38" x="58" y="54">EMULADO · la infraestructura</text>
+<text class="sv-s" fill="#12695C" x="58" y="72">replicada con fidelidad · direccionada por las interfaces que expondría un despliegue real</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="58" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="164" y="106">interfaces de vQPU</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="164" y="123">procesos que poseen</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="164" y="137">sus recursos clásicos</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="294" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="400" y="106">integración en HPC</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="123">en el nodo o co-localizadas</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="137">como un acelerador más</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="530" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="636" y="106">interacción entre QPU</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="636" y="123">cómo se comunican</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="636" y="137">nula · clásica · cuántica</text>
+<line stroke="#6B7683" stroke-dasharray="6 4" stroke-width="1.2" x1="40" x2="760" y1="172" y2="172"></line>
+<text class="sv-s" text-anchor="middle" x="400" y="166">estructura arriba · física abajo</text>
+<rect fill="#EDEAFA" height="126" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="720" x="40" y="184"></rect>
+<text class="sv-th" fill="#3B2C82" x="58" y="208">SIMULADO · los dispositivos</text>
+<text class="sv-s" fill="#5B3FB8" x="58" y="226">comportamiento reproducido · delegado en una capa inferior</text>
+<rect fill="#fff" height="58" rx="5" stroke="#5B3FB8" stroke-width="1" width="330" x="58" y="238"></rect>
+<text class="sv-t" text-anchor="middle" x="223" y="260">siete simuladores</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="223" y="277">Aer · DDSIM · Maestro · Qulacs</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="223" y="291">Qsim · QuEST · CunqaSimulator</text>
+<rect fill="#fff" height="58" rx="5" stroke="#5B3FB8" stroke-width="1" width="330" x="412" y="238"></rect>
+<text class="sv-t" text-anchor="middle" x="577" y="260">comportamiento del canal</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="577" y="277">ideal en la versión 3.0.0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="577" y="291">aún sin ruido de comunicación</text>
+<text class="sv-s" text-anchor="middle" x="400" y="330">el ruido es de comportamiento, así que vive en la mitad inferior: un canal perfecto sigue siendo un canal de primera clase</text>
+</svg>

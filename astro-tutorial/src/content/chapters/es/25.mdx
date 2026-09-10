@@ -1,0 +1,102 @@
+---
+lang: es
+order: 25
+part: "Parte V"
+title: "Caso de estudio: una QFT distribuida"
+lead: "La transformada de Fourier cuántica repartida entre tres QPU es el ejercicio hacia el que apunta todo el día. Es un buen caso final por una razón que nada tiene que ver con su fama: a diferencia del estado GHZ del capítulo 14, sus puertas remotas no son todas iguales, y las que menos importan son exactamente las que uno querría cortar. La recompensa llega al final del capítulo: la transformada escrita en el ejercicio 8 se reutiliza, literalmente, como subrutina del ejercicio 9."
+accent: quantum
+---
+### 25.1 Por qué la QFT particiona mal, y qué enseña eso
+
+La QFT sobre n qubits es una escalera: un Hadamard en cada qubit, seguido de rotaciones de fase controladas entre ese qubit y todos los de debajo, con el ángulo de rotación dividiéndose por dos en cada paso. De ahí se siguen inmediatamente dos propiedades, y ambas importan para distribuir.
+
+- **Es casi toda puertas de dos qubits, y son todos con todos.** Cada qubit interactúa con todos los demás. Cualquier partición en bloques corta un número de puertas que crece con el producto de los tamaños de bloque, así que el coste de comunicación de una QFT distribuida es cuadrático en el corte, no lineal.
+- **Las puertas que cruzan el corte son las más débiles.** El ángulo de rotación entre los qubits *j* y *k* decae como 2^−|j−k|, de modo que las puertas entre qubits lejanos —justo las que con más probabilidad cruzan una frontera de partición— son las que menos fase aportan. Esa es la base de la QFT *aproximada*, y significa que la QFT distribuida es uno de los pocos casos en los que una aproximación con fundamento reduce drásticamente el número de operaciones remotas.
+
+Ese segundo punto merece una diapositiva, porque es la lección general que carga el ejercicio concreto: **el particionado de circuitos no es solo un problema de grafos, es un problema algorítmico.** El capítulo 15 listaba el particionado como línea de investigación abierta;<Ref n={24} /> la QFT es el caso en el que un físico le gana al particionador de grafos por saber qué significan las puertas.
+
+### 25.2 Telegates, y por qué una QFT los quiere
+
+Teleportar un control al otro lado del corte y traerlo de vuelta cuesta dos transferencias en cada sentido y, peor aún, arrastra consigo aquello con lo que el qubit ya estuviera entrelazado. Así que la QFT no quiere *mover* qubits. Quiere **prestarlos**: el control se queda donde está y se pone a disposición de los demás mediante un estado GHZ compartido. Eso es un telegate, y es lo que hacen `expose` / `unexpose` (capítulo 23).
+
+Tres propiedades de esa pareja sostienen todo el ejercicio.
+
+- **Son colectivas, como `MPI_Bcast`.** Todos los ranks de la ventana las llaman, en el mismo orden, y por eso las llamadas van *fuera* de las ramas `if rank ==`. Los ranks que quedan fuera de la ventana reciben `None` y no consumen nada.
+- **`expose` devuelve el índice que hay que usar como control** —el propio qubit en el root, un qubit de comunicación recién reservado en cada receptor—, de modo que la puerta no local se escribe exactamente igual que una local.
+- **Las ventanas anidan como ámbitos.** Puede haber dos abiertas a la vez, y la interior tiene que cerrarse primero. Eso no es una norma de estilo: es la razón por la que la vQPU del capítulo 21 se levantó con dos qubits de comunicación y no con uno.
+
+### 25.3 La forma del programa
+
+Tres ranks, **un qubit de datos cada uno**, y la transformada inversa en lugar de la directa:
+
+```
+H(q2) · CP(q2→q1, −π/2) · H(q1) · CP(q2→q0, −π/4) · CP(q1→q0, −π/2) · H(q0)
+```
+
+Invertir el orden es lo que convierte esto en un ejercicio y no en una transcripción, y obliga a dos cosas que la transformada directa no pide.
+
+- **El Hadamard de `q2` va primero**, antes de que se lo preste a nadie: el espejo de la transformada directa, donde iba el último.
+- **`q1` es receptor y *después* prestamista**, así que su ventana se abre dentro de la de `q2` y por tanto tiene que cerrarse antes. El rank 0 queda dentro de las dos a la vez, y ahí es donde se va el segundo qubit de comunicación del capítulo 21.
+
+Lo que hay que señalar es el emparejamiento: cada `expose` tiene su `unexpose`, la interior primero, con las puertas no locales entre medias. El capítulo 23 explicó por qué ese emparejamiento es más estricto en este backend que en ningún otro: el qubit de comunicación que libera `unexpose` es el que va a pedir la ventana siguiente.
+
+Nótese también lo que cuesta una ventana: *un* estado GHZ, ocurran dentro las rotaciones que ocurran. El control del rank 2 se usa dos veces, por dos ranks distintos, al precio de prestarlo una. Teleportar `q2` de ida y vuelta habrían sido cuatro bloques de teledata.
+
+### 25.4 Los ejercicios
+
+<Exercise label="Ejercicio 8 · obligatorio">
+  #### Una QFT inversa de 3 qubits entre tres QPU
+
+  `examples/netqmpi/5_qft_expose.py` construye la transformada directa. **Escribir la inversa**: las mismas puertas del revés, todos los ángulos negados, un qubit de datos por rank.
+
+  Cómo sabrás que ha funcionado: `QFT|x>` es un estado producto, así que cada rank prepara su propio factor localmente sin comunicación ninguna —el rank *j* sostiene `(|0> + e^(2πi·2^j·x/8)|1>)/√2`—. Al deshacer la transformada, cada rank lee un bit de *x* en las 1024 tiradas, el rank 0 el más significativo.
+</Exercise>
+
+El valor de *x* viaja en el entorno, porque el lanzador no pasa argumentos al programa: la restricción SPMD del capítulo 6, todavía vinculante cuatro partes después.
+
+```bash title="Un valor, y después los ocho"
+$ QFT_X=5 netqmpi -n 3 notebook_apps/ex8_iqft.py --cunqa --shots 1024
+$ for x in 0 1 2 3 4 5 6 7; do
+>   QFT_X=$x netqmpi -n 3 notebook_apps/ex8_iqft.py --cunqa --shots 1024 | tail -1
+> done
+```
+
+`101` es 5, con el rank 0 delante, y cada marginal debería salir un `1.000` / `0.000` limpio. **La bandera de determinismo vale más que el propio valor.** Protege la única suposición que viene del *formato* de las cuentas y no de la física: CUNQA concatena una cadena de bits por registro clásico, primero el registro propio del usuario y después los dos bits del protocolo, y los bits del protocolo son monedas al aire. Si la lectura hubiera cogido uno de esos por error, nada saldría determinista, así que obtienes un honesto `deterministic=False` en lugar de una respuesta incorrecta pero verosímil. Un valor podría ser suerte; ocho, no.
+
+<Exercise label="Ejercicio 9 · opcional">
+  #### Estimación de fase distribuida
+
+  El ejercicio 8 construyó una subrutina. Este es el algoritmo al que pertenece. Estimación de fase con `U = P(2πφ)`, cuyo autoestado es `|1>`: los qubits de conteo a `|+>`, un `controlled-U^(2^j)` desde el qubit de conteo *j* que devuelve la fase por retroceso, y una QFT inversa sobre el registro de conteo.
+
+  El segundo paso deja exactamente el estado producto que en el ejercicio 8 preparabas a mano, así que el tercero *es* el ejercicio 8: `inverse_qft` se copia tal cual. Hay que escribir los dos primeros.
+</Exercise>
+
+Es el primer programa del día en el que los ranks **no son simétricos**: el rank 0 sostiene el bit de conteo 0 *y* el autoestado en un segundo qubit de datos; los ranks 1 y 2 sostienen un bit de conteo cada uno. Cada `controlled-U^(2^j)` tiene su control en el rank *j* y su objetivo en el rank 0: local para el rank 0, una ventana de `expose` para los otros dos. Esas ventanas no se solapan, así que se van pasando el mismo qubit de comunicación.
+
+Dos cosas que conviene fijar antes de escribir nada. Las colectivas van *fuera* de las ramas `if rank ==`, como siempre: todos los ranks llaman a `expose` y a `unexpose`, y solo el rank 0 pone una puerta entre medias. Y los ángulos son `2π·2^j·φ`, no `2π·φ/2^j`. El rank 0 es el bit más significativo, así que le toca la rotación *más pequeña*, que es el orden que espera la QFT inversa y la razón por la que las dos mitades encajan.
+
+```bash title="Una fase que puede representar, y otra que no"
+$ QPE_PHI=0.625 netqmpi -n 3 notebook_apps/ex9_qpe.py --cunqa --shots 1024
+$ QPE_PHI=0.3333333333333333 netqmpi -n 3 notebook_apps/ex9_qpe.py --cunqa --shots 1024
+```
+
+φ = 5/8 es múltiplo de 1/8, así que tres bits la representan exactamente y el registro de conteo es determinista: `101`, en todas las tiradas. φ = 1/3 cae entre 2/8 y 3/8, y la segunda ejecución es la más instructiva de las dos: hay que leerla con cuidado, porque lo que vuelve son tres **marginales**, y nada en ellos dice qué tirada del rank 0 iba con cuál del rank 2. Con las fases exactas eso era inofensivo, porque un producto de deltas *es* la distribución conjunta. Aquí no lo es, y el histograma sobre *x* sencillamente no está en esos datos. `010` y `011` coinciden en los dos primeros bits y difieren en el tercero, que es justo lo que debe verse: los ranks 0 y 1 casi seguros, el rank 2 repartido cerca del 50/50, y `deterministic=False` como firma honesta.
+
+### 25.5 Qué llevarse
+
+Los cinco minutos más valiosos no son la ejecución. Son lo que dicen los dos ejercicios juntos.
+
+**La composición es el resultado.** `inverse_qft` se copió del ejercicio 8 sin tocar nada y siguió funcionando aunque ahora el rank 0 sostiene dos qubits de datos y llega entrelazado en lugar de en un estado producto. Que una colectiva distribuida componga no es gratis; esta lo hace porque está escrita contra ranks e índices de qubit y no le importa qué pasó antes.
+
+**Lo que se paga es la concurrencia máxima, no el total.** En todo el ejercicio 9 se abren cinco ventanas y la familia sigue siendo `[2, 2]`. Las ventanas del retroceso de fase se abren y se cierran de una en una; solo el par anidado de la QFT inversa se sostiene a la vez. **La vida de la ventana es el presupuesto de qubits de comunicación**: cerrando antes la ventana del rank 2 bastaría con uno, pero el circuito ya no sería la QFT inversa.
+
+**Y los recursos siguen siendo tuyos, para devolverlos.** La familia lleva levantada desde el capítulo 21, y por eso cada ejecución de aquí se enganchó al instante y no pagó coste de planificador. Sigue siendo una reserva.
+
+```python title="La última línea del día"
+qdrop(FAMILY)
+```
+
+Dos extensiones que merece la pena probar después, y que además se responden sobre el papel antes de costar una reserva:
+
+- Rehacer el ejercicio 8 con **teledata** en lugar de telegates —mover `q1` y `q2` al rank 0, transformar y devolverlos— y contar cuántas peticiones `gen_ent` emite cada versión.
+- Llevar el ejercicio 9 a cuatro nodos. Calcular qué hay que levantar *antes* de levantarlo: *n* qubits de conteo en *n* nodos son n(n−1)/2 rotaciones entre nodos y n−1 qubits de comunicación sostenidos a la vez en el rank 0.

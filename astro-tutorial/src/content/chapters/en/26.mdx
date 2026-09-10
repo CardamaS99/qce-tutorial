@@ -1,0 +1,31 @@
+---
+lang: en
+order: 26
+part: "Part V"
+title: "Closing the second block"
+lead: ""
+accent: quantum
+---
+The second half in one sentence: a programming model needs a machine to run on; there is no such machine yet; CUNQA emulates the infrastructure of one inside a real supercomputer, simulating its devices and channels; and because both projects kept a thin, documented seam at the right height of the stack, NetQMPI's abstractions can be carried down onto it without either side surrendering its model.
+
+### 26.1 What CUNQA does not do yet
+
+The honest list, in the order it appears on the roadmap.<Ref n={1} />
+
+- **Communication noise: absent.** Every channel in this tutorial is ideal. Latency, entanglement fidelity, heralded loss and memory decoherence during entanglement distribution are the characteristic physics of a distributed system, and none of it is modelled. Two routes are being weighed and both have costs: implementing it over the existing simulators, which were not designed for time-dependent physical-layer effects, or integrating a discrete-event network simulator, which brings mature noise models along with a networking paradigm that does not adapt readily to a computing one — and, being mostly written in Python, would break the C++ ecosystem the current simulators live in.
+- **Device noise: partial.** Available only when AerSimulator runs the shots loop unassisted — no communication, no `CIF` (chapters 16 to 18). Lifting this and extending noise to the other simulators that support it, such as Qulacs, is the nearer of the two goals.
+- **The joint state lives in one process.** Under quantum communication, the centralised executor simulates a single state without exploiting the distributed state vectors that QuEST and AerSimulator-under-MPI already offer. This is the ceiling on how large a quantum-communication experiment can be, and it is the clearest illustration in the whole tutorial of chapter 17's point: the distribution of a quantum system and the distribution of its classical simulation are orthogonal problems.
+- **Execution is circuit-at-a-time.** The roadmap points at streaming instructions to the vQPU in small binary blocks, with the vQPU updating its state as each block arrives — driven by the prospect of circuits whose encoding reaches hundreds of gigabytes. That would replace JSON as the interchange format and, incidentally, would make `flush()` translate properly for the first time (chapter 23).
+- **Scheduling is list order.** `run` assigns circuits to vQPUs in the order they appear. Everything a scheduler would do — locality, load, heterogeneous backends — is left as room above the API.
+
+### 26.2 What the integration still has to settle
+
+- **Sub-communicators.** Chapter 23 mapped `COMM_WORLD` onto a family. Splitting a communicator maps onto multiple families, which is workable but not yet the same abstraction — and MPI programmers reach for `Comm_split` sooner than one might expect.
+- **Noise parity across backends.** The same program runs on SquidASM and on CUNQA and returns incomparable fidelities, for the reasons in 26.1. Until communication noise exists, the backend choice is a choice about *what question you are asking*: physical realism, or infrastructure behaviour at HPC scale.
+- **Where the ranks come from.** Today the two `-n` flags must agree by hand (chapter 24). A launcher that raised the infrastructure and started the ranks in one act would be more convenient — and would quietly undo the stack decision of chapter 16, which is why it has not been done.
+
+### 26.3 The through-line
+
+Five parts, one argument. Physical limits forced the replication of units, replication forced communication, and communication turned out to be the expensive part. MPI standardised how that is programmed, through three abstractions — SPMD, rank, communicator — that have outlived every machine they were written for. NetQMPI carried those three into the quantum domain, adapting the primitives where physics forbids the literal translation and leaving one cell of the table permanently empty. And CUNQA supplies what the model was missing: not a simulator of quantum mechanics, of which there are many, but an emulator of the *infrastructure* — vQPUs that are asked for, paid for, queried and released exactly as an accelerator of a real machine would be.
+
+If an attendee leaves with one sentence from the second half, let it be the counterpart of the one that closed the first: **distributed quantum computing will be run on HPC systems, so it has to be programmed like HPC and managed like HPC.** The quantum part is what is new. Almost everything around it is not — and that is the good news, because it means the discipline already exists.

@@ -1,0 +1,30 @@
+# Build output
+dist/
+.astro/
+
+# Dependencies
+node_modules/
+.npm/
+
+# Logs
+npm-debug.log*
+*.log
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Deploy adapters
+.vercel/
+.netlify/
+
+# Custom
+comands.txt
+modifications.md

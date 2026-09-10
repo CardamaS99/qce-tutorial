@@ -1,0 +1,56 @@
+---
+lang: en
+order: 24
+part: "Part V"
+title: "Launching it"
+lead: "The dictionary of chapter 23 covers what the program says. This chapter covers what you type, which is where the two models are most visibly different: NetQMPI expects one command, CUNQA expects two, and the reason is the stack decision of chapter 16."
+accent: quantum
+---
+### 24.1 Two commands, not one
+
+A NetQMPI application on its published backends is launched the way an MPI application is:
+
+```bash title="On a network-simulator backend"
+$ netqmpi -n 3 app.py
+```
+
+On CUNQA the infrastructure does not come into existence when the program starts — it was raised beforehand and outlives the program (chapter 18). So the sequence is:
+
+```bash title="On the CUNQA backend"
+$ qraise -n 3 -t 00:30:00 --quantum_comm --co-located --family qce26
+$ qinfo
+$ netqmpi -n 3 app.py --cunqa --shots 1024
+$ qdrop --family qce26
+```
+
+Four observations that are worth a slide of their own.
+
+- **`-n` appears twice and must agree.** `qraise -n 3` reserves three vQPUs; `netqmpi -n 3` starts three ranks. If they disagree you get either idle paid-for vQPUs or ranks with nowhere to run. Chapter 23 explained why: `size` is `len(get_QPUs(...))`.
+- **The DQC model is chosen at raise time, not at run time.** `--quantum_comm` is a property of the infrastructure. A program that calls `expose` against an infrastructure raised without it fails, and it fails at the vQPU rather than in your code.
+- **`--shots` belongs to the run, not the raise.** It is an execution argument, forwarded to `run` (chapter 19) — the one number in the command line that is about the algorithm rather than the machine.
+- **`qdrop` is not optional.** The vQPUs live until the wall time expires whether or not anything is using them. This is the piece of the workflow with a real cost attached, and the one an audience of HPC users will judge you on.
+
+### 24.2 Sizing the request
+
+The flags of chapter 18 are where a demo lives or dies, and the sizing rule depends entirely on the model, for the reason chapter 17 gave:
+
+| Model raised | What the vQPUs are | How to size |
+| --- | --- | --- |
+| No communication | N independent simulations | Per-vQPU memory scales with the qubits *of one* circuit. Adding vQPUs adds throughput at linear cost. |
+| `--classical_comm` | N independent simulations plus a message layer | Same per-vQPU sizing. The cost that grows is time, not memory, and it grows with the dependency chain rather than with N. |
+| `--quantum_comm` | one joint state behind N proxies | Per-vQPU memory is **not** the right mental model: the centralised executor holds a single state whose dimension is set by the *total* number of qubits across participating vQPUs. |
+
+That last row is the one to say out loud. In the quantum-communication model, going from two vQPUs of 10 qubits to four vQPUs of 10 qubits does not double the memory: it squares the state vector's dimension twice over. A room full of people each raising four `--quantum_comm` vQPUs on a shared allocation is a predictable way to lose the second half of the session.
+
+### 24.3 When it does not work
+
+The failure modes are few, and they are all identifiable from the outside. This is the troubleshooting slide to have ready rather than improvise.
+
+| Symptom | Most likely cause | Check |
+| --- | --- | --- |
+| The program finds no QPUs | Nothing raised, wall time expired, or `--co-located` mismatch | `qinfo`. If the family is listed but invisible, you are on a different node than the vQPUs and they were raised on-node. |
+| Fewer ranks than expected | `-n` disagreement between `qraise` and `netqmpi` | Compare the two command lines before reading any code. |
+| An `expose` hangs | Communication qubits exhausted — a missing `unexpose` | Chapter 23. The stall is by design: the request waits for a resource to be freed. |
+| A program hangs with no error | A blocking `recv` cycle, or two halves of a transfer that do not name each other identically | Chapter 7, exercise 6b. Nothing will diagnose this; the wall time ends it. |
+| Noise flags appear to do nothing | Noise asked for outside its supported conditions | Chapters 16 and 18: no communication, no `CIF`, AerSimulator. |
+| Runs, but absurdly slow | `--quantum_comm` with more qubits than intended | Chapter 20's fourth row is the expected behaviour, not a bug. |

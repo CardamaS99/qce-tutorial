@@ -1,0 +1,119 @@
+---
+lang: en
+order: 21
+part: "Part IV"
+title: "Exercises with CUNQA"
+lead: "Two exercises, and they are the same program twice. The first writes by hand what the NetQMPI notebook obtained from a single call; the second hands it back to NetQMPI and puts the two files side by side. What separates them is not capability — it is how many decisions are yours, and how quietly the wrong ones fail."
+accent: quantum
+---
+### 21.1 One family for the whole afternoon
+
+Both exercises of this chapter and both of chapter 25 run against a single raised family. That is the point of the two-step workflow of chapter 18: raise once, attach many times, and pay no scheduler cost per run.
+
+```python title="Raised once · three vQPUs, quantum communication, two hours"
+from cunqa.qpu import get_QPUs, qraise
+
+FAMILY, SIZE = "netqmpi_notebook", 3
+
+qpus = get_QPUs(co_located=True, family=FAMILY) or []
+if len(qpus) < SIZE:
+    qraise(SIZE, "02:00:00",
+           simulator="Munich",
+           co_located=True,
+           quantum_comm=True,               # without this there is no gen_ent
+           backend="notebook_apps/notebook_vqpu.json",
+           family=FAMILY)
+    qpus = get_QPUs(co_located=True, family=FAMILY) or []
+```
+
+The vQPU definition is the one number that decides whether the afternoon finishes. `num_qubits` is the pair `[data, comm]`, and the executor simulates the **whole family in one register** spanning every qubit each vQPU *declares* — used or not.
+
+```json title="notebook_vqpu.json · [2, 2] is not a guess"
+{
+    "name": "netqmpi_notebook",
+    "num_qubits": [2, 2]
+}
+```
+
+**Two data qubits** because exercise 9's rank 0 holds a counting qubit *and* the eigenstate, and a family is raised from a single definition, so every other rank carries the second qubit unused. **Two comm qubits** because the inverse QFT of exercise 8 keeps two `expose` windows open at once, and an open window costs one comm qubit on every rank inside it. Four qubits times three vQPUs is a twelve-qubit register — 4096 amplitudes, 64 KiB. Read that off the definition, never off your circuit: `[4, 4]` across three vQPUs is 256 MiB, and `[8, 8]` across two is 64 GiB.
+
+<Exercise label="Exercise 6 · mandatory">
+  #### Communicating two vQPUs
+
+  Rank 0 prepares `|+>` and hands it to rank 1, which measures it. In NetQMPI that is `comm.qsend(circuit, [0], next_rank)` against a matching `comm.qrecv`. **Write the same program again without NetQMPI**: two `CunqaCircuit` objects built by hand, teleportation through `cunqa.qc_protocols.qsend` / `qrecv`, submitted with `run`.
+
+  The point is not that it is hard. It is that four things NetQMPI *derived* are now yours to choose, and every one of them is a way to get it wrong.
+</Exercise>
+
+| | NetQMPI derives it | You choose it |
+| --- | --- | --- |
+| Circuit id | `f"rank_{rank}"` | You name them — and the names are the addresses |
+| Comm qubits | Borrowed from a pool, per protocol block | Declared up front in the `(data, comm)` pair |
+| Protocol clbits | Its own `netqmpi_protocol` register | Yours to allocate, apart from your own bits |
+| Pairing the two halves | A tag built from the ranks and a counter | The same string on both sides, or the run hangs |
+
+```python title="What you need · the API surface"
+CunqaCircuit((num_data, num_comm), num_clbits, id="...")
+
+circuit.add_cl_register("name", n)   # returns the name it used
+circuit.classical_regs["name"]       # the bits of that register
+circuit.comm_qubits                  # the indices reserved for communication
+
+qsend(circuit, data_qubit, comm_qubit, clbits, recving_circuit="<id>", tag="...")
+qrecv(circuit, data_qubit, comm_qubit, clbits, control_circuit="<id>", tag="...")
+```
+
+Both calls need **one** comm qubit and **two** classical bits, and the tag has to match byte for byte on the two sides.
+
+Two operational details that the API does not announce and that people lose time on.
+
+- **On a `(1, 1)` circuit, `comm_qubits` is `[1]`.** Comm qubits are numbered after the data ones, and `add_cl_register` returns the name it used, so the register looked up by that name goes straight into the call.
+- **The spare vQPU needs a circuit.** The family has three vQPUs and this program uses two. CUNQA runs one executor per family and starts a round only once *every* vQPU has submitted something, so the idle one does not sit the round out — it stalls it. Give it a throwaway circuit.
+
+```python title="Submitting · the spare vQPU included"
+spare = CunqaCircuit((1, 0), 1, id="spare")
+spare.measure(0, 0)
+
+results = gather(run(circuits + [spare], qpus, shots=1024))
+
+for result in results:
+    if result.id != "spare":
+        print(f"{result.id}: {result.counts}")
+```
+
+**Read the counts before moving on.** `rank_1` splits roughly 50/50, which is what `|+>` looks like — and also exactly what a *broken* channel returning noise looks like. Swap the sender's `h(0)` for an `x(0)` and run it again: rank 1 must then report `1` on essentially every shot. That is the test that actually distinguishes the two. `rank_0` contributes nothing either way, because teleportation *moves* a state: by the end its data qubit is back in `|0>` and its only measurements are the protocol's own.
+
+<Exercise label="Exercise 6b · optional, five minutes">
+  #### Break it deliberately
+
+  Change the tag on one side only. The program hangs. Nothing errors, nothing warns — each vQPU simply waits forever for a partner that never names it, and what eventually ends it is the wall time fixed at `qraise`. This is the deadlock of chapter 7 in quantum clothing, and it is worth meeting once on purpose, because the diagnosis is nothing like an MPI deadlock's.
+</Exercise>
+
+<Exercise label="Exercise 7 · comparison">
+  #### The same program, the other programming model
+
+  Now write exercise 6 in NetQMPI and run it against the very same three vQPUs. It is the same two calls quoted in exercise 6, inside a `with comm:` block — two lines of work. The exercise is what comes after: **put the two files side by side.**
+</Exercise>
+
+```bash title="No --config, and no family on the command line"
+$ netqmpi -n 2 notebook_apps/ex7_send_recv.py --cunqa --shots 1024
+```
+
+With exactly one family up, that is all the adapter needs: it attaches to what is running and leaves the allocation alone afterwards. Note also that two ranks ran on a three-vQPU family and nothing stalled — the adapter gave the spare vQPU a throwaway circuit, the same thing you had to know to do by hand in exercise 6. An oversized family is wasteful, never wrong.
+
+Roughly thirty lines against six, and the difference is entirely the four rows of the table above. None of those values has a *correct* setting you could look up; they only have to **agree between the two halves**, and nothing checks that they do. That is the class of bug NetQMPI removes — not a hard one, a silent one.
+
+Four questions to answer in writing before Part V starts:
+
+- **Who is addressed?** In NetQMPI you send to a *rank*; in CUNQA you name a *circuit identifier*. Which one is the communicator, and where does it live in each model?
+- **When does the parallelism appear?** NetQMPI launches N copies of one file, SPMD-style. CUNQA builds N circuit objects in one file and hands them to N vQPUs. Both end up with N things running — but only one of them is SPMD.
+- **Who reserves the resources?** In NetQMPI the launcher does it as part of starting the application. In CUNQA it happened before the program existed, in a separate command, and outlives it.
+- **What is the unit of work?** A rank executing a program, or a circuit executed on a device. This is the deepest of the four differences and the one Part V has to reconcile.
+
+<Note label="What the comparison is for">
+  Neither answer is the right one. NetQMPI is a *programming model* that hides the machine; CUNQA is an *infrastructure emulator* that insists you see it. They sit at different heights of the stack of chapter 11, which is exactly why they compose rather than compete — and composing them is the subject of the next five chapters.
+</Note>
+
+<Bridge label="Leave it up">
+  Do not run `qdrop` at the end of this chapter. The family raised in 21.1 is the one chapter 25 attaches to, which is why every run there costs nothing but the shots.
+</Bridge>

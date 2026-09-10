@@ -1,0 +1,71 @@
+---
+lang: es
+order: 18
+part: "Parte IV"
+title: "Levantar la infraestructura"
+lead: "Tres órdenes cubren todo el ciclo de vida de una vQPU. Son programas en C++ expuestos como órdenes de Bash e implementados como envoltorios de SLURM, que es la manera honesta de decir que CUNQA no inventa un gestor de recursos: toma prestado el que la máquina ya tiene."
+accent: quantum
+---
+### 18.1 Reservar primero, ejecutar después
+
+El modelo de pila del capítulo 16 tiene una consecuencia operativa directa: **cuando el programa de Python arranca, los recursos cuánticos ya tienen que existir.** No hay reserva perezosa, ni arranque implícito, ni «si no hay vQPU disponible, se crea una». El flujo tiene dos pasos separados, y están separados a propósito.
+
+<Figure id="qraise-lifecycle">
+  El ciclo completo. `qraise` envía un trabajo que mantiene N vQPU vivas durante un tiempo de pared acotado; `qinfo` informa de lo que está levantado; el programa de Python del capítulo 19 se engancha a las vQPU en marcha mediante `get_QPUs`, envía trabajo y recoge resultados; `qdrop` lo libera todo. Nótese que el programa puede ejecutarse muchas veces contra la misma infraestructura levantada, y que olvidar el `qdrop` quema asignación hasta que expire el reloj de pared.
+</Figure>
+
+### 18.2 `qraise`
+
+Dos opciones son obligatorias: cuántas vQPU y durante cuánto tiempo.
+
+```bash title="La forma mínima"
+$ qraise -n 4 -t 00:10:00
+```
+
+Cada invocación despliega una **familia**: un grupo homogéneo de vQPU que comparten una configuración. Ejecutar `qraise` dos veces da dos familias, que pueden diferir en todo —número de qubits, simulador, modelo DQC— y que pueden coexistir en la misma sesión. Las familias son la manera de montar una infraestructura heterogénea a partir de piezas homogéneas.
+
+### 18.3 Las opciones no obligatorias
+
+Se reparten en cinco grupos, que se corresponden exactamente con las cinco cosas que una infraestructura DQC tiene que decidir.<Ref n={1} />
+
+| Grupo | Opciones | Qué decide |
+| --- | --- | --- |
+| QPU simulada | `--backend`, `--infrastructure` | Número de qubits (de datos y de comunicación), mapa de acoplamiento, instrucciones soportadas, propiedades de ruido. `--backend` toma un fichero JSON y despliega vQPU homogéneas; `--infrastructure` toma un JSON con un backend por vQPU, para despliegues heterogéneos. |
+| Simulador | `--sim` | Cuál de los siete simuladores ejecuta las tareas. Por defecto, AerSimulator. |
+| Recursos clásicos | `--cores-per-qpu`, `--mem-per-qpu`, `--n-nodes` | Se pasan a SLURM. Aquí es donde una vQPU deja de ser una abstracción y empieza a costar dinero. |
+| Modelo DQC | `--classical_comm`, `--quantum_comm` | Ninguna: sin comunicación. Una de ellas: ese modelo. |
+| Integración e identidad | `--co-located`, `--family` | Si las vQPU son alcanzables desde cualquier nodo o solo desde el que las aloja; y un nombre con el que direccionar al grupo. |
+
+Las propiedades de ruido —T₁, T₂ y demás— se declaran en el JSON del backend y se convierten en modelo de ruido con Qiskit. La restricción del capítulo 17 aparece aquí en su forma operativa: **una vQPU con ruido exige sin comunicación, sin `CIF` y AerSimulator.** Pedir ruido fuera de esas condiciones no da el ruido.
+
+<Warning label="La opción que decide todas las demás">
+  `--quantum_comm` no es una opción entre cinco. Elegirla traslada la ejecución al ejecutor centralizado del capítulo 17, hace existir los qubits de comunicación, convierte el estado conjunto en un único estado en un único proceso y elimina toda posibilidad de ruido de dispositivo. Es la diferencia entre ejecutar N simulaciones y ejecutar una. Y eso tiene una consecuencia directa para el dimensionado: bajo `--quantum_comm` la memoria no se gasta vQPU a vQPU, porque un único proceso guarda el estado de todas ellas, y ese estado crece con el número *total* de qubits. Pedir `--mem-per-qpu` como si cada vQPU solo tuviera que guardar sus propios qubits es la forma más común de que un ejercicio de tutorial reviente sobre la asignación compartida de la sala.
+</Warning>
+
+### 18.4 `qdrop` y `qinfo`
+
+`qdrop` envuelve el `scancel` de SLURM. Libera todo lo levantado, con `--all`, o una familia, con `--family` seguido del nombre.
+
+```bash title="Desmontar"
+$ qdrop --family qft_demo      # una familia
+$ qdrop --all                  # todo lo que hayas levantado
+```
+
+`qinfo` informa de las vQPU activas en el sistema: qué familias existen, de qué están hechas y si son alcanzables desde donde estás. Es lo primero que hay que ejecutar cuando un programa no encuentra ninguna QPU, y lo segundo cuando encuentra las que no son.
+
+### 18.5 Las mismas órdenes desde Python
+
+Las tres están también expuestas en la API de Python. Explícitamente *no* es el flujo principal previsto: existe para que un único script pueda encargarse de la gestión y de la ejecución cuando eso resulte cómodo, sin abandonar el modelo de pila en el que ambas siguen conceptualmente separadas.
+
+```python title="Gestión desde dentro del programa · cómodo, no canónico"
+from cunqa.qpu import qraise, get_QPUs, run
+from cunqa.circuit import CunqaCircuit
+from cunqa.qjob import gather
+
+family = qraise(4, "01:00:00", simulator="Aer", co_located=True)
+qpus = get_QPUs(co_located=True)
+```
+
+<Note label="Un apunte para la gente de HPC de la sala">
+  Todo este capítulo es la razón por la que CUNQA se llama emulador de *infraestructuras*. Una herramienta que escondiese `qraise` detrás de un constructor sería más fácil de demostrar y habría abandonado la afirmación por lo bajo: lo que convierte a la vQPU en sustituta de un acelerador es que hay que pedirla al planificador, esperarla y devolverla.
+</Note>

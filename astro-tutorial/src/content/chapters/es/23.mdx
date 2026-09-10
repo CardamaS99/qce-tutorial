@@ -1,0 +1,79 @@
+---
+lang: es
+order: 23
+part: "Parte V"
+title: "El diccionario"
+lead: "Identificado el punto de contacto, el adaptador de backend es una tabla de traducción. La mayoría de entradas son uno a uno; las interesantes son aquellas en las que la traducción no es literal, porque ahí es donde los dos modelos discrepan de verdad sobre el mundo."
+accent: quantum
+---
+### 23.1 Estructura: rank, size, communicator
+
+| NetQMPI | CUNQA | Notas |
+| --- | --- | --- |
+| `rank` | posición en la lista que devuelve `get_QPUs()` | `run` asigna circuitos a vQPU por orden de lista (capítulo 19), así que el orden *es* la asignación de ranks. Trivial, determinista, y el sitio al que acabaría yendo un planificador de verdad. |
+| `size` | `len(get_QPUs(...))` | Por eso tiene que coincidir con el `-n` dado a `qraise`. Véase el capítulo 24. |
+| `COMM_WORLD` | una **familia** | El nombre de `--family` en el levantamiento es lo más parecido a un communicator que tiene CUNQA: un grupo homogéneo, nombrado y filtrable. Los subcommunicators se corresponderían con varias familias. |
+| `env.create_circuit(...)` | `CunqaCircuit(...)` | Con una diferencia que importa: los circuitos de CUNQA llevan un `id`, y el adaptador tiene que generar uno por rank y mantener el mapa rank → id. |
+| cierre de `with comm:` | `run(circuits, qpus, ...)` | El ámbito de ejecución se convierte en la llamada de despacho. |
+| `comm.results` | `gather(qjobs)` | La misma operación con otro nombre. |
+
+El mapa rank → id es lo más importante que mantiene el adaptador, y la razón está en el capítulo 19: **NetQMPI direcciona ranks y CUNQA direcciona identificadores de circuito.** Todas las primitivas de abajo son, en el fondo, esa traducción aplicada una vez.
+
+### 23.2 Punto a punto
+
+```text
+comm.qsend(circuit, [q], dest)   →   qsend  (teledata) desde el circuito de este
+                                     rank al circuito registrado para `dest`
+
+comm.qrecv(circuit, [q], src)    →   qrecv  (teledata) declarado en el circuito de
+                                     este rank, nombrando al circuito de `src`
+```
+
+Es la entrada más limpia de toda la tabla, porque ambas bibliotecas implementan el mismo protocolo e incluso usan los mismos dos verbos. Los `qsend`/`qrecv` de NetQMPI encapsulan la teleportación;<Ref n={2} /> los `qsend`/`qrecv` de CUNQA son teledata construido sobre `gen_ent`.<Ref n={1} /> El adaptador tiene que traducir nombres y destinos, no semántica.
+
+El par clásico es igual de directo: un envío y una recepción clásicos se convierten en `send`/`recv` de CUNQA, y cualquier condicional sobre un bit recibido se convierte en un bloque `cif`/`endcif`.
+
+### 23.3 Colectivas
+
+| NetQMPI | CUNQA | Notas |
+| --- | --- | --- |
+| `qscatter` / `qgather` | un bucle de `qsend` / `qrecv` | Ambas bibliotecas ya las implementan como bucles punto a punto (capítulo 13). La traducción es literal y hereda la misma advertencia honesta: no son colectivas optimizadas con árboles. |
+| `expose` / `unexpose` | `gen_ent` sobre N circuitos, y después `cat_entangler` / `cat_disentangler` | **La entrada interesante.** Véase más abajo. |
+| `flush()` | — | Sin contrapartida directa. Véase 23.4. |
+| `Bcast` | — | No existe en ninguno de los dos lados, y por la misma razón física. |
+
+**`expose` en términos de CUNQA.** El capítulo 13 definió `expose` como la transformación de un estado raíz α|0⟩ + β|1⟩ en un único estado global repartido entre todos los ranks participantes, implementada entrelazando el qubit del root con un estado GHZ precompartido, seguido de medidas y correcciones. Cada uno de esos ingredientes es una directiva de CUNQA:
+
+- el estado GHZ precompartido es `gen_ent` llamado de forma consistente con una **lista** de identificadores de circuito —el capítulo 19 lo decía explícitamente: dos circuitos dan un par de Bell, N circuitos dan un GHZ sobre sus qubits de comunicación—;
+- entrelazar el qubit de datos del root con ese estado, más las medidas y correcciones clásicas, es `cat_entangler` generalizado de dos circuitos a N;
+- `unexpose` es `cat_disentangler`, y la razón por la que NetQMPI lo hace **obligatorio** es la que dio el capítulo 17 para separar qubits de comunicación de qubits de datos: el recurso es finito, y pedir más qubits de comunicación de los que hay detiene la ejecución hasta que se liberen algunos. Saltarse el `unexpose` no solo deja el communicator inconsistente: sobre este backend consume un qubit de comunicación que el siguiente `expose` se va a quedar esperando.
+
+Esa última frase es el mejor argumento del tutorial sobre por qué los dos proyectos van juntos: **la primitiva más abstracta de NetQMPI adquiere un coste operativo concreto en cuanto corre sobre un emulador que modela recursos.** En un simulador de red, olvidar el `unexpose` es un indicio de incorrección. En CUNQA es un cuelgue.
+
+### 23.4 Lo que no traduce limpiamente
+
+Tres entradas en las que el diccionario necesita una nota al pie en lugar de una palabra.
+
+**`flush()`.** En NetQMPI, `flush` sincroniza el flujo de instrucciones cuánticas: empuja al backend las instrucciones NetQASM acumuladas. CUNQA no tiene flujo de instrucciones que empujar: un circuito se envía entero, como JSON, y el bucle de *shots* corre dentro de la vQPU o dentro del ejecutor centralizado. Sobre este backend, `flush` es por tanto o bien una operación vacía o bien una frontera de ámbito que dispara el despacho, y la advertencia del capítulo 13 se aplica con más fuerza: nunca fue una barrera de procesos, y aquí ni siquiera es un vaciado. Es la diferencia estructural más aguda entre los dos modelos, y el capítulo 26 explica por qué se espera que mengüe.
+
+**Semántica de bloqueo.** El `qrecv` de NetQMPI bloquea el rank; el `recv` de CUNQA bloquea dentro de un bucle de *shots* que controla CUNQA. El comportamiento observable se parece lo bastante como para que los programas sean correctos, pero los modos de fallo difieren: un interbloqueo al estilo MPI detiene N procesos, mientras que un interbloqueo en CUNQA detiene un bucle de *shots* hasta que expire el tiempo de pared del `qraise`. El diagnóstico también es distinto, y peor, que es exactamente por lo que el ejercicio 6b pedía verlo una vez a propósito.
+
+**Ruido.** Los backends publicados de NetQMPI son simuladores de red cuya aportación central es el ruido de capa física.<Ref n={7} /> CUNQA no modela ningún ruido de comunicación y solo ruido de dispositivo parcial (capítulos 16 y 18). Un programa que corra idéntico en ambos backends **no** producirá fidelidades comparables, y leer una ejecución de CUNQA como si fuese una de SquidASM es la interpretación errónea más probable de esta segunda mitad del tutorial.
+
+### 23.5 La tabla que hay que llevarse
+
+| Concepto | MPI | NetQMPI | CUNQA |
+| --- | --- | --- | --- |
+| Unidad | proceso | rank | vQPU |
+| Grupo | communicator | communicator | familia |
+| Lanzamiento | `mpirun -n N` | `netqmpi -n N` | `qraise -n N -t T` |
+| Punto a punto | `Send` / `Recv` | `qsend` / `qrecv` | `qsend` / `qrecv` · `send` / `recv` |
+| Repartir | `Scatter` / `Gather` | `qscatter` / `qgather` | bucles de lo anterior |
+| Replicar | `Bcast` | — | — |
+| Repartir un control | — | `expose` / `unexpose` | `gen_ent` · `cat_entangler` / `cat_disentangler` |
+| Entrelazar | — | implícito en las primitivas | `gen_ent`, explícito y atómico |
+| Sincronizar | `Barrier` | `flush()` | ámbito del bucle de *shots* |
+
+<Note label="Cómo usar esta diapositiva">
+  Tres columnas, de izquierda a derecha, son el tutorial entero en una imagen: la primera fue la primera hora, la segunda la media hora siguiente, la tercera esta sesión. Léase una fila en voz alta y se oye el hilo del día: la abstracción sobrevive, la implementación cambia, y hay una celda vacía en dos de las tres columnas por una razón que es de física y no de ingeniería.
+</Note>

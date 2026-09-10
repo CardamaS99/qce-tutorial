@@ -1,4 +1,4 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>From monolithic circuits to multi-QPU networks</title><meta name="description" content="Foundations of distributed programming in HPC, the MPI standard, and its translation into the quantum domain with NetQMPI over the CUNQA emulator. Supporting material for the tutorial's first block."><link rel="alternate" hreflang="es" href="/tutorial/es/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="/tutorial/_astro/i18n.BK51drxS.css"></head><body><header class="masthead"><div><a class="lang-switch" href="/tutorial/es/" hreflang="es">Español</a><p class="eyebrow">IEEE Quantum Week · QCE26 · 3-hour tutorial · 18 September</p><h1>From monolithic circuits to multi-QPU networks</h1><p class="dek">Foundations of distributed programming in HPC, the MPI standard, and its translation into the quantum domain with NetQMPI over the CUNQA emulator. Supporting material for the tutorial&#39;s first block.</p><div class="meta"><div>Block<strong>First ninety minutes</strong></div><div>Prerequisites<strong>Python; basic quantum circuits</strong></div><div>Tools<strong>mpi4py · NetQMPI · CUNQA</strong></div><div>Goal<strong>Write and run a distributed application</strong></div></div></div></header><div class="shell"><nav class="toc" aria-label="Contents"><p class="toc-head">Contents</p><div class="toc-group" data-accent="classical">Part I</div><a href="#e1"><b>1</b>Why we parallelise</a><a href="#e2"><b>2</b>Anatomy of a distributed system</a><a href="#e3"><b>3</b>How work gets divided</a><a href="#e4"><b>4</b>How much there is to gain</a><a href="#e5"><b>5</b>What communication costs</a><div class="toc-group" data-accent="classical">Part II</div><a href="#e6"><b>6</b>MPI: SPMD, rank and communicator</a><a href="#e7"><b>7</b>Point-to-point communication</a><a href="#e8"><b>8</b>Collective operations</a><a href="#e9"><b>9</b>Exercises with mpi4py</a><div class="toc-group" data-accent="quantum">Part III</div><a href="#e10"><b>10</b>What breaks in the quantum domain</a><a href="#e11"><b>11</b>The software stack</a><a href="#e12"><b>12</b>NetQMPI: the interface</a><a href="#e13"><b>13</b>Quantum collectives</a><a href="#e14"><b>14</b>Case study: the distributed GHZ state</a><a href="#e15"><b>15</b>Closing, and what is left out</a><a href="#refs"><b>§</b>References</a></nav><main><section class="chapter" id="e1" data-accent="classical"><span class="chapter-num">Part I · Chapter 1</span><h2>Why we parallelise</h2><p class="lead">Distributed computing is not an advanced optimisation technique you reach for once everything else is exhausted. It is the direct consequence of two physical limits that were hit two decades ago and have not been lifted since. It is worth starting there, because those same two limits reappear — under a different vocabulary — the moment we start connecting several QPUs.</p><h3 id="11-dennard-scaling-and-its-end">1.1 Dennard scaling and its end</h3>
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>From monolithic circuits to multi-QPU networks</title><meta name="description" content="Foundations of distributed programming in HPC, the MPI standard, its translation into the quantum domain with NetQMPI, the CUNQA emulator from the inside, and the integration of the two. Supporting material for both sessions of the tutorial."><link rel="alternate" hreflang="es" href="/tutorial/es/"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet"><link rel="stylesheet" href="/tutorial/_astro/i18n.D3t1_BhW.css"></head><body><header class="masthead"><div><a class="lang-switch" href="/tutorial/es/" hreflang="es">Español</a><p class="eyebrow">IEEE Quantum Week · QCE26 · 3-hour tutorial · 18 September</p><h1>From monolithic circuits to multi-QPU networks</h1><p class="dek">Foundations of distributed programming in HPC, the MPI standard, its translation into the quantum domain with NetQMPI, the CUNQA emulator from the inside, and the integration of the two. Supporting material for both sessions of the tutorial.</p><div class="meta"><div>Blocks<strong>Both sessions · three hours</strong></div><div>Prerequisites<strong>Python; basic quantum circuits</strong></div><div>Tools<strong>mpi4py · NetQMPI · CUNQA</strong></div><div>Goal<strong>Write, deploy and run a distributed application</strong></div></div></div></header><div class="shell"><nav class="toc" aria-label="Contents"><p class="toc-head">Contents</p><div class="toc-group" data-accent="classical">Part I</div><a href="#e1"><b>1</b>Why we parallelise</a><a href="#e2"><b>2</b>Anatomy of a distributed system</a><a href="#e3"><b>3</b>How work gets divided</a><a href="#e4"><b>4</b>How much there is to gain</a><a href="#e5"><b>5</b>What communication costs</a><div class="toc-group" data-accent="classical">Part II</div><a href="#e6"><b>6</b>MPI: SPMD, rank and communicator</a><a href="#e7"><b>7</b>Point-to-point communication</a><a href="#e8"><b>8</b>Collective operations</a><a href="#e9"><b>9</b>Exercises with mpi4py</a><div class="toc-group" data-accent="quantum">Part III</div><a href="#e10"><b>10</b>What breaks in the quantum domain</a><a href="#e11"><b>11</b>The software stack</a><a href="#e12"><b>12</b>NetQMPI: the interface</a><a href="#e13"><b>13</b>Quantum collectives</a><a href="#e14"><b>14</b>Case study: the distributed GHZ state</a><a href="#e15"><b>15</b>Closing, and what is left out</a><div class="toc-group" data-accent="quantum">Part IV</div><a href="#e16"><b>16</b>What CUNQA emulates</a><a href="#e17"><b>17</b>The vQPU</a><a href="#e18"><b>18</b>Raising the infrastructure</a><a href="#e19"><b>19</b>The cunqa package</a><a href="#e20"><b>20</b>One algorithm, three models</a><a href="#e21"><b>21</b>Exercises with CUNQA</a><div class="toc-group" data-accent="quantum">Part V</div><a href="#e22"><b>22</b>Two stacks, one contact point</a><a href="#e23"><b>23</b>The dictionary</a><a href="#e24"><b>24</b>Launching it</a><a href="#e25"><b>25</b>Case study: a distributed QFT</a><a href="#e26"><b>26</b>Closing the second block</a><a href="#refs"><b>§</b>References</a></nav><main><section class="chapter" id="e1" data-accent="classical"><span class="chapter-num">Part I · Chapter 1</span><h2>Why we parallelise</h2><p class="lead">Distributed computing is not an advanced optimisation technique you reach for once everything else is exhausted. It is the direct consequence of two physical limits that were hit two decades ago and have not been lifted since. It is worth starting there, because those same two limits reappear — under a different vocabulary — the moment we start connecting several QPUs.</p><h3 id="11-dennard-scaling-and-its-end">1.1 Dennard scaling and its end</h3>
 <p>In 1974, Robert Dennard and his co-authors formulated the rule that governed microprocessor design for thirty years.<sup class="ref-call"><a href="#r19">19</a></sup> Simplified: if you shrink a transistor’s linear dimensions by a factor <em>k</em> and scale the supply voltage proportionally, the power density per unit area stays constant. Translated into practical consequences: every new process generation gave you more transistors <em>and</em> more clock frequency <em>without</em> paying more watts per square millimetre.</p>
 <p>That was the free lunch. A programmer could write sequential code and trust that, without touching a line, it would run faster on next year’s hardware. This was not a marketing promise: it was a physical property of scaling.</p>
 <p>Dennard scaling breaks down around 2004–2006. The immediate reason is that transistor threshold voltage cannot keep dropping without leakage current exploding, at which point static power starts to dominate the thermal budget. From then on, raising frequency means raising power superlinearly, and power becomes the binding constraint on design.</p>
@@ -632,9 +632,9 @@
 <text class="sv-m" fill="#12695C" x="590" y="317">supercomputer</text>
 <line stroke="#6B7683" stroke-dasharray="4 3" stroke-width="1.2" x1="524" x2="556" y1="120" y2="120"></line>
 <path d="M552 116l6 4-6 4" fill="#6B7683"></path><path d="M528 116l-6 4 6 4" fill="#6B7683"></path>
-<text class="sv-s" text-anchor="middle" x="400" y="374">the integration point is the subject of the tutorial · confirm the exact route before the session</text>
+<text class="sv-s" text-anchor="middle" x="400" y="374">the integration point is a backend adapter · chapter 22 draws it</text>
 </svg></div><figcaption><p>NetQMPI rests on the NetQASM SDK and therefore on its backends. CUNQA is an independent development aimed at emulating distributed QPUs inside a real HPC environment, with its own API and its three communication models.<sup class="ref-call"><a href="#r1">1</a></sup> That both are combined in the tutorial’s title requires making explicit where they connect.</p></figcaption></figure>
-<aside class="callout callout--warning"><span class="callout-label">To resolve before delivering</span><p>The published literature describes NetQMPI as middleware over the NetQASM SDK, with SquidASM and SimulaQron as execution backends.<sup class="ref-call"><a href="#r2">2</a></sup> CUNQA, in turn, is published as a distributed quantum computing emulator for HPC with its own QPU management interface.<sup class="ref-call"><a href="#r1">1</a></sup> The tutorial’s title promises «NetQMPI over the CUNQA emulator», which presupposes an integration route between the two.</p><p>It is worth dedicating an explicit slide to that route: if a CUNQA backend for NetQMPI exists, draw it in the stack; if the integration goes another way — through NetQIR as a common intermediate representation, say, or via a translation layer — state it clearly. A knowledgeable attendee will ask, and the answer should be on the slides rather than in the Q&amp;A.</p></aside></section><section class="chapter" id="e12" data-accent="quantum"><span class="chapter-num">Part III · Chapter 12</span><h2>NetQMPI: the interface</h2><p class="lead">With the frame in place, the API almost explains itself: it is MPI with the constraints of chapter 10 applied. What is interesting is not the syntax but what it chooses to hide and what it chooses to expose.</p><h3 id="121-the-problem-it-solves">12.1 The problem it solves</h3>
+<aside class="callout callout--note"><span class="callout-label">Resolved in Part V</span><p>The published literature describes NetQMPI as middleware over the NetQASM SDK, with SquidASM and SimulaQron as execution backends.<sup class="ref-call"><a href="#r2">2</a></sup> CUNQA, in turn, is published as a distributed quantum computing emulator for HPC with its own QPU management interface.<sup class="ref-call"><a href="#r1">1</a></sup> The tutorial’s title promises «NetQMPI over the CUNQA emulator», which presupposes an integration route between the two.</p><p>That route is a backend adapter, and chapter 22 draws it: NetQMPI keeps its whole programming model and delegates two things — what a circuit object is, and what happens when the execution scope closes — while CUNQA exposes a single documented contact point beneath. Part IV covers the emulator itself first, because the adapter is unreadable before its lower half is known.</p></aside></section><section class="chapter" id="e12" data-accent="quantum"><span class="chapter-num">Part III · Chapter 12</span><h2>NetQMPI: the interface</h2><p class="lead">With the frame in place, the API almost explains itself: it is MPI with the constraints of chapter 10 applied. What is interesting is not the syntax but what it chooses to hide and what it chooses to expose.</p><h3 id="121-the-problem-it-solves">12.1 The problem it solves</h3>
 <p>The NetQASM SDK follows a <em>role-based</em> model: one file per participant — <code>app_alice.py</code>, <code>app_bob.py</code>, <code>app_charlie.py</code>. Moreover, it offers no qubit-transfer primitive: to move a state you must implement teleportation by hand, step by step, including creating the EPR socket, the local gates, the measurement, sending the bits over a separate classical socket and applying corrections at the receiver. And you must call <code>flush()</code> manually to synchronise the quantum flow.<sup class="ref-call"><a href="#r2">2</a></sup></p>
 <p>The result, measured on the case study of chapter 14, is that the number of files grows with N and socket instantiation grows as N² in fully connected topologies. That is the cost NetQMPI removes.</p>
 <h3 id="122-rank-injection-and-communicator-creation">12.2 Rank injection and communicator creation</h3>
@@ -917,4 +917,999 @@
 </ul>
 <h3 id="152-link-to-the-second-half-of-the-tutorial">15.2 Link to the second half of the tutorial</h3>
 <p>CUNQA’s three communication models — no communication, classical communication and quantum communication — map neatly onto the three situations described in Part I: the embarrassingly parallel case, the exchange of scalar results, and the movement of state. Quantum phase estimation, the algorithm used to demonstrate the emulator in the literature,<sup class="ref-call"><a href="#r1">1</a></sup> exercises all three.</p>
-<p>If the attendee takes away one idea from this ninety minutes, let it be this: <strong>distributed quantum computing is distributed computing</strong>, with a harsher communication cost model and one physical prohibition — no-cloning — that removes one of the four fundamental collectives. Everything else transfers.</p></section><section class="references" id="refs"><h2>References</h2><ol><li id="r1"><b>J. Vázquez-Pérez, D. Expósito-Patiño, M. Losada, Á. Carballido, A. Gómez, T. F. Pena.</b> CUNQA: a Distributed Quantum Computing emulator for HPC. arXiv:2511.05209 [quant-ph], 2025. <a href="https://arxiv.org/abs/2511.05209">arxiv.org/abs/2511.05209</a> · documentation and code at <a href="https://github.com/CESGA-Quantum-Spain/cunqa">github.com/CESGA-Quantum-Spain/cunqa</a></li><li id="r2"><b>F. J. Cardama, T. F. Pena.</b> NetQMPI: An MPI-Inspired library for programming Distributed Quantum Applications over Quantum Networks using NetQASM SDK. arXiv:2512.11483 [quant-ph], 2025. <a href="https://arxiv.org/abs/2512.11483">arxiv.org/abs/2512.11483</a> · código en <a href="https://github.com/netqir/netqmpi">github.com/netqir/netqmpi</a></li><li id="r3"><b>F. J. Cardama, J. Vázquez-Pérez, C. Piñeiro, T. F. Pena, J. C. Pichel, A. Gómez.</b> NetQIR: An extension of QIR for distributed quantum computing. <em>Future Generation Computer Systems</em>, 174:107989, 2026.</li><li id="r4"><b>T. Häner, D. S. Steiger, T. Hoefler, M. Troyer.</b> Distributed quantum computing with QMPI. <em>Proc. SC'21</em>, 2021.</li><li id="r5"><b>Y. Shi et al.</b> A Reference Implementation for a Quantum Message Passing Interface. <em>Proc. SC-W '23</em>, pp. 1420–1425, 2023.</li><li id="r6"><b>A. Dahlberg, B. van der Vecht, C. Delle Donne, M. Skrzypczyk, I. te Raa, W. Kozlowski, S. Wehner.</b> NetQASM — a low-level instruction set architecture for hybrid quantum-classical programs in a quantum internet. <em>Quantum Science and Technology</em>, 7(3):035023, 2022.</li><li id="r7"><b>T. Coopmans et al.</b> NetSquid, a NETwork Simulator for QUantum Information using Discrete events. <em>Communications Physics</em>, 4:164, 2021.</li><li id="r8"><b>A. Dahlberg, S. Wehner.</b> SimulaQron — a simulator for developing quantum internet software. <em>Quantum Science and Technology</em>, 4(1):015001, 2018.</li><li id="r9"><b>S. DiAdamo, J. Nötzel, B. Zanger, M. M. Beşe.</b> QuNetSim: A Software Framework for Quantum Networks. <em>IEEE Transactions on Quantum Engineering</em>, 2, 2021.</li><li id="r10"><b>X. Wu et al.</b> SeQUeNCe: a customizable discrete-event simulator of quantum networks. <em>Quantum Science and Technology</em>, 6(4):045027, 2021.</li><li id="r11"><b>D. Barral, F. J. Cardama, G. Díaz-Camacho, D. Faílde, I. F. Llovo, M. Mussa-Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J. C. Pichel, T. F. Pena, A. Gómez.</b> Review of Distributed Quantum Computing: From single QPU to High Performance Quantum Computing. <em>Computer Science Review</em>, 57:100747, 2025.</li><li id="r12"><b>M. Caleffi, M. Amoretti, D. Ferrari, J. Illiano, A. Manzalini, A. S. Cacciapuoti.</b> Distributed quantum computing: A survey. <em>Computer Networks</em>, 254:110672, 2024.</li><li id="r13"><b>S. Wehner, D. Elkouss, R. Hanson.</b> Quantum internet: A vision for the road ahead. <em>Science</em>, 362(6412), 2018.</li><li id="r14"><b>J. Preskill.</b> Quantum Computing in the NISQ era and beyond. <em>Quantum</em>, 2:79, 2018.</li><li id="r15"><b>MPI Forum.</b> MPI: A Message-Passing Interface Standard. Version 4.1, 2023. <a href="https://www.mpi-forum.org/docs/">mpi-forum.org/docs</a></li><li id="r16a"><b>G. M. Amdahl.</b> Validity of the single processor approach to achieving large scale computing capabilities. <em>AFIPS Spring Joint Computer Conference</em>, pp. 483–485, 1967. — <b id="r16b">J. L. Gustafson.</b> Reevaluating Amdahl's Law. <em>Communications of the ACM</em>, 31(5):532–533, 1988.</li><li id="r17"><b>J. L. Hennessy, D. A. Patterson.</b> <em>Computer Architecture: A Quantitative Approach.</em> 6th ed., Morgan Kaufmann, 2019. — For the roofline model: S. Williams, A. Waterman, D. Patterson, <em>Communications of the ACM</em>, 52(4):65–76, 2009.</li><li id="r18"><b>W. A. Wulf, S. A. McKee.</b> Hitting the Memory Wall: Implications of the Obvious. <em>ACM SIGARCH Computer Architecture News</em>, 23(1):20–24, 1995.</li><li id="r19"><b>R. H. Dennard, F. H. Gaensslen, H.-N. Yu, V. L. Rideout, E. Bassous, A. R. LeBlanc.</b> Design of ion-implanted MOSFET's with very small physical dimensions. <em>IEEE Journal of Solid-State Circuits</em>, 9(5):256–268, 1974.</li><li id="r20"><b>K. Rupp.</b> Microprocessor Trend Data. Open dataset, CC-BY licence. <a href="https://github.com/karlrupp/microprocessor-trend-data">github.com/karlrupp/microprocessor-trend-data</a> — recommended source if concrete figures are projected in figure 1.</li><li id="r21"><b>L. Dalcín, R. Paz, M. Storti, J. D'Elía.</b> MPI for Python: Performance improvements and MPI-2 extensions. <em>Journal of Parallel and Distributed Computing</em>, 68(5):655–662, 2008. · documentation at <a href="https://mpi4py.readthedocs.io">mpi4py.readthedocs.io</a></li><li id="r22"><b>G. Díaz-Camacho, I. F. Llovo, F. J. Cardama, I. Bautista, D. Faílde, M. M. Juane, J. Vázquez-Pérez, N. Costas, T. F. Pena, A. Gómez.</b> Benchmarking Distributed Quantum Computing Emulators. arXiv:2512.01807, 2025.</li><li id="r23"><b>R. Parekh, A. Ricciardi, A. Darwish, S. DiAdamo.</b> Quantum Algorithms and Simulation for Parallel and Distributed Quantum Computing. <em>Proc. QCS 2021 (SC21)</em>, pp. 9–19, 2021.</li><li id="r24"><b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023.</li></ol></section></main></div><footer class="site-footer"><div><p>Supporting material · Practical Distributed Quantum Computing: Programming distributed applications with NetQMPI over the CUNQA emulator — from monolithic circuits to multi-QPU networks · IEEE Quantum Week (QCE26), 18 September.</p><p>Figures are schematic and intended for projection; numerical values illustrate orders of magnitude and trends, not measurements. For citable figures, refer to the primary sources listed in the references.</p></div></footer><script type="module">document.querySelector(`.lang-switch`)?.addEventListener(`click`,e=>{let t=e.currentTarget,n=location.hash.slice(1);n&&(t.href=t.getAttribute(`href`)+`#`+n)});</script></body></html>
+<p>If the attendee takes away one idea from this ninety minutes, let it be this: <strong>distributed quantum computing is distributed computing</strong>, with a harsher communication cost model and one physical prohibition — no-cloning — that removes one of the four fundamental collectives. Everything else transfers.</p></section><section class="chapter" id="e16" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 16</span><h2>What CUNQA emulates</h2><p class="lead">Part III finished with an interface and nothing underneath it. CUNQA is what goes underneath — or rather, the emulated infrastructure that stands in for a machine nobody can yet buy. Knowing exactly what it replicates faithfully and what it merely reproduces behaviourally is the difference between reading its output correctly and over-reading it.</p><h3 id="161-emulation-is-not-simulation">16.1 Emulation is not simulation</h3>
+<p>The two words are used interchangeably and they are not the same thing. <strong>Emulation</strong> aims to replicate a system faithfully; <strong>simulation</strong> aims to reproduce its behaviour. In classical computing, emulating a device means translating the instructions of the emulated machine into native instructions of the host. That route is closed for a quantum computer: there are no classical instructions to translate a quantum one into, because the computing paradigms do not share a vocabulary. What is left is the approach Willsch set out — have the classical counterpart solve the physical equations governing the quantum system, so its behaviour is reproduced rather than its instructions translated.<sup class="ref-call"><a href="#r26">26</a></sup></p>
+<p>CUNQA applies both notions, at different heights of the stack.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<ul>
+<li><strong>At the architectural level it emulates.</strong> QPUs are first-class components, deployed and queried through the same interfaces a physical installation would expose. Their integration into the HPC system is also designed to mimic faithfully how an actual QPU would be integrated.</li>
+<li><strong>At the device level it simulates.</strong> Third-party libraries reproduce the outcome of the quantum tasks; the channels reproduce the effect of the links on what they carry.</li>
+</ul>
+<p>In one sentence: <em>CUNQA emulates DQC infrastructures whose QPUs and communication channels are simulated in order to execute the quantum tasks.</em></p>
+<figure><div class="canvas"><svg aria-label="CUNQA split into an emulated upper half — the infrastructure: the vQPUs interfaces, their integration into the HPC system and the interaction between QPUs — and a simulated lower half — the devices: third-party simulators and channel behaviour. Noise belongs to the lower half." role="img" viewbox="0 0 800 340">
+<title>What CUNQA emulates and what it simulates</title>
+<rect fill="#E4F1EE" height="126" rx="8" stroke="#12695C" stroke-width="1.6" width="720" x="40" y="30"></rect>
+<text class="sv-th" fill="#0C3F38" x="58" y="54">EMULATED · the infrastructure</text>
+<text class="sv-s" fill="#12695C" x="58" y="72">replicated faithfully · addressed through the interfaces a real deployment would expose</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="58" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="164" y="106">vQPUs interfaces</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="164" y="123">processes that own</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="164" y="137">their classical resources</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="294" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="400" y="106">HPC integration</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="123">on-node or co-located</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="137">as an accelerator would be</text>
+<rect fill="#fff" height="58" rx="5" stroke="#12695C" stroke-width="1" width="212" x="530" y="84"></rect>
+<text class="sv-t" text-anchor="middle" x="636" y="106">QPU interaction</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="636" y="123">how QPUs communicate</text>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="636" y="137">none · classical · quantum</text>
+<line stroke="#6B7683" stroke-dasharray="6 4" stroke-width="1.2" x1="40" x2="760" y1="172" y2="172"></line>
+<text class="sv-s" text-anchor="middle" x="400" y="166">structure above · physics below</text>
+<rect fill="#EDEAFA" height="126" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="720" x="40" y="184"></rect>
+<text class="sv-th" fill="#3B2C82" x="58" y="208">SIMULATED · the devices</text>
+<text class="sv-s" fill="#5B3FB8" x="58" y="226">behaviour reproduced · delegated to a lower layer</text>
+<rect fill="#fff" height="58" rx="5" stroke="#5B3FB8" stroke-width="1" width="330" x="58" y="238"></rect>
+<text class="sv-t" text-anchor="middle" x="223" y="260">seven simulators</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="223" y="277">Aer · DDSIM · Maestro · Qulacs</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="223" y="291">Qsim · QuEST · CunqaSimulator</text>
+<rect fill="#fff" height="58" rx="5" stroke="#5B3FB8" stroke-width="1" width="330" x="412" y="238"></rect>
+<text class="sv-t" text-anchor="middle" x="577" y="260">channel behaviour</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="577" y="277">ideal in version 3.0.0</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="577" y="291">no communication noise yet</text>
+<text class="sv-s" text-anchor="middle" x="400" y="330">noise is behavioural, so it lives in the lower half — a perfect channel is still a first-class channel</text>
+</svg>
+</div><figcaption><p>The split is what licenses the word «emulator» even when every channel is ideal. What is replicated is the <em>structure</em>: processes that own their resources, are scheduled, queried and addressed exactly as an accelerator of the machine would be. What is reproduced is the <em>physics</em>, and physics is delegated. Noise belongs to the lower half — it is a behavioural property, not a structural one — which is why a perfect-fidelity channel is still a first-class channel.</p></figcaption></figure>
+<h3 id="162-the-two-kinds-of-noise">16.2 The two kinds of noise</h3>
+<p>Because noise sits at the device level, it splits along the same line as the components:</p>
+<ul>
+<li><strong>Device noise.</strong> Gate and qubit errors — decoherence, readout. Supported, but under a restriction that will be made precise in chapter 17: only when AerSimulator runs the shots loop unassisted.</li>
+<li><strong>Communication noise.</strong> Latency on the links, entanglement fidelity, heralded loss, memory decoherence while entanglement is distributed. <strong>Not modelled in version 3.0.0.</strong> The channels are ideal.<sup class="ref-call"><a href="#r1">1</a></sup></li>
+</ul>
+<aside class="callout callout--warning"><span class="callout-label">A disclaimer before you read any number in this book</span><p>Every number the emulator produces here comes from an ideal, noiseless channel. That is not a footnote: it is the boundary of what you may conclude from it. Timings measure the classical cost of emulating the infrastructure, not the runtime of a hypothetical physical one; fidelities are not degraded because nothing degrades them. If you are coming from a quantum-network simulator such as NetSquid,<sup class="ref-call"><a href="#r7">7</a></sup> this is the first difference you will notice — so read every result that follows with that boundary in mind.</p></aside>
+<h3 id="163-where-the-qpus-sit">16.3 Where the QPUs sit</h3>
+<p>There are three ways to place a QPU relative to an HPC installation, following the classification of Elsharkawy et al.<sup class="ref-call"><a href="#r27">27</a></sup> with the two co-located variants merged:</p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>What it means</th>
+<th>CUNQA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Standalone</strong></td>
+<td>No HPC integration at all; the environment is purely quantum.</td>
+<td>Discarded — it falls outside the accelerator paradigm.</td>
+</tr>
+<tr>
+<td><strong>Co-located</strong></td>
+<td>The QPUs live inside the HPC environment but separate from the classical nodes.</td>
+<td>Supported, via the <code>--co-located</code> flag.</td>
+</tr>
+<tr>
+<td><strong>On-node</strong></td>
+<td>The QPUs are devices of a classical node, like a GPU.</td>
+<td>Supported, and the default.</td>
+</tr>
+</tbody>
+</table>
+<p>The choice is not cosmetic: it decides which nodes can reach a given vQPU, and therefore how the job you launch in chapter 18 must be sized.</p>
+<h3 id="164-the-three-communication-models">16.4 The three communication models</h3>
+<p>These are the same three situations Part I described in classical terms, and chapter 15 already anticipated the correspondence:</p>
+<ul>
+<li><strong>No communication.</strong> Independent QPUs. This is the <em>embarrassingly parallel</em> case of chapter 3: different quantum tasks on different QPUs, in parallel, with no exchange.</li>
+<li><strong>Classical communication.</strong> QPUs exchange classical bits at run time. Structurally identical to the previous one, except that a QPU may now receive classical information mid-execution and condition an instruction on it. This introduces the synchronisation problem the previous model did not have — and, with it, the deadlock risk of chapter 7.</li>
+<li><strong>Quantum communication.</strong> QPUs are entangled through a quantum channel while keeping the classical link. This is the model that lets several limited QPUs act as one larger machine, and it is the one the vendor roadmaps point at.</li>
+</ul>
+<p>To the best of the authors’ knowledge, CUNQA is the only tool that emulates DQC infrastructures with all three models inside an HPC environment.<sup class="ref-call"><a href="#r1">1</a></sup> The HPCQC integration frameworks — QFw, MQSS, QCCP, XACC — expose no inter-QPU communication model at all; the quantum-network tools — NetSquid, SeQUeNCe, QuISP, SimulaQron, QuNetSim — offer full communication but no HPC integration.<sup class="ref-call"><a href="#r22">22</a></sup> CUNQA occupies the intersection, and pays for it in noise modelling, which is where those network tools are strongest.</p>
+<h3 id="165-why-you-manage-the-resources-yourself">16.5 Why you manage the resources yourself</h3>
+<p>There are two ways to draw a quantum software stack. In the usual one, resource management lives inside the middleware and is opaque to the user. CUNQA deliberately takes the other: <strong>resource management is the user’s responsibility and sits outside the execution workflow.</strong><sup class="ref-call"><a href="#r1">1</a></sup></p>
+<p>The reasoning is HPC practice rather than quantum computing. Compute time on a shared machine is an accounted resource governed per user by the scheduler. A tool that allocated resources on its own would spend an allocation without the restraint its owner would have applied — greedily rather than deliberately. The consequence for the programmer is the two-step workflow of chapter 18: <strong>first you raise the infrastructure, then you run against it.</strong></p>
+<aside class="callout callout--bridge"><span class="callout-label">Where this is going</span><p>Chapter 17 opens up the vQPU, the unit this infrastructure is made of. Chapter 18 covers the commands that create and destroy it. Chapter 19 covers the Python that talks to it. Chapter 20 puts the three models to work on a single algorithm. Part V then returns to the question chapter 11 left open: how NetQMPI and CUNQA fit together.</p></aside></section><section class="chapter" id="e17" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 17</span><h2>The vQPU</h2><p class="lead">The infrastructure of chapter 16 is made of one repeated unit. A virtual QPU is not a simulator instance that appears when you call it and vanishes when it returns: it is a process that exists, holds resources, and is queried — and that distinction is the whole point.</p><h3 id="171-what-a-vqpu-is">17.1 What a vQPU is</h3>
+<p>A <strong>vQPU</strong> is a process running in an HPC environment, with its own allocated set of classical resources, that stands in for a real QPU in the system and executes the quantum tasks submitted to it.<sup class="ref-call"><a href="#r1">1</a></sup> The concept is not entirely new — Claudino et al. worked with virtualised quantum accelerators before<sup class="ref-call"><a href="#r32">32</a></sup> — but the emphasis here is on ownership: because the vQPU owns its resources, <strong>its lifetime is independent of the tasks that run on it</strong>.</p>
+<p>That independence is what makes it behave like hardware. You can ask whether it is up, ask what it is made of, send it work, and send it more work later. From the programmer’s seat it is another accelerator that happens to be in the machine, exactly like a GPU or an FPGA: it receives tasks, executes them, and returns results.</p>
+<p>The contrast with the usual quantum-simulation workflow is worth making explicit on a slide. <code>AerSimulator()</code> is an object you construct inside your script; a vQPU is a job that was already running before your script started and will still be running after it ends.</p>
+<h3 id="172-three-components">17.2 Three components</h3>
+<figure><div class="canvas"><svg aria-label="Anatomy of a virtual QPU: a single process holding three components — server, backend and simulator — reached by the user program through the server." role="img" viewbox="0 0 800 340">
+<title>The three components of a vQPU</title>
+<text class="sv-th" x="30" y="24">anatomy of one vQPU</text>
+<text class="sv-s" x="30" y="42">a process with its own classical resources</text>
+<rect fill="#F7F8F6" height="30" rx="15" stroke="#C3C7C2" stroke-width="1" width="174" x="596" y="8"></rect>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="683" y="28">your program</text>
+<line stroke="#6B7683" stroke-width="1" x1="683" x2="683" y1="38" y2="55"></line>
+<path d="M677 55 L683 64 L689 55 Z" fill="#6B7683"></path>
+<rect fill="#F7F8F6" height="232" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="64"></rect>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="84"></rect>
+<text class="sv-t" x="72" y="108">server</text>
+<text class="sv-m" fill="#6B7683" x="72" y="127">receives tasks · queues them · returns results</text>
+<text class="sv-s" text-anchor="end" x="728" y="108">how it is reached</text>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="152"></rect>
+<text class="sv-t" x="72" y="176">backend</text>
+<text class="sv-m" fill="#6B7683" x="72" y="195">qubits · coupling map · gates · noise · comm qubits</text>
+<text class="sv-s" text-anchor="end" x="728" y="176">what it declares it is</text>
+<rect fill="#EDEAFA" height="56" rx="5" stroke="#5B3FB8" stroke-width="1.2" width="700" x="50" y="220"></rect>
+<text class="sv-t" fill="#3B2C82" x="72" y="244">simulator</text>
+<text class="sv-m" fill="#5B3FB8" x="72" y="263">one of seven · plus the classical channel</text>
+<text class="sv-s" fill="#5B3FB8" text-anchor="end" x="728" y="244">what makes it compute</text>
+<text class="sv-s" x="30" y="322">server and simulator are swappable · the backend is fixed per version, but trivially editable</text>
+</svg>
+</div><figcaption><p>Server, backend and simulator. The first two are what makes the vQPU addressable as a device; the third is what makes it compute. Server and simulator are decoupled from any specific third-party implementation, so the underlying libraries can be swapped or extended; the backend is fixed within a CUNQA version but is trivially editable to expose new QPU characteristics.</p></figcaption></figure>
+<ul>
+<li><strong>Server.</strong> Connects the vQPU to the user: receives quantum tasks, queues them, returns results. A conventional client–server structure over a standard socket library — Asio or ZMQ in the current version.</li>
+<li><strong>Backend.</strong> Holds what the user needs to know about the simulated QPU: coupling map, number of qubits, basis gates, noise model, and — under the quantum-communication model — the communication qubits. Some fields are generic; others only acquire meaning under a particular DQC model.</li>
+<li><strong>Simulator.</strong> Does the actual execution. Version 3.0.0 supports seven: six third-party — AerSimulator, MQT-DDSIM, Maestro, Qulacs, Qsim, QuEST — and CunqaSimulator, a lightweight one written inside the project for testing.<sup class="ref-call"><a href="#r1">1</a></sup></li>
+</ul>
+<h3 id="173-how-execution-changes-with-the-model">17.3 How execution changes with the model</h3>
+<p>This is the part that surprises people. The DQC model being emulated does not only determine what the user may write: <strong>it changes how the system executes underneath.</strong></p>
+<p><strong>No communication.</strong> Nothing changes with respect to an ordinary circuit run. The simulator does all the work and CUNQA treats it as a black box. There is exactly one exception: a classical <code>if</code> on a gate — <code>CIF</code>. Most simulators do not support it, so CUNQA takes over, runs the shots loop itself, and checks the control bit classically before deciding whether to apply the gate.</p>
+<p>That exception is the origin of the noise restriction announced in chapter 16. Noise modelling relies on AerSimulator, which injects noise at the simulator level with no documented mechanism for doing it gate by gate. The moment CUNQA takes the shots loop, the simulator’s noise machinery is bypassed. Hence: <strong>noisy vQPUs exist only where AerSimulator runs unassisted — no communication, and no <code>CIF</code>.</strong><sup class="ref-call"><a href="#r1">1</a></sup></p>
+<p><strong>Classical communication.</strong> The same reasoning applies for the same reason: no supported simulator understands communication directives. <code>SEND</code> and <code>RECV</code> are therefore executed inside a shots loop that CUNQA controls, through an extra element in the simulator component — the classical communication channel, available over ZMQ or MPI.</p>
+<p><strong>Quantum communication.</strong> Here the scheme above breaks down entirely. Both previous models rest on the same unstated assumption: each vQPU holds its own state, so each can run its own shots loop and the only thing crossing between them is classical. A quantum channel breaks that assumption at the root — once two vQPUs are entangled they no longer have two states, they have one — and no arrangement of independent simulators can represent a state that does not decompose. Something other than the vQPUs has to do the executing, which is what the next section is about.</p>
+<h3 id="174-the-centralised-executor">17.4 The centralised executor</h3>
+<p>Under no- and classical-communication, each vQPU simulates its own state independently: the distribution is purely classical. Under quantum communication that stops being possible. Quantum protocols between vQPUs can entangle their qubits, and an entangled state is by definition not separable — so <strong>the state of all participating vQPUs must be simulated as a single state.</strong></p>
+<p>The consequence is structural. A single state needs a single executor aware of every operation, because an operation aimed at one vQPU may affect another. So in this model the vQPUs stop being executors and become <strong>proxies</strong>: they keep the interface a user would have with a real system, forward instructions to a centralised executor, and hand back that executor’s results.</p>
+<figure><div class="canvas"><svg aria-label="The two execution regimes of a vQPU. Under no communication and classical communication each vQPU simulates its own state and is its own executor. Under quantum communication the vQPUs become proxies of a single centralised executor holding one joint state." role="img" viewbox="0 0 800 380">
+<title>Who executes, under each communication model</title>
+<text class="sv-th" x="30" y="24">how a vQPU executes</text>
+<text class="sv-s" x="30" y="42">the DQC model decides who actually runs the circuit</text>
+<rect fill="#fff" height="126" rx="8" stroke="#C3C7C2" stroke-width="1.2" width="740" x="30" y="58"></rect>
+<text class="sv-m" fill="#6B7683" x="52" y="84">no communication · classical communication</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="52" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="162" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="162" y="136">simulates its own state</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="290" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="400" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="136">simulates its own state</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="528" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="638" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="638" y="136">simulates its own state</text>
+<text class="sv-s" x="52" y="170">separate states, separate executors · only classical bits cross</text>
+<rect fill="#EDEAFA" height="156" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="198"></rect>
+<text class="sv-m" fill="#5B3FB8" x="52" y="224">quantum communication</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="52" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="162" y="261">vQPU · proxy</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="290" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="400" y="261">vQPU · proxy</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="528" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="638" y="261">vQPU · proxy</text>
+<line stroke="#5B3FB8" stroke-width="1" x1="162" x2="162" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="400" x2="400" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="638" x2="638" y1="276" y2="292"></line>
+<rect fill="#D3CBF2" height="42" rx="4" stroke="#3B2C82" stroke-width="1.6" width="696" x="52" y="292"></rect>
+<text class="sv-t" fill="#2E2450" text-anchor="middle" x="400" y="311">centralised executor</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="400" y="327">one joint state · one process</text>
+<text class="sv-s" x="30" y="372">an entangled state is not separable, so it cannot be split across independent simulations</text>
+</svg>
+</div><figcaption><p>The same infrastructure, executing in two different ways. Above, the two models of chapter 16 that need no quantum channel: three vQPUs, three states, three executors, and only classical bits crossing between them. Below, what quantum communication forces: one joint state, therefore one executor, and vQPUs reduced to the interface. Nothing changes in what the user writes — the proxies expose exactly what the executors exposed — and everything changes in what runs underneath.</p></figcaption></figure>
+<aside class="callout callout--note"><span class="callout-label">Two objections worth pre-empting</span><p><strong>«The states <em>may</em> be entangled, not <em>must</em> be — keep them separate when they are not.»</strong> True, and it would require deciding whether the resulting state is separable, which is a strongly NP-hard problem.<sup class="ref-call"><a href="#r28">28</a></sup> The check costs more than the thing it would save.</p><p><strong>«A single state can still be simulated across several processes.»</strong> Also true, and perfectly compatible with CUNQA — but that distribution belongs to the simulator, not to the emulator. CUNQA controls how instructions are executed and stays agnostic about how the state is stored. Some supported simulators do offer distributed state vectors (QuEST, AerSimulator under MPI); version 3.0.0 does not yet exploit them, so the joint state lives in one process.</p><p>This looks contradictory for a <em>distributed</em> model and is not: the distributed nature of the quantum system and the distribution of its classical simulation are orthogonal. That they diverge here is the clearest possible illustration of how expensive entanglement is to handle classically.</p></aside>
+<p>The centralised executor accepts every directive of the two previous models plus one of its own: <strong><code>GEN_ENT</code></strong>, the generation of an entangled state between QPUs. With a centralised executor, generating entanglement is nothing more than preparing a GHZ state across the selected communication qubits — but defining it as an atomic instruction lets CUNQA lift it out of the stream of quantum operations, which is what makes entanglement generation and communication-qubit bookkeeping modellable at all. It was chosen as the semantic minimum of a quantum communication: every known quantum-communication protocol needs it as a building block.<sup class="ref-call"><a href="#r11">11</a></sup></p>
+<h3 id="175-data-qubits-and-communication-qubits">17.5 Data qubits and communication qubits</h3>
+<p>The quantum-communication model introduces a backend field the other two do not have. <strong>Communication qubits</strong> are a subset of a vQPU’s qubits reserved exclusively for communication with other vQPUs, as opposed to <strong>data qubits</strong>, which do the computing. The distinction goes back to the earliest work on distributed quantum computing<sup class="ref-call"><a href="#r31">31</a></sup> and has been kept ever since.<sup class="ref-call"><a href="#r11">11</a></sup></p>
+<p>CUNQA adopts it for two reasons. The first is fidelity to the state of the art. The second is management: separating the two resources means that asking for more communication qubits than the machine has <strong>stalls execution until some are freed</strong>, rather than silently eating the data qubits. Nothing prevents a user who dislikes the split from simply using communication qubits as data qubits.</p>
+<aside class="callout callout--bridge"><span class="callout-label">Before writing any code</span><p>Everything so far exists before your program does. Chapter 18 is about bringing it into existence.</p></aside></section><section class="chapter" id="e18" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 18</span><h2>Raising the infrastructure</h2><p class="lead">Three commands cover the whole life cycle of a vQPU. They are C++ programs exposed as Bash commands and implemented as SLURM wrappers, which is the honest way of saying that CUNQA does not invent a resource manager: it borrows the one the machine already has.</p><h3 id="181-reserve-first-execute-after">18.1 Reserve first, execute after</h3>
+<p>The stack model of chapter 16 has a direct operational consequence: <strong>by the time your Python program runs, the quantum resources must already exist.</strong> There is no lazy allocation, no implicit start-up, no «if no vQPU is available, spawn one». The workflow has two separate steps, and they are separate on purpose.</p>
+<figure><div class="canvas"><svg aria-label="The life cycle of a raised CUNQA infrastructure: qraise submits a scheduler job that keeps N vQPUs alive for a bounded wall time, qinfo reports what is up, the Python program attaches with get_QPUs and runs against it, and qdrop frees the resources." role="img" viewbox="0 0 800 232">
+<title>The life cycle of a raised infrastructure</title>
+<rect fill="#F7F8F6" height="40" rx="5" stroke="#C3C7C2" stroke-width="1" width="150" x="30" y="40"></rect>
+<text class="sv-m" text-anchor="middle" x="105" y="58">qraise -n 4 -t T</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="105" y="72">a SLURM job</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="180" x2="222" y1="60" y2="60"></line>
+<path d="M218 56l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="176" rx="8" stroke="#12695C" stroke-dasharray="6 4" stroke-width="1.6" width="316" x="226" y="40"></rect>
+<text class="sv-th" fill="#0C3F38" x="242" y="62">family · alive for T</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="242" y="76"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="309" y="98">vQPU 0</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="392" y="76"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="459" y="98">vQPU 1</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="242" y="124"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="309" y="146">vQPU 2</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="392" y="124"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="459" y="146">vQPU 3</text>
+<text class="sv-s" fill="#12695C" x="242" y="188">qinfo lists them · they outlive your program</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="542" x2="584" y1="60" y2="60"></line>
+<path d="M580 56l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#F7F8F6" height="40" rx="5" stroke="#C3C7C2" stroke-width="1" width="180" x="588" y="40"></rect>
+<text class="sv-m" text-anchor="middle" x="678" y="58">qdrop --all</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="678" y="72">scancel</text>
+<rect fill="#EDEAFA" height="96" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="180" x="588" y="104"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="678" y="126">your program</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="146">get_QPUs()</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="163">run(...)</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="180">gather(...)</text>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="584" x2="546" y1="140" y2="140"></line>
+<path d="M550 136l-6 4 6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="566" y="130">attach</text>
+</svg>
+</div><figcaption><p>The full cycle. <code>qraise</code> submits a job that keeps N vQPUs alive for a bounded wall time; <code>qinfo</code> reports what is up; the Python program of chapter 19 attaches to the running vQPUs through <code>get_QPUs</code>, submits work and collects results; <code>qdrop</code> frees everything. Note that the program may be run many times against the same raised infrastructure, and that forgetting <code>qdrop</code> burns allocation until the wall clock expires.</p></figcaption></figure>
+<h3 id="182-qraise">18.2 <code>qraise</code></h3>
+<p>Two flags are mandatory: how many vQPUs, and for how long.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="The minimal form"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qraise</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 4</span><span style="color:#79C0FF"> -t</span><span style="color:#A5D6FF"> 00:10:00</span></span></code></pre>
+<p>Each invocation deploys a <strong>family</strong>: a homogeneous group of vQPUs sharing one configuration. Running <code>qraise</code> twice gives you two families, which may differ in every respect — number of qubits, simulator, DQC model — and which can coexist in the same session. Families are how a heterogeneous infrastructure is assembled out of homogeneous pieces.</p>
+<h3 id="183-the-optional-flags">18.3 The optional flags</h3>
+<p>They fall into five groups, which map exactly onto the five things a DQC infrastructure has to decide.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>Flags</th>
+<th>What it decides</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Simulated QPU</td>
+<td><code>--backend</code>, <code>--infrastructure</code></td>
+<td>Qubit counts (data and communication), coupling map, supported instructions, noise properties. <code>--backend</code> takes a JSON file and deploys homogeneous vQPUs; <code>--infrastructure</code> takes a JSON file listing one backend per vQPU, for heterogeneous deployments.</td>
+</tr>
+<tr>
+<td>Simulator</td>
+<td><code>--sim</code></td>
+<td>Which of the seven simulators runs the tasks. Defaults to AerSimulator.</td>
+</tr>
+<tr>
+<td>Classical resources</td>
+<td><code>--cores-per-qpu</code>, <code>--mem-per-qpu</code>, <code>--n-nodes</code></td>
+<td>Passed through to SLURM. This is where a vQPU stops being an abstraction and starts costing money.</td>
+</tr>
+<tr>
+<td>DQC model</td>
+<td><code>--classical_comm</code>, <code>--quantum_comm</code></td>
+<td>Neither: no communication. One of them: that model.</td>
+</tr>
+<tr>
+<td>Integration and identity</td>
+<td><code>--co-located</code>, <code>--family</code></td>
+<td>Whether the vQPUs are reachable from any node or only from the one hosting them; and a name to address the group by.</td>
+</tr>
+</tbody>
+</table>
+<p>Noise properties — T₁, T₂ and the rest — are declared in the backend JSON and turned into a noise model with Qiskit. The restriction of chapter 17 applies here in its operational form: <strong>a noisy vQPU requires no communication, no <code>CIF</code>, and AerSimulator.</strong> Ask for noise outside those conditions and you will not get the noise.</p>
+<aside class="callout callout--warning"><span class="callout-label">The flag that decides everything else</span><p><code>--quantum_comm</code> is not one option among five. Choosing it moves execution to the centralised executor of chapter 17, brings communication qubits into being, makes the joint state a single state in a single process, and removes any possibility of device noise. It is the difference between running N simulations and running one. That has a direct consequence for sizing: under <code>--quantum_comm</code> the memory is not spent one vQPU at a time, because a single process holds the state of all of them, and that state grows with the <em>total</em> number of qubits. Asking for <code>--mem-per-qpu</code> as if each vQPU had to hold only its own qubits is the most common way to make a tutorial exercise fail on the room’s shared allocation.</p></aside>
+<h3 id="184-qdrop-and-qinfo">18.4 <code>qdrop</code> and <code>qinfo</code></h3>
+<p><code>qdrop</code> wraps SLURM’s <code>scancel</code>. It frees everything raised, with <code>--all</code>, or one family, with <code>--family</code> followed by the name.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="Tearing down"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qdrop</span><span style="color:#79C0FF"> --family</span><span style="color:#A5D6FF"> qft_demo</span><span style="color:#8B949E">      # one family</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qdrop</span><span style="color:#79C0FF"> --all</span><span style="color:#8B949E">                  # everything you raised</span></span></code></pre>
+<p><code>qinfo</code> reports the vQPUs currently active in the system: which families exist, what they are made of, and whether they are reachable from where you are. It is the first thing to run when a program cannot find any QPU, and the second thing to run when it finds the wrong ones.</p>
+<h3 id="185-the-same-commands-from-python">18.5 The same commands from Python</h3>
+<p>All three are also exposed in the Python API. This is explicitly <em>not</em> the intended main workflow — it exists so that a single script can handle both management and execution when that is convenient, without abandoning the stack model in which the two remain conceptually separate.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Management from inside the program · convenient, not canonical"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.qpu </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> qraise, get_QPUs, run</span></span>
+<span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.circuit </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> CunqaCircuit</span></span>
+<span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.qjob </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> gather</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">family </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> qraise(</span><span style="color:#79C0FF">4</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;01:00:00&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">simulator</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;Aer&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">qpus </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs(</span><span style="color:#FFA657">co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<aside class="callout callout--note"><span class="callout-label">A remark for the HPC people in the room</span><p>Everything in this chapter is the reason CUNQA calls itself an emulator of <em>infrastructures</em>. A tool that hid <code>qraise</code> behind a constructor would be easier to demo and would have quietly abandoned the claim: what makes the vQPU a stand-in for an accelerator is that you have to ask the scheduler for it, wait for it, and give it back.</p></aside></section><section class="chapter" id="e19" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 19</span><h2>The cunqa package</h2><p class="lead">With the infrastructure up, the Python API covers two things and only two: designing distributed quantum tasks, and executing them. The design side is where the DQC directives live; the execution side is deliberately thin.</p><h3 id="191-cunqacircuit">19.1 <code>CunqaCircuit</code></h3>
+<p>The design entry point is a class whose constructor should look familiar to anyone who has written Qiskit:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="A circuit with three quantum registers and three classical ones"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.circuit </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> CunqaCircuit</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">circuit </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">3</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">3</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;circuit_id&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>The <code>id</code> is not decoration. Under any communication model, circuits address each other <strong>by identifier</strong>, not by rank or by QPU: a send names the receiving circuit, an entanglement generation names the circuits it entangles. This is a genuine difference from MPI, where the addressee is a rank in a communicator, and it is worth flagging early because it is the first thing that trips up someone arriving from Part II.</p>
+<p>Beyond the usual catalogue of local gates, the class implements the communication directives.</p>
+<h3 id="192-classical-communication-send-recv-cif">19.2 Classical communication: <code>send</code>, <code>recv</code>, <code>cif</code></h3>
+<p>Two circuits, one identified as the sender and one as the receiver. The sender pushes the contents of one or more classical registers; the receiver declares in advance where they will land.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Classical communication between two circuits"><code><span class="line"><span style="color:#E6EDF3">send_circuit.send(</span><span style="color:#FFA657">clbits</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">sending_cregs, </span><span style="color:#FFA657">recving_circuit</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;recving_circuit_id&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">recv_circuit.recv(</span><span style="color:#FFA657">clbits</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">recving_cregs, </span><span style="color:#FFA657">sending_circuit</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;sending_circuit_id&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>A received bit is only useful if something can be conditioned on it, which is what <code>cif</code> / <code>endcif</code> provide: a classically controlled block that applies the enclosed gates when the control bit is 1.</p>
+<p><strong><code>recv</code> blocks.</strong> This is the same semantics as <code>MPI_Recv</code> in chapter 7, with the same consequence: a chain of receives that each wait on the previous one serialises the computation, and a cycle of them deadlocks. Chapter 20 shows a case where this is not a bug but the algorithm’s actual structure.</p>
+<h3 id="193-quantum-communication-gen_ent">19.3 Quantum communication: <code>gen_ent</code></h3>
+<p>Circuits that will communicate quantum information must distinguish their two kinds of qubit, and they do so by passing an ordered pair as <code>num_qubits</code>:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Three data qubits and two communication qubits"><code><span class="line"><span style="color:#E6EDF3">circuit_0 </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">3</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">), </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">3</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;circuit_0_id&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">circuit_1 </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">), </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;circuit_1_id&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Entanglement is then generated by both circuits calling <code>gen_ent</code> consistently — each naming the other:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="A Bell pair between two communication qubits"><code><span class="line"><span style="color:#E6EDF3">circuit_0.gen_ent(</span><span style="color:#FFA657">comm_qubit</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">circuits</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;circuit_1_id&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">circuit_1.gen_ent(</span><span style="color:#FFA657">comm_qubit</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">circuits</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;circuit_0_id&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Two circuits give a Bell pair. A consistent list of circuit identifiers in the <code>circuits</code> argument gives a GHZ state shared among all their communication qubits. This is the <code>GEN_ENT</code> directive of chapter 17 seen from the application layer, and it is the building block from which any quantum-communication protocol can be assembled.</p>
+<h3 id="194-the-two-protocols-you-do-not-have-to-write">19.4 The two protocols you do not have to write</h3>
+<p>You are not required to build protocols from <code>gen_ent</code>. The two standard ones ship with the library.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<ul>
+<li><strong>Teledata</strong> — quantum teleportation — moves the state of a data qubit from one circuit to another. Provided by <code>qsend</code> and <code>qrecv</code>.</li>
+<li><strong>Telegate</strong> — quantum gate teleportation — shares the state of a control qubit with a communication qubit of a remote circuit so that a local gate placed in between acts as a <em>non-local controlled gate</em>. Provided by <code>cat_entangler</code> and <code>cat_disentangler</code>.</li>
+</ul>
+<p>In both cases the entanglement generation, the classical corrections and the communication-qubit bookkeeping happen inside. The programmer writes the boundaries of the protocol and the operation that goes between them.</p>
+<aside class="callout callout--note"><span class="callout-label">The same two protocols, two vocabularies</span><p>Chapter 12 introduced <code>qsend</code> and <code>qrecv</code> as NetQMPI primitives and chapter 13 introduced <code>expose</code> / <code>unexpose</code> as its way of spreading a control. The correspondence is not accidental: <code>qsend</code>/<code>qrecv</code> is teledata on both sides, and <code>expose</code> is a cat-entangler generalised to N ranks with a mandatory release. The naming differs because one library speaks MPI and the other speaks protocol. Part V builds the full dictionary; noticing the overlap now makes that chapter shorter.</p></aside>
+<h3 id="195-composing-circuits">19.5 Composing circuits</h3>
+<p>Three free functions build large circuits out of small ones, which matters more than it sounds when the circuits are the units you distribute:</p>
+<ul>
+<li><strong><code>add</code></strong> composes in <em>depth</em>: the instructions of the first operand followed by those of the second.</li>
+<li><strong><code>union</code></strong> composes in <em>width</em>: the registers of the first operand carrying its gates, then those of the second carrying its own.</li>
+<li><strong><code>hsplit</code></strong> inverts <code>union</code>: it cuts a circuit along the register axis into subcircuits acting on contiguous blocks, given either a partition size or an explicit set of cut points.</li>
+</ul>
+<p><code>hsplit</code> is the closest thing in the API to automatic circuit partitioning, and it is worth being precise about what it is not: it cuts where you tell it to. Deciding <em>where</em> to cut so as to minimise remote gates is the open problem chapter 15 listed as left out.<sup class="ref-call"><a href="#r24">24</a></sup></p>
+<h3 id="196-execution">19.6 Execution</h3>
+<p>Connecting to the raised infrastructure returns a list of handles:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Attaching, running, gathering"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.qpu </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> get_QPUs, run</span></span>
+<span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.qjob </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> gather</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qpus </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs(</span><span style="color:#FFA657">co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">family</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;qft_demo&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qjobs </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> run(circuits, qpus, </span><span style="color:#FFA657">shots</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1000</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> gather(qjobs)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> r </span><span style="color:#FF7B72">in</span><span style="color:#E6EDF3"> results:</span></span>
+<span class="line"><span style="color:#79C0FF">    print</span><span style="color:#E6EDF3">(r.counts, r.time_taken)</span></span></code></pre>
+<p>Four things are worth stating explicitly about that block.</p>
+<ul>
+<li><strong><code>get_QPUs</code> filters, it does not create.</strong> <code>co_located</code> decides whether vQPUs on other nodes are visible; <code>family</code> selects by the name given at <code>qraise</code> time. Both concepts were fixed in chapter 18.</li>
+<li><strong><code>run</code> assigns circuits to vQPUs in list order.</strong> That is the whole scheduling algorithm. It is a deliberate placeholder: trivial, predictable, and leaving room for a real scheduler on top.</li>
+<li><strong><code>run</code> is asynchronous.</strong> It dispatches and returns one <code>QJob</code> per circuit. Results arrive through <code>QJob.result</code> — a <code>Result</code> with <code>counts</code> and <code>time_taken</code> — or in bulk through <code>gather</code>.</li>
+<li><strong><code>upgrade_parameters</code></strong> updates the values of a parametric circuit in place. For a variational algorithm running the same ansatz a thousand times with different angles, this is the difference between retransmitting the circuit and retransmitting the numbers.</li>
+</ul>
+<h3 id="197-what-the-middleware-does-and-why-it-is-thin">19.7 What the middleware does, and why it is thin</h3>
+<p>Between the Python above and the C++ vQPUs there is a middleware whose job is deliberately small: turn a <code>CunqaCircuit</code> into a JSON intermediate representation with a fixed schema, and connect the user to the vQPU through a single point — a client attached to the vQPU’s server.<sup class="ref-call"><a href="#r25">25</a></sup></p>
+<p>Two consequences follow, and both are useful to know.</p>
+<p><strong>JSON was chosen for compatibility, not efficiency.</strong> Simulators such as AerSimulator already consume that kind of representation. It is also memory-inefficient compared with anything that avoids string literals, which is why chapter 26 lists a binary encoding among the roadmap items.</p>
+<p><strong>A single contact point means the Python layer is optional.</strong> Anyone who wants a different interface can discard the <code>cunqa</code> package entirely; the only requirement is to send correctly shaped JSON to the vQPU’s server. <strong>That is the door Part V walks through.</strong></p>
+<p>Compilation, meanwhile, is not a CUNQA concern: Qiskit transpilation is supported and leveraged, and no optimisation machinery is developed in-house. The purpose of the project is the integration of DQC into HPC, not the optimal compilation of circuits, and the middleware’s simplicity is the design decision that keeps effort pointed at the first thing.</p></section><section class="chapter" id="e20" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 20</span><h2>One algorithm, three models</h2><p class="lead">The cleanest way to see what each communication model does to a program is to hold the algorithm fixed and vary only the model. Quantum Phase Estimation is the one the CUNQA literature uses for exactly that reason: using a single algorithm isolates the differences the model imposes from the differences the algorithm would have imposed anyway.</p><h3 id="201-the-algorithm-briefly">20.1 The algorithm, briefly</h3>
+<p>QPE, introduced by Kitaev in 1995,<sup class="ref-call"><a href="#r30">30</a></sup> estimates the phase φ of an eigenvalue of a unitary operator U: given U and one of its eigenvectors |ψ⟩ with U|ψ⟩ = e^(2πiφ)|ψ⟩, it returns</p>
+<p class="formula"><p>φ ≃ ξ / 2ⁿ, with error 1 / 2ⁿ</p></p>
+<p>where n is the number of ancilla qubits and ξ is the decimal reading of the most frequent output string of the ancilla register. The circuit has two registers: the n ancillas that hold the phase, and the register holding |ψ⟩ to which the controlled powers of U are applied, followed by an inverse QFT on the ancillas.</p>
+<p>The demonstration takes U = R_z and |ψ⟩ = |1⟩, for two practical reasons: the eigenvectors of R_z are trivial to prepare — eigenstate preparation being one of QPE’s real bottlenecks — and with |1⟩ the answer is known in advance through θ = 2πφ, so correctness is checkable rather than merely plausible.</p>
+<h3 id="202-no-communication-distribute-the-shots">20.2 No communication: distribute the shots</h3>
+<p>More precision means more ancillas, more possible outcomes, and therefore more shots. Nothing about the <em>circuit</em> needs distributing; the <em>sampling</em> does. This is the embarrassingly parallel case, and the code shows it: the circuit is built exactly as it would be on one machine, then replicated.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="QPE with distributed shots · the circuit is untouched"><code><span class="line"><span style="color:#8B949E"># Defining the QPE circuit</span></span>
+<span class="line"><span style="color:#E6EDF3">qpe </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit(num_qubits </span><span style="color:#FF7B72">+</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">, num_qubits)</span></span>
+<span class="line"><span style="color:#E6EDF3">qpe.x(num_qubits)                       </span><span style="color:#8B949E"># eigenstate |psi&gt; = |1&gt;</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(num_qubits):</span></span>
+<span class="line"><span style="color:#E6EDF3">    qpe.h(i)</span></span>
+<span class="line"><span style="color:#FF7B72">    for</span><span style="color:#E6EDF3"> _ </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">2</span><span style="color:#FF7B72">**</span><span style="color:#E6EDF3">i):</span></span>
+<span class="line"><span style="color:#E6EDF3">        qpe.crz(phase, i, num_qubits)   </span><span style="color:#8B949E"># controlled U^(2^i)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qpe.IQFT(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, num_qubits </span><span style="color:#FF7B72">-</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">qpe.measure_all()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E"># Obtaining available vQPUs and distributing the shots</span></span>
+<span class="line"><span style="color:#E6EDF3">qpus </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs()</span></span>
+<span class="line"><span style="color:#E6EDF3">shots_per_qpu </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> [shots </span><span style="color:#FF7B72">//</span><span style="color:#79C0FF"> len</span><span style="color:#E6EDF3">(qpus) </span><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> _ </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">len</span><span style="color:#E6EDF3">(qpus))]</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qjobs </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> run([qpe]</span><span style="color:#FF7B72">*</span><span style="color:#79C0FF">len</span><span style="color:#E6EDF3">(qpus), qpus, </span><span style="color:#FFA657">shots</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">shots_per_qpu)</span></span>
+<span class="line"><span style="color:#E6EDF3">results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> gather(qjobs)</span></span></code></pre>
+<p>The only distributed thing in that program is the last three lines. That is the point: the no-communication model asks nothing of the algorithm.</p>
+<h3 id="203-classical-communication-the-ipea">20.3 Classical communication: the IPEA</h3>
+<p>The Iterative Phase Estimation Algorithm<sup class="ref-call"><a href="#r29">29</a></sup> attacks the qubit cost instead of the shot cost: it extracts the binary expansion of the phase one bit at a time, using a single ancilla per circuit.</p>
+<p>The derivation is worth doing on a slide because it turns an unfamiliar algorithm into a familiar one. The last thing acting on the ancillas before measurement is the inverse QFT — a ladder of Hadamards and controlled rotations. By the deferred measurement principle, measuring <em>before</em> those controlled rotations is equivalent, and it converts them into <strong>classically</strong> controlled gates. Classically controlled gates whose controls come from earlier measurements are precisely a partition point: each slice becomes an independent circuit that needs one classical bit from each of its predecessors.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="IPEA on CUNQA · one subcircuit per vQPU"><code><span class="line"><span style="color:#E6EDF3">qpus_QPE </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs()</span></span>
+<span class="line"><span style="color:#E6EDF3">num_qpus </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> len</span><span style="color:#E6EDF3">(qpus_QPE)</span></span>
+<span class="line"><span style="color:#E6EDF3">circuits </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> []</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(num_qpus):</span></span>
+<span class="line"><span style="color:#E6EDF3">    theta </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> 2</span><span style="color:#FF7B72"> *</span><span style="color:#E6EDF3"> pi </span><span style="color:#FF7B72">*</span><span style="color:#79C0FF"> 2</span><span style="color:#FF7B72">**</span><span style="color:#E6EDF3">(num_qpus </span><span style="color:#FF7B72">-</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">-</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">) </span><span style="color:#FF7B72">*</span><span style="color:#E6EDF3"> phase</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    circuits.append(CunqaCircuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;circuit_</span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">i</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">))</span></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].h(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].x(</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].crz(theta, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)          </span><span style="color:#8B949E"># this slice&#39;s power of U</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # Receiving bits from previous circuits</span></span>
+<span class="line"><span style="color:#FF7B72">    for</span><span style="color:#E6EDF3"> j </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(i):</span></span>
+<span class="line"><span style="color:#E6EDF3">        circuits[i].recv(</span><span style="color:#FFA657">clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">sending_circuit</span><span style="color:#FF7B72">=</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;circuit_</span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">i </span><span style="color:#FF7B72">-</span><span style="color:#E6EDF3"> j </span><span style="color:#FF7B72">-</span><span style="color:#79C0FF"> 1</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">        circuits[i].cif(</span><span style="color:#FFA657">clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">        circuits[i].rz(</span><span style="color:#FFA657">param</span><span style="color:#FF7B72">=-</span><span style="color:#E6EDF3">pi </span><span style="color:#FF7B72">*</span><span style="color:#79C0FF"> 2</span><span style="color:#FF7B72">**</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">-</span><span style="color:#E6EDF3">j </span><span style="color:#FF7B72">-</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">), </span><span style="color:#FFA657">qubits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">        circuits[i].endcif()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].h(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#8B949E">    # Sending bits to upcoming circuits</span></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].measure(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#FF7B72">    for</span><span style="color:#E6EDF3"> k </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(num_qpus </span><span style="color:#FF7B72">-</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">-</span><span style="color:#79C0FF"> 1</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">        circuits[i].send(</span><span style="color:#FFA657">clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">recving_circuit</span><span style="color:#FF7B72">=</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;circuit_</span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">i </span><span style="color:#FF7B72">+</span><span style="color:#E6EDF3"> k </span><span style="color:#FF7B72">+</span><span style="color:#79C0FF"> 1</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    circuits[i].measure(</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qjobs </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> run(circuits, qpus_QPE)</span></span>
+<span class="line"><span style="color:#E6EDF3">results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> gather(qjobs)</span></span></code></pre>
+<p>The inner loop is the whole algorithm. <code>recv</code> blocks until subcircuit <em>i − j − 1</em> has measured; <code>cif</code>/<code>endcif</code> apply the correction rotation R_z(−π · 2^−(j+1)) only when the received bit is 1; and the cumulative effect of all those conditional rotations reproduces the inverse QFT one bit at a time, with no extra ancillas. Then the ancilla is measured and broadcast to every later subcircuit that will need it.</p>
+<p>The partition is legitimate for a reason worth stating: in the eigenvector register, each controlled gate leaves the register in the eigenstate, so the slices are genuinely independent of one another except through the classical bits.</p>
+<h3 id="204-quantum-communication-the-register-split">20.4 Quantum communication: the register split</h3>
+<p>QPE has two registers, so the obvious quantum-communication partition is one register per vQPU. Doing that turns every controlled-U into a <strong>non-local</strong> controlled gate, which is exactly what telegate is for. The example below uses <code>cat_entangler</code> / <code>cat_disentangler</code> rather than raw <code>gen_ent</code>, which makes the structure legible.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Distributed QPE with quantum communication · two circuits, one comm qubit each"><code><span class="line"><span style="color:#E6EDF3">ancilla_circuit  </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit((</span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">), </span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;ancilla_circuit&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">register_circuit </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit((</span><span style="color:#79C0FF">N_REGISTER_QUBITS</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">), </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;register_circuit&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">data_qubits_anc, comm_qubits_anc </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> ancilla_circuit.get_qubits()</span></span>
+<span class="line"><span style="color:#E6EDF3">data_qubits_reg, comm_qubits_reg </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> register_circuit.get_qubits()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">register_circuit.x(data_qubits_reg[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">])          </span><span style="color:#8B949E"># eigenstate |1&gt;</span></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    ancilla_circuit.h(data_qubits_anc[i])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> i </span><span style="color:#FF7B72">in</span><span style="color:#79C0FF"> range</span><span style="color:#E6EDF3">(</span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    cat_entangler(</span></span>
+<span class="line"><span style="color:#FFA657">        target_circuits</span><span style="color:#FF7B72"> =</span><span style="color:#E6EDF3"> [ancilla_circuit, register_circuit],</span></span>
+<span class="line"><span style="color:#FFA657">        data_qubit</span><span style="color:#FF7B72">      =</span><span style="color:#E6EDF3"> data_qubits_anc[</span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#FF7B72"> -</span><span style="color:#79C0FF"> 1</span><span style="color:#FF7B72"> -</span><span style="color:#E6EDF3"> i],</span></span>
+<span class="line"><span style="color:#FFA657">        comm_qubits</span><span style="color:#FF7B72">     =</span><span style="color:#E6EDF3"> [comm_qubits_anc[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">], comm_qubits_reg[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">]],</span></span>
+<span class="line"><span style="color:#FFA657">        clbits</span><span style="color:#FF7B72">          =</span><span style="color:#E6EDF3"> [</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">],</span></span>
+<span class="line"><span style="color:#FFA657">        tag</span><span style="color:#FF7B72">             =</span><span style="color:#A5D6FF"> &quot;telegate&quot;</span></span>
+<span class="line"><span style="color:#E6EDF3">    )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    param </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> (</span><span style="color:#79C0FF">2</span><span style="color:#FF7B72">**</span><span style="color:#E6EDF3">i) </span><span style="color:#FF7B72">*</span><span style="color:#79C0FF"> 2</span><span style="color:#FF7B72"> *</span><span style="color:#79C0FF"> 2</span><span style="color:#FF7B72"> *</span><span style="color:#E6EDF3"> pi </span><span style="color:#FF7B72">*</span><span style="color:#79C0FF"> PHASE_TO_COMPUTE</span></span>
+<span class="line"><span style="color:#E6EDF3">    register_circuit.crz(param, comm_qubits_reg[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">], data_qubits_reg[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">])</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    cat_disentangler(</span></span>
+<span class="line"><span style="color:#FFA657">        target_circuits</span><span style="color:#FF7B72"> =</span><span style="color:#E6EDF3"> [ancilla_circuit, register_circuit],</span></span>
+<span class="line"><span style="color:#FFA657">        data_qubit</span><span style="color:#FF7B72">      =</span><span style="color:#E6EDF3"> data_qubits_anc[</span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#FF7B72"> -</span><span style="color:#79C0FF"> 1</span><span style="color:#FF7B72"> -</span><span style="color:#E6EDF3"> i],</span></span>
+<span class="line"><span style="color:#FFA657">        comm_qubits</span><span style="color:#FF7B72">     =</span><span style="color:#E6EDF3"> [comm_qubits_reg[</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">]],</span></span>
+<span class="line"><span style="color:#FFA657">        recv_clbits</span><span style="color:#FF7B72">     =</span><span style="color:#E6EDF3"> [</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">],</span></span>
+<span class="line"><span style="color:#FFA657">        send_clbits</span><span style="color:#FF7B72">     =</span><span style="color:#E6EDF3"> [</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">]</span></span>
+<span class="line"><span style="color:#E6EDF3">    )</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">ancilla_circuit.IQFT(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">N_ANCILLA_QUBITS</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">ancilla_circuit.measure_all()</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qjobs </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> run([ancilla_circuit, register_circuit], get_QPUs())</span></span>
+<span class="line"><span style="color:#E6EDF3">results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> gather(qjobs)</span></span></code></pre>
+<p>The three-step pattern inside the loop is the one to keep:</p>
+<ul>
+<li><strong><code>cat_entangler</code></strong> shares the state of one ancilla qubit with <code>register_circuit</code> through the reserved communication qubits, <em>without destroying it</em>. If the ancilla is α|0⟩ + β|1⟩, the joint state of that ancilla and the remote communication qubit becomes α|00⟩ + β|11⟩ with α and β unchanged — so using the communication qubit as a control is equivalent to using the ancilla as a control.</li>
+<li><strong>The local <code>crz</code></strong> is then an ordinary local gate inside <code>register_circuit</code>. This is where the non-locality has gone: it has not disappeared, it has been paid for in advance.</li>
+<li><strong><code>cat_disentangler</code></strong> removes the residual entanglement, leaving the ancilla in α′|0⟩ + β′|1⟩ and the communication qubit back in |0⟩, free for the next iteration.</li>
+</ul>
+<p>Together the three realise a non-local controlled gate having exchanged only a temporary entangled pair and some classical bits — never the ancilla’s state itself.</p>
+<h3 id="205-reading-the-numbers-honestly">20.5 Reading the numbers honestly</h3>
+<p>All three variants were run to estimate φ = 1/π on the QMIO cluster at CESGA, each vQPU given the same 2 cores and 30 GB, all co-located, every case repeated 100 times.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<table>
+<thead>
+<tr>
+<th>Model</th>
+<th>vQPUs</th>
+<th>Shots per vQPU</th>
+<th>Estimated phase</th>
+<th>Mean time (s)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No communication</td>
+<td>1</td>
+<td>10⁸</td>
+<td>0.3183135986328125</td>
+<td>123.602</td>
+</tr>
+<tr>
+<td>No communication</td>
+<td>128</td>
+<td>781 250</td>
+<td>0.3183135986328125</td>
+<td>1.267</td>
+</tr>
+<tr>
+<td>Classical communication</td>
+<td>16</td>
+<td>10⁸</td>
+<td>0.3183135986328125</td>
+<td>4959.346</td>
+</tr>
+<tr>
+<td>Quantum communication</td>
+<td>2</td>
+<td>10⁴</td>
+<td>0.3183135986328125</td>
+<td>5124.625</td>
+</tr>
+</tbody>
+</table>
+<p>Two readings, and they must not be mixed up.</p>
+<p><strong>Correctness.</strong> Every model returns the same estimate, 0.3183135986328125 ± 0.000015, against the true 1/π = 0.31830988…. The uncertainty is 2⁻¹⁶, exactly the resolution of QPE with n = 16 ancillas, and the estimate agrees well inside it. The platform emulates all three models and gets the right answer in all three. That is the claim the table supports.</p>
+<p><strong>Cost.</strong> The times measure the classical wall clock spent emulating and simulating the infrastructure. They are <strong>not</strong> predictions of a physical DQC system’s runtime — the channels are ideal and carry no timing model at all — and they are <strong>not</strong> a benchmark, because benchmarking here would mostly benchmark AerSimulator. What they do show is how each model shapes the simulation:</p>
+<ul>
+<li><strong>No communication scales.</strong> 128 vQPUs run about 100× faster than one, close to the ideal speedup line, because there is nothing to coordinate. The reason to stop at 128 is not the curve flattening but the bill: 256 cores and 3.84 TB.</li>
+<li><strong>Classical communication serialises.</strong> Sixteen subcircuits <em>could</em> overlap, but every subcircuit <em>i</em> must receive a bit from each of its <em>i</em> predecessors, and <code>recv</code> blocks. The dependency structure of the IPEA is a chain, so the partition buys nothing and the communication traffic costs plenty: 40× slower than the monolithic baseline at the same shot count.</li>
+<li><strong>Quantum communication is monolithic and expensive.</strong> The centralised executor takes over, the joint state is one state, and the telegate protocol inserts many extra gates. Four orders of magnitude fewer shots for a comparable wall time — a per-shot cost roughly 4 × 10⁵ times higher.</li>
+</ul>
+<aside class="callout callout--note"><span class="callout-label">Different models want different vQPU counts</span><p>1, 128, 16 and 2 vQPUs across four rows is not sloppy methodology. The no-communication model takes as many as you can pay for; the classical model is pinned to the number of subcircuits, which is the number of ancilla qubits; the quantum model wants the natural register split, which is two. Forcing a common N would be tidier and would hide the exact thing the comparison is for: <strong>the model dictates the shape of the deployment, not the other way round.</strong></p></aside></section><section class="chapter" id="e21" data-accent="quantum"><span class="chapter-num">Part IV · Chapter 21</span><h2>Exercises with CUNQA</h2><p class="lead">Two exercises, and they are the same program twice. The first writes by hand what the NetQMPI notebook obtained from a single call; the second hands it back to NetQMPI and puts the two files side by side. What separates them is not capability — it is how many decisions are yours, and how quietly the wrong ones fail.</p><h3 id="211-one-family-for-the-whole-afternoon">21.1 One family for the whole afternoon</h3>
+<p>Both exercises of this chapter and both of chapter 25 run against a single raised family. That is the point of the two-step workflow of chapter 18: raise once, attach many times, and pay no scheduler cost per run.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Raised once · three vQPUs, quantum communication, two hours"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> cunqa.qpu </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> get_QPUs, qraise</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#79C0FF">FAMILY</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">SIZE</span><span style="color:#FF7B72"> =</span><span style="color:#A5D6FF"> &quot;netqmpi_notebook&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">3</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qpus </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs(</span><span style="color:#FFA657">co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">family</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">FAMILY</span><span style="color:#E6EDF3">) </span><span style="color:#FF7B72">or</span><span style="color:#E6EDF3"> []</span></span>
+<span class="line"><span style="color:#FF7B72">if</span><span style="color:#79C0FF"> len</span><span style="color:#E6EDF3">(qpus) </span><span style="color:#FF7B72">&lt;</span><span style="color:#79C0FF"> SIZE</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">    qraise(</span><span style="color:#79C0FF">SIZE</span><span style="color:#E6EDF3">, </span><span style="color:#A5D6FF">&quot;02:00:00&quot;</span><span style="color:#E6EDF3">,</span></span>
+<span class="line"><span style="color:#FFA657">           simulator</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;Munich&quot;</span><span style="color:#E6EDF3">,</span></span>
+<span class="line"><span style="color:#FFA657">           co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">,</span></span>
+<span class="line"><span style="color:#FFA657">           quantum_comm</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">,               </span><span style="color:#8B949E"># without this there is no gen_ent</span></span>
+<span class="line"><span style="color:#FFA657">           backend</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;notebook_apps/notebook_vqpu.json&quot;</span><span style="color:#E6EDF3">,</span></span>
+<span class="line"><span style="color:#FFA657">           family</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">FAMILY</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">    qpus </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> get_QPUs(</span><span style="color:#FFA657">co_located</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">True</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">family</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">FAMILY</span><span style="color:#E6EDF3">) </span><span style="color:#FF7B72">or</span><span style="color:#E6EDF3"> []</span></span></code></pre>
+<p>The vQPU definition is the one number that decides whether the afternoon finishes. <code>num_qubits</code> is the pair <code>[data, comm]</code>, and the executor simulates the <strong>whole family in one register</strong> spanning every qubit each vQPU <em>declares</em> — used or not.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="json" data-title="notebook_vqpu.json · [2, 2] is not a guess"><code><span class="line"><span style="color:#E6EDF3">{</span></span>
+<span class="line"><span style="color:#7EE787">    &quot;name&quot;</span><span style="color:#E6EDF3">: </span><span style="color:#A5D6FF">&quot;netqmpi_notebook&quot;</span><span style="color:#E6EDF3">,</span></span>
+<span class="line"><span style="color:#7EE787">    &quot;num_qubits&quot;</span><span style="color:#E6EDF3">: [</span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">2</span><span style="color:#E6EDF3">]</span></span>
+<span class="line"><span style="color:#E6EDF3">}</span></span></code></pre>
+<p><strong>Two data qubits</strong> because exercise 9’s rank 0 holds a counting qubit <em>and</em> the eigenstate, and a family is raised from a single definition, so every other rank carries the second qubit unused. <strong>Two comm qubits</strong> because the inverse QFT of exercise 8 keeps two <code>expose</code> windows open at once, and an open window costs one comm qubit on every rank inside it. Four qubits times three vQPUs is a twelve-qubit register — 4096 amplitudes, 64 KiB. Read that off the definition, never off your circuit: <code>[4, 4]</code> across three vQPUs is 256 MiB, and <code>[8, 8]</code> across two is 64 GiB.</p>
+<aside class="callout callout--exercise"><span class="callout-label">Exercise 6 · mandatory</span><h4 id="communicating-two-vqpus">Communicating two vQPUs</h4><p>Rank 0 prepares <code>|+&gt;</code> and hands it to rank 1, which measures it. In NetQMPI that is <code>comm.qsend(circuit, [0], next_rank)</code> against a matching <code>comm.qrecv</code>. <strong>Write the same program again without NetQMPI</strong>: two <code>CunqaCircuit</code> objects built by hand, teleportation through <code>cunqa.qc_protocols.qsend</code> / <code>qrecv</code>, submitted with <code>run</code>.</p><p>The point is not that it is hard. It is that four things NetQMPI <em>derived</em> are now yours to choose, and every one of them is a way to get it wrong.</p></aside>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>NetQMPI derives it</th>
+<th>You choose it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Circuit id</td>
+<td><code>f&quot;rank_{rank}&quot;</code></td>
+<td>You name them — and the names are the addresses</td>
+</tr>
+<tr>
+<td>Comm qubits</td>
+<td>Borrowed from a pool, per protocol block</td>
+<td>Declared up front in the <code>(data, comm)</code> pair</td>
+</tr>
+<tr>
+<td>Protocol clbits</td>
+<td>Its own <code>netqmpi_protocol</code> register</td>
+<td>Yours to allocate, apart from your own bits</td>
+</tr>
+<tr>
+<td>Pairing the two halves</td>
+<td>A tag built from the ranks and a counter</td>
+<td>The same string on both sides, or the run hangs</td>
+</tr>
+</tbody>
+</table>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="What you need · the API surface"><code><span class="line"><span style="color:#E6EDF3">CunqaCircuit((num_data, num_comm), num_clbits, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;...&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">circuit.add_cl_register(</span><span style="color:#A5D6FF">&quot;name&quot;</span><span style="color:#E6EDF3">, n)   </span><span style="color:#8B949E"># returns the name it used</span></span>
+<span class="line"><span style="color:#E6EDF3">circuit.classical_regs[</span><span style="color:#A5D6FF">&quot;name&quot;</span><span style="color:#E6EDF3">]       </span><span style="color:#8B949E"># the bits of that register</span></span>
+<span class="line"><span style="color:#E6EDF3">circuit.comm_qubits                  </span><span style="color:#8B949E"># the indices reserved for communication</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">qsend(circuit, data_qubit, comm_qubit, clbits, </span><span style="color:#FFA657">recving_circuit</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;&lt;id&gt;&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">tag</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;...&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">qrecv(circuit, data_qubit, comm_qubit, clbits, </span><span style="color:#FFA657">control_circuit</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;&lt;id&gt;&quot;</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">tag</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;...&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Both calls need <strong>one</strong> comm qubit and <strong>two</strong> classical bits, and the tag has to match byte for byte on the two sides.</p>
+<p>Two operational details that the API does not announce and that people lose time on.</p>
+<ul>
+<li><strong>On a <code>(1, 1)</code> circuit, <code>comm_qubits</code> is <code>[1]</code>.</strong> Comm qubits are numbered after the data ones, and <code>add_cl_register</code> returns the name it used, so the register looked up by that name goes straight into the call.</li>
+<li><strong>The spare vQPU needs a circuit.</strong> The family has three vQPUs and this program uses two. CUNQA runs one executor per family and starts a round only once <em>every</em> vQPU has submitted something, so the idle one does not sit the round out — it stalls it. Give it a throwaway circuit.</li>
+</ul>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="Submitting · the spare vQPU included"><code><span class="line"><span style="color:#E6EDF3">spare </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> CunqaCircuit((</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">), </span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">id</span><span style="color:#FF7B72">=</span><span style="color:#A5D6FF">&quot;spare&quot;</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">spare.measure(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> gather(run(circuits </span><span style="color:#FF7B72">+</span><span style="color:#E6EDF3"> [spare], qpus, </span><span style="color:#FFA657">shots</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1024</span><span style="color:#E6EDF3">))</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">for</span><span style="color:#E6EDF3"> result </span><span style="color:#FF7B72">in</span><span style="color:#E6EDF3"> results:</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> result.id </span><span style="color:#FF7B72">!=</span><span style="color:#A5D6FF"> &quot;spare&quot;</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#79C0FF">        print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;</span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">result.id</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">: </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">result.counts</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p><strong>Read the counts before moving on.</strong> <code>rank_1</code> splits roughly 50/50, which is what <code>|+&gt;</code> looks like — and also exactly what a <em>broken</em> channel returning noise looks like. Swap the sender’s <code>h(0)</code> for an <code>x(0)</code> and run it again: rank 1 must then report <code>1</code> on essentially every shot. That is the test that actually distinguishes the two. <code>rank_0</code> contributes nothing either way, because teleportation <em>moves</em> a state: by the end its data qubit is back in <code>|0&gt;</code> and its only measurements are the protocol’s own.</p>
+<aside class="callout callout--exercise"><span class="callout-label">Exercise 6b · optional, five minutes</span><h4 id="break-it-deliberately">Break it deliberately</h4><p>Change the tag on one side only. The program hangs. Nothing errors, nothing warns — each vQPU simply waits forever for a partner that never names it, and what eventually ends it is the wall time fixed at <code>qraise</code>. This is the deadlock of chapter 7 in quantum clothing, and it is worth meeting once on purpose, because the diagnosis is nothing like an MPI deadlock’s.</p></aside>
+<aside class="callout callout--exercise"><span class="callout-label">Exercise 7 · comparison</span><h4 id="the-same-program-the-other-programming-model">The same program, the other programming model</h4><p>Now write exercise 6 in NetQMPI and run it against the very same three vQPUs. It is the same two calls quoted in exercise 6, inside a <code>with comm:</code> block — two lines of work. The exercise is what comes after: <strong>put the two files side by side.</strong></p></aside>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="No --config, and no family on the command line"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 2</span><span style="color:#A5D6FF"> notebook_apps/ex7_send_recv.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span></span></code></pre>
+<p>With exactly one family up, that is all the adapter needs: it attaches to what is running and leaves the allocation alone afterwards. Note also that two ranks ran on a three-vQPU family and nothing stalled — the adapter gave the spare vQPU a throwaway circuit, the same thing you had to know to do by hand in exercise 6. An oversized family is wasteful, never wrong.</p>
+<p>Roughly thirty lines against six, and the difference is entirely the four rows of the table above. None of those values has a <em>correct</em> setting you could look up; they only have to <strong>agree between the two halves</strong>, and nothing checks that they do. That is the class of bug NetQMPI removes — not a hard one, a silent one.</p>
+<p>Four questions to answer in writing before Part V starts:</p>
+<ul>
+<li><strong>Who is addressed?</strong> In NetQMPI you send to a <em>rank</em>; in CUNQA you name a <em>circuit identifier</em>. Which one is the communicator, and where does it live in each model?</li>
+<li><strong>When does the parallelism appear?</strong> NetQMPI launches N copies of one file, SPMD-style. CUNQA builds N circuit objects in one file and hands them to N vQPUs. Both end up with N things running — but only one of them is SPMD.</li>
+<li><strong>Who reserves the resources?</strong> In NetQMPI the launcher does it as part of starting the application. In CUNQA it happened before the program existed, in a separate command, and outlives it.</li>
+<li><strong>What is the unit of work?</strong> A rank executing a program, or a circuit executed on a device. This is the deepest of the four differences and the one Part V has to reconcile.</li>
+</ul>
+<aside class="callout callout--note"><span class="callout-label">What the comparison is for</span><p>Neither answer is the right one. NetQMPI is a <em>programming model</em> that hides the machine; CUNQA is an <em>infrastructure emulator</em> that insists you see it. They sit at different heights of the stack of chapter 11, which is exactly why they compose rather than compete — and composing them is the subject of the next five chapters.</p></aside>
+<aside class="callout callout--bridge"><span class="callout-label">Leave it up</span><p>Do not run <code>qdrop</code> at the end of this chapter. The family raised in 21.1 is the one chapter 25 attaches to, which is why every run there costs nothing but the shots.</p></aside></section><section class="chapter" id="e22" data-accent="quantum"><span class="chapter-num">Part V · Chapter 22</span><h2>Two stacks, one contact point</h2><p class="lead">Chapter 11 left a question open and flagged it as something to resolve before delivering: the tutorial&#39;s title promises «NetQMPI over CUNQA», and the two projects were published independently, each with its own stack. This chapter answers it. The short version is that the integration is a backend adapter, and that it works because both sides were built with the seam in the right place.</p><h3 id="221-what-each-side-actually-is">22.1 What each side actually is</h3>
+<p>It is worth restating the two definitions next to each other, because most of the confusion about the integration comes from assuming the two tools occupy the same level.</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>NetQMPI</th>
+<th>CUNQA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>What it is</td>
+<td>A <em>programming model</em>: MPI’s SPMD, rank and communicator carried into the quantum domain.<sup class="ref-call"><a href="#r2">2</a></sup></td>
+<td>An <em>infrastructure emulator</em>: vQPUs deployed on a supercomputer through the scheduler.<sup class="ref-call"><a href="#r1">1</a></sup></td>
+</tr>
+<tr>
+<td>Level in the stack of chapter 11</td>
+<td>Middleware, over the NetQASM SDK.</td>
+<td>System layer plus its own application layer.</td>
+</tr>
+<tr>
+<td>What it hides</td>
+<td>Sockets, EPR pairs, corrections, node identities.</td>
+<td>Simulators, processes, sockets, the SLURM job.</td>
+</tr>
+<tr>
+<td>What it insists you see</td>
+<td>Ranks and the communicator.</td>
+<td>The infrastructure: you raise it, you pay for it, you drop it.</td>
+</tr>
+<tr>
+<td>Unit of work</td>
+<td>A rank executing a program.</td>
+<td>A circuit executed on a device.</td>
+</tr>
+</tbody>
+</table>
+<p>They are not competitors, and neither is a subset of the other. NetQMPI needs <em>something underneath</em> that can hold quantum state, produce entanglement between nodes and carry classical bits. CUNQA is such a something, and it happens to be the only one that runs inside a real HPC environment with all three communication models.<sup class="ref-call"><a href="#r22">22</a></sup></p>
+<h3 id="222-the-seam-on-the-cunqa-side">22.2 The seam on the CUNQA side</h3>
+<p>Chapter 19 ended on the sentence that matters here: the middleware connects to the lower level <strong>through a single point</strong> — a client attached to the vQPU’s server — and anyone who wants a different interface can discard the <code>cunqa</code> Python package entirely, the only requirement being to send correctly shaped JSON to the vQPUs.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<p>That is not an accident of implementation; it is the reason the middleware was kept thin on purpose. An emulator whose Python API was welded to its execution layer would have to be <em>wrapped</em>. One whose contact point is a documented JSON schema over a socket can be <em>targeted</em>.</p>
+<h3 id="223-the-seam-on-the-netqmpi-side">22.3 The seam on the NetQMPI side</h3>
+<p>NetQMPI has moved in the same direction. The published version of the library is described as middleware over the NetQASM SDK with SquidASM and SimulaQron as execution backends;<sup class="ref-call"><a href="#r2">2</a></sup> the interface has since been reorganised around an explicit <code>Environment</code> that owns both the communicator and the circuit construction, so that the same user program runs against whichever backend the launcher selects.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="The backend-agnostic shape · examples/netqmpi/send_recv.py"><code><span class="line"><span style="color:#FF7B72">from</span><span style="color:#E6EDF3"> netqmpi.sdk.environment </span><span style="color:#FF7B72">import</span><span style="color:#E6EDF3"> Environment</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">def</span><span style="color:#D2A8FF"> main</span><span style="color:#E6EDF3">(env: Environment </span><span style="color:#FF7B72">=</span><span style="color:#79C0FF"> None</span><span style="color:#E6EDF3">):</span></span>
+<span class="line"><span style="color:#E6EDF3">    comm </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> env.comm</span></span>
+<span class="line"><span style="color:#E6EDF3">    rank </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.rank</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    next_rank     </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.get_next_rank(rank)</span></span>
+<span class="line"><span style="color:#E6EDF3">    previous_rank </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.get_prev_rank(rank)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#FF7B72">    with</span><span style="color:#E6EDF3"> comm:                                    </span><span style="color:#8B949E"># everything inside runs on the backend</span></span>
+<span class="line"><span style="color:#FF7B72">        if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">==</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">            circuit </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> env.create_circuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">            circuit.h(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)                          </span><span style="color:#8B949E"># prepare |+&gt;</span></span>
+<span class="line"><span style="color:#E6EDF3">            comm.qsend(circuit, [</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">], next_rank)   </span><span style="color:#8B949E"># teleport the qubit</span></span>
+<span class="line"><span style="color:#FF7B72">        else</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#E6EDF3">            circuit </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> env.create_circuit(</span><span style="color:#FFA657">num_qubits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">, </span><span style="color:#FFA657">num_clbits</span><span style="color:#FF7B72">=</span><span style="color:#79C0FF">1</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"><span style="color:#E6EDF3">            comm.qrecv(circuit, [</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">], previous_rank)</span></span>
+<span class="line"><span style="color:#E6EDF3">            circuit.measure(</span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">, </span><span style="color:#79C0FF">0</span><span style="color:#E6EDF3">)</span></span>
+<span class="line"></span>
+<span class="line"><span style="color:#E6EDF3">    results </span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3"> comm.results</span></span>
+<span class="line"><span style="color:#FF7B72">    if</span><span style="color:#E6EDF3"> rank </span><span style="color:#FF7B72">!=</span><span style="color:#79C0FF"> 0</span><span style="color:#E6EDF3">:</span></span>
+<span class="line"><span style="color:#79C0FF">        print</span><span style="color:#E6EDF3">(</span><span style="color:#FF7B72">f</span><span style="color:#A5D6FF">&quot;measure: </span><span style="color:#FF7B72">{</span><span style="color:#E6EDF3">results</span><span style="color:#FF7B72">}</span><span style="color:#A5D6FF">&quot;</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Three things in that snippet are the integration, and they are easy to miss on a first read.</p>
+<ul>
+<li><strong><code>env.create_circuit(...)</code> instead of <code>Qubit(connection)</code>.</strong> The user no longer instantiates qubits against a live connection; they build a <em>circuit object supplied by the environment</em>. Which class that is depends on the backend — and on CUNQA it is a <code>CunqaCircuit</code>.</li>
+<li><strong><code>with comm:</code> as an execution scope.</strong> The block delimits what gets dispatched. Under a NetQASM backend this maps onto flushes; under CUNQA it maps onto assembling the circuits and calling <code>run</code>.</li>
+<li><strong><code>comm.results</code></strong> collects afterwards, which is exactly the <code>gather</code> of chapter 19 wearing an MPI-shaped hat.</li>
+</ul>
+<figure><div class="canvas"><svg aria-label="The integration point between NetQMPI and CUNQA. Above the dashed line, the unchanged NetQMPI programming model: one file, SPMD, ranks and primitives. Below it, a backend adapter that maps ranks to raised vQPUs and primitives to CUNQA directives, over the CUNQA system layer." role="img" viewbox="0 0 800 386">
+<title>Where NetQMPI meets CUNQA</title>
+<rect fill="#F7F8F6" height="46" rx="6" stroke="#C3C7C2" stroke-width="1" width="720" x="40" y="24"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="45">user application</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="61">one file · SPMD · unchanged across backends</text>
+<rect fill="#EDEAFA" height="66" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="720" x="40" y="80"></rect>
+<text class="sv-th" fill="#3B2C82" text-anchor="middle" x="400" y="102">NetQMPI</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="400" y="119">Environment · comm · rank / size · qsend / qrecv</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="400" y="135">qscatter / qgather · expose / unexpose</text>
+<line stroke="#6B7683" stroke-dasharray="6 4" stroke-width="1.4" x1="40" x2="760" y1="162" y2="162"></line>
+<text class="sv-s" text-anchor="middle" x="400" y="157">everything above is the same for any backend</text>
+<rect fill="#fff" height="72" rx="6" stroke="#141C24" stroke-width="1.6" width="720" x="40" y="176"></rect>
+<text class="sv-th" text-anchor="middle" x="400" y="198">backend adapter</text>
+<text class="sv-m" fill="#6B7683" x="60" y="218">rank → vQPU from get_QPUs()</text>
+<text class="sv-m" fill="#6B7683" x="60" y="234">create_circuit → CunqaCircuit + id</text>
+<text class="sv-m" fill="#6B7683" x="330" y="218">qsend / qrecv → teledata</text>
+<text class="sv-m" fill="#6B7683" x="330" y="234">expose → gen_ent + cat_entangler</text>
+<text class="sv-m" fill="#6B7683" x="580" y="218">scope close → run()</text>
+<text class="sv-m" fill="#6B7683" x="580" y="234">results → gather()</text>
+<line stroke="#141C24" stroke-width="1.2" x1="400" x2="400" y1="248" y2="272"></line>
+<path d="M396 267l4 6 4-6" fill="#141C24"></path>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="470" y="264">JSON over a socket</text>
+<rect fill="#E4F1EE" height="74" rx="6" stroke="#12695C" stroke-width="1.6" width="720" x="40" y="276"></rect>
+<text class="sv-th" fill="#0C3F38" text-anchor="middle" x="400" y="298">CUNQA · the raised infrastructure</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="60" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="160" y="327">vQPU · rank 0</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="300" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="400" y="327">vQPU · rank 1</text>
+<rect fill="#fff" height="30" rx="4" stroke="#12695C" stroke-width="1" width="200" x="540" y="308"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="640" y="327">vQPU · rank 2</text>
+<text class="sv-s" text-anchor="middle" x="400" y="372">raised beforehand with qraise · the single contact point is a documented JSON schema</text>
+</svg>
+</div><figcaption><p>The contact point. NetQMPI keeps the whole programming model — one file, SPMD, ranks, <code>qsend</code>/<code>qrecv</code>, collectives — and delegates two things to the backend adapter: what a circuit object is, and what happens when the execution scope closes. The adapter maps ranks onto raised vQPUs, translates the primitives into CUNQA directives, and returns the counts. Everything above the dashed line is unchanged between the SquidASM backend and the CUNQA one; everything below it is chapters 17 to 19.</p></figcaption></figure>
+<h3 id="224-why-this-composes-rather-than-collides">22.4 Why this composes rather than collides</h3>
+<p>The two abstractions being at different heights is what makes the composition clean, and it shows up in three places:</p>
+<ul>
+<li><strong>Neither owns resource management, in the same way.</strong> NetQMPI’s launcher starts N ranks; CUNQA’s <code>qraise</code> reserves N vQPUs. These are the same act performed in two vocabularies, and chapter 24 shows how the two commands line up.</li>
+<li><strong>Both are already backend-agnostic in the right direction.</strong> NetQMPI abstracts over what executes; CUNQA abstracts over what programs it. They meet in the middle and neither has to give up its model.</li>
+<li><strong>The circuit is the natural interchange object.</strong> NetQMPI needs somewhere to accumulate gates before dispatch; CUNQA’s IR is a circuit in JSON. The impedance mismatch that could have existed — a streaming instruction model on one side, a whole-circuit model on the other — does not, because both are currently whole-circuit.</li>
+</ul></section><section class="chapter" id="e23" data-accent="quantum"><span class="chapter-num">Part V · Chapter 23</span><h2>The dictionary</h2><p class="lead">With the contact point identified, the backend adapter is a translation table. Most entries are one-to-one; the interesting ones are those where the translation is not literal, because those are the places where the two models genuinely disagree about the world.</p><h3 id="231-structure-rank-size-communicator">23.1 Structure: rank, size, communicator</h3>
+<table>
+<thead>
+<tr>
+<th>NetQMPI</th>
+<th>CUNQA</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rank</code></td>
+<td>position in the list returned by <code>get_QPUs()</code></td>
+<td><code>run</code> assigns circuits to vQPUs in list order (chapter 19), so the ordering <em>is</em> the rank assignment. Trivial, deterministic, and the place a real scheduler would eventually go.</td>
+</tr>
+<tr>
+<td><code>size</code></td>
+<td><code>len(get_QPUs(...))</code></td>
+<td>Which is why it must match the <code>-n</code> given to <code>qraise</code>. See chapter 24.</td>
+</tr>
+<tr>
+<td><code>COMM_WORLD</code></td>
+<td>a <strong>family</strong></td>
+<td>The <code>--family</code> name at raise time is the closest thing CUNQA has to a communicator: a named, homogeneous group you can filter for. Sub-communicators would map onto multiple families.</td>
+</tr>
+<tr>
+<td><code>env.create_circuit(...)</code></td>
+<td><code>CunqaCircuit(...)</code></td>
+<td>With one difference that matters: CUNQA circuits carry an <code>id</code>, and the adapter has to generate one per rank and keep the rank → id map.</td>
+</tr>
+<tr>
+<td><code>with comm:</code> closing</td>
+<td><code>run(circuits, qpus, ...)</code></td>
+<td>The execution scope becomes the dispatch call.</td>
+</tr>
+<tr>
+<td><code>comm.results</code></td>
+<td><code>gather(qjobs)</code></td>
+<td>Same operation, different name.</td>
+</tr>
+</tbody>
+</table>
+<p>The rank → id mapping is the single most important thing the adapter maintains, and the reason is chapter 19: <strong>NetQMPI addresses ranks, CUNQA addresses circuit identifiers.</strong> Every primitive below is, at bottom, that translation applied once.</p>
+<h3 id="232-point-to-point">23.2 Point to point</h3>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="text"><code><span class="line"><span>comm.qsend(circuit, [q], dest)   →   qsend  (teledata) from this rank&#39;s circuit</span></span>
+<span class="line"><span>                                     to the circuit registered for `dest`</span></span>
+<span class="line"><span></span></span>
+<span class="line"><span>comm.qrecv(circuit, [q], src)    →   qrecv  (teledata) declared on this rank&#39;s</span></span>
+<span class="line"><span>                                     circuit, naming the circuit of `src`</span></span></code></pre>
+<p>This is the cleanest entry in the whole table, because both libraries implement the same protocol and even use the same two verbs. NetQMPI’s <code>qsend</code>/<code>qrecv</code> encapsulate teleportation;<sup class="ref-call"><a href="#r2">2</a></sup> CUNQA’s <code>qsend</code>/<code>qrecv</code> are teledata built over <code>gen_ent</code>.<sup class="ref-call"><a href="#r1">1</a></sup> The adapter has to translate names and destinations, not semantics.</p>
+<p>The classical pair is equally direct: a classical send and receive become CUNQA’s <code>send</code>/<code>recv</code>, and any conditional applied to a received bit becomes a <code>cif</code>/<code>endcif</code> block.</p>
+<h3 id="233-collectives">23.3 Collectives</h3>
+<table>
+<thead>
+<tr>
+<th>NetQMPI</th>
+<th>CUNQA</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>qscatter</code> / <code>qgather</code></td>
+<td>a loop of <code>qsend</code> / <code>qrecv</code></td>
+<td>Both libraries already implement these as point-to-point loops (chapter 13). The translation is literal and inherits the same honest caveat: these are not tree-optimised collectives.</td>
+</tr>
+<tr>
+<td><code>expose</code> / <code>unexpose</code></td>
+<td><code>gen_ent</code> over N circuits, then <code>cat_entangler</code> / <code>cat_disentangler</code></td>
+<td><strong>The interesting entry.</strong> See below.</td>
+</tr>
+<tr>
+<td><code>flush()</code></td>
+<td>—</td>
+<td>No direct counterpart. See 23.4.</td>
+</tr>
+<tr>
+<td><code>Bcast</code></td>
+<td>—</td>
+<td>Does not exist on either side, and for the same physical reason.</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>expose</code> in CUNQA terms.</strong> Chapter 13 defined <code>expose</code> as the transformation of a root state α|0⟩ + β|1⟩ into a single global state spread across all participating ranks, implemented by entangling the root’s qubit with a pre-shared GHZ state followed by measurements and corrections. Every one of those ingredients is a CUNQA directive:</p>
+<ul>
+<li>the pre-shared GHZ state is <code>gen_ent</code> called consistently with a <strong>list</strong> of circuit identifiers — chapter 19 said this explicitly: two circuits give a Bell pair, N circuits give a GHZ state across their communication qubits;</li>
+<li>entangling the root’s data qubit with that state, plus the measurements and classical corrections, is <code>cat_entangler</code> generalised from two circuits to N;</li>
+<li><code>unexpose</code> is <code>cat_disentangler</code>, and the reason NetQMPI makes it <strong>mandatory</strong> is the reason chapter 17 gave for separating communication qubits from data qubits: the resource is finite, and a request for more communication qubits than exist stalls execution until some are freed. Skipping <code>unexpose</code> does not merely leave the communicator inconsistent — on this backend it consumes a communication qubit that the next <code>expose</code> will wait for.</li>
+</ul>
+<p>That last sentence is the best argument in the tutorial for why the two projects belong together: <strong>NetQMPI’s most abstract primitive acquires a concrete operational cost the moment it runs on an emulator that models resources.</strong> On a network simulator, forgetting <code>unexpose</code> is a correctness smell. On CUNQA it is a hang.</p>
+<h3 id="234-what-does-not-translate-cleanly">23.4 What does not translate cleanly</h3>
+<p>Three entries where the dictionary needs a footnote rather than a word.</p>
+<p><strong><code>flush()</code>.</strong> In NetQMPI, <code>flush</code> synchronises the quantum instruction stream — it pushes accumulated NetQASM instructions to the backend. CUNQA has no instruction stream to push: a circuit is submitted whole, as JSON, and the shots loop runs inside the vQPU or inside the centralised executor. On this backend <code>flush</code> is therefore either a no-op or a scope boundary that triggers dispatch, and chapter 13’s warning applies with extra force: it was never a process barrier, and here it is not even a flush. This is the sharpest structural difference between the two models, and chapter 26 explains why it is expected to shrink.</p>
+<p><strong>Blocking semantics.</strong> NetQMPI’s <code>qrecv</code> blocks the rank; CUNQA’s <code>recv</code> blocks inside a shots loop that CUNQA controls. The observable behaviour is similar enough for programs to be correct, but the failure modes differ: an MPI-style deadlock stops N processes, while a CUNQA deadlock stalls one shots loop until the <code>qraise</code> wall time expires. The diagnosis is different too, and worse — which is precisely why exercise 6b asked people to see it once on purpose.</p>
+<p><strong>Noise.</strong> NetQMPI’s published backends are network simulators whose central contribution is physical-layer noise.<sup class="ref-call"><a href="#r7">7</a></sup> CUNQA models no communication noise at all and only partial device noise (chapters 16 and 18). A program that runs identically on both backends will therefore <em>not</em> produce comparable fidelities, and reading a CUNQA run as if it were a SquidASM run is the single most likely misinterpretation of the second half of this tutorial.</p>
+<h3 id="235-the-table-to-keep">23.5 The table to keep</h3>
+<table>
+<thead>
+<tr>
+<th>Concept</th>
+<th>MPI</th>
+<th>NetQMPI</th>
+<th>CUNQA</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Unit</td>
+<td>process</td>
+<td>rank</td>
+<td>vQPU</td>
+</tr>
+<tr>
+<td>Group</td>
+<td>communicator</td>
+<td>communicator</td>
+<td>family</td>
+</tr>
+<tr>
+<td>Launch</td>
+<td><code>mpirun -n N</code></td>
+<td><code>netqmpi -n N</code></td>
+<td><code>qraise -n N -t T</code></td>
+</tr>
+<tr>
+<td>Point to point</td>
+<td><code>Send</code> / <code>Recv</code></td>
+<td><code>qsend</code> / <code>qrecv</code></td>
+<td><code>qsend</code> / <code>qrecv</code> · <code>send</code> / <code>recv</code></td>
+</tr>
+<tr>
+<td>Distribute</td>
+<td><code>Scatter</code> / <code>Gather</code></td>
+<td><code>qscatter</code> / <code>qgather</code></td>
+<td>loops of the above</td>
+</tr>
+<tr>
+<td>Replicate</td>
+<td><code>Bcast</code></td>
+<td>—</td>
+<td>—</td>
+</tr>
+<tr>
+<td>Spread a control</td>
+<td>—</td>
+<td><code>expose</code> / <code>unexpose</code></td>
+<td><code>gen_ent</code> · <code>cat_entangler</code> / <code>cat_disentangler</code></td>
+</tr>
+<tr>
+<td>Entangle</td>
+<td>—</td>
+<td>implicit in the primitives</td>
+<td><code>gen_ent</code> — explicit and atomic</td>
+</tr>
+<tr>
+<td>Synchronise</td>
+<td><code>Barrier</code></td>
+<td><code>flush()</code></td>
+<td>scope of the shots loop</td>
+</tr>
+</tbody>
+</table>
+<aside class="callout callout--note"><span class="callout-label">How to use this slide</span><p>Three columns, left to right, is the whole tutorial in one image: the first was the first hour, the second the third half-hour, the third this session. Read a row aloud and the through-line of the day is audible — the abstraction survives, the implementation changes, and one cell is empty in two of the three columns for a reason that is physics rather than engineering.</p></aside></section><section class="chapter" id="e24" data-accent="quantum"><span class="chapter-num">Part V · Chapter 24</span><h2>Launching it</h2><p class="lead">The dictionary of chapter 23 covers what the program says. This chapter covers what you type, which is where the two models are most visibly different: NetQMPI expects one command, CUNQA expects two, and the reason is the stack decision of chapter 16.</p><h3 id="241-two-commands-not-one">24.1 Two commands, not one</h3>
+<p>A NetQMPI application on its published backends is launched the way an MPI application is:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="On a network-simulator backend"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> app.py</span></span></code></pre>
+<p>On CUNQA the infrastructure does not come into existence when the program starts — it was raised beforehand and outlives the program (chapter 18). So the sequence is:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="On the CUNQA backend"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qraise</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#79C0FF"> -t</span><span style="color:#A5D6FF"> 00:30:00</span><span style="color:#79C0FF"> --quantum_comm</span><span style="color:#79C0FF"> --co-located</span><span style="color:#79C0FF"> --family</span><span style="color:#A5D6FF"> qce26</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qinfo</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> app.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> qdrop</span><span style="color:#79C0FF"> --family</span><span style="color:#A5D6FF"> qce26</span></span></code></pre>
+<p>Four observations that are worth a slide of their own.</p>
+<ul>
+<li><strong><code>-n</code> appears twice and must agree.</strong> <code>qraise -n 3</code> reserves three vQPUs; <code>netqmpi -n 3</code> starts three ranks. If they disagree you get either idle paid-for vQPUs or ranks with nowhere to run. Chapter 23 explained why: <code>size</code> is <code>len(get_QPUs(...))</code>.</li>
+<li><strong>The DQC model is chosen at raise time, not at run time.</strong> <code>--quantum_comm</code> is a property of the infrastructure. A program that calls <code>expose</code> against an infrastructure raised without it fails, and it fails at the vQPU rather than in your code.</li>
+<li><strong><code>--shots</code> belongs to the run, not the raise.</strong> It is an execution argument, forwarded to <code>run</code> (chapter 19) — the one number in the command line that is about the algorithm rather than the machine.</li>
+<li><strong><code>qdrop</code> is not optional.</strong> The vQPUs live until the wall time expires whether or not anything is using them. This is the piece of the workflow with a real cost attached, and the one an audience of HPC users will judge you on.</li>
+</ul>
+<h3 id="242-sizing-the-request">24.2 Sizing the request</h3>
+<p>The flags of chapter 18 are where a demo lives or dies, and the sizing rule depends entirely on the model, for the reason chapter 17 gave:</p>
+<table>
+<thead>
+<tr>
+<th>Model raised</th>
+<th>What the vQPUs are</th>
+<th>How to size</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>No communication</td>
+<td>N independent simulations</td>
+<td>Per-vQPU memory scales with the qubits <em>of one</em> circuit. Adding vQPUs adds throughput at linear cost.</td>
+</tr>
+<tr>
+<td><code>--classical_comm</code></td>
+<td>N independent simulations plus a message layer</td>
+<td>Same per-vQPU sizing. The cost that grows is time, not memory, and it grows with the dependency chain rather than with N.</td>
+</tr>
+<tr>
+<td><code>--quantum_comm</code></td>
+<td>one joint state behind N proxies</td>
+<td>Per-vQPU memory is <strong>not</strong> the right mental model: the centralised executor holds a single state whose dimension is set by the <em>total</em> number of qubits across participating vQPUs.</td>
+</tr>
+</tbody>
+</table>
+<p>That last row is the one to say out loud. In the quantum-communication model, going from two vQPUs of 10 qubits to four vQPUs of 10 qubits does not double the memory: it squares the state vector’s dimension twice over. A room full of people each raising four <code>--quantum_comm</code> vQPUs on a shared allocation is a predictable way to lose the second half of the session.</p>
+<h3 id="243-when-it-does-not-work">24.3 When it does not work</h3>
+<p>The failure modes are few, and they are all identifiable from the outside. This is the troubleshooting slide to have ready rather than improvise.</p>
+<table>
+<thead>
+<tr>
+<th>Symptom</th>
+<th>Most likely cause</th>
+<th>Check</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>The program finds no QPUs</td>
+<td>Nothing raised, wall time expired, or <code>--co-located</code> mismatch</td>
+<td><code>qinfo</code>. If the family is listed but invisible, you are on a different node than the vQPUs and they were raised on-node.</td>
+</tr>
+<tr>
+<td>Fewer ranks than expected</td>
+<td><code>-n</code> disagreement between <code>qraise</code> and <code>netqmpi</code></td>
+<td>Compare the two command lines before reading any code.</td>
+</tr>
+<tr>
+<td>An <code>expose</code> hangs</td>
+<td>Communication qubits exhausted — a missing <code>unexpose</code></td>
+<td>Chapter 23. The stall is by design: the request waits for a resource to be freed.</td>
+</tr>
+<tr>
+<td>A program hangs with no error</td>
+<td>A blocking <code>recv</code> cycle, or two halves of a transfer that do not name each other identically</td>
+<td>Chapter 7, exercise 6b. Nothing will diagnose this; the wall time ends it.</td>
+</tr>
+<tr>
+<td>Noise flags appear to do nothing</td>
+<td>Noise asked for outside its supported conditions</td>
+<td>Chapters 16 and 18: no communication, no <code>CIF</code>, AerSimulator.</td>
+</tr>
+<tr>
+<td>Runs, but absurdly slow</td>
+<td><code>--quantum_comm</code> with more qubits than intended</td>
+<td>Chapter 20’s fourth row is the expected behaviour, not a bug.</td>
+</tr>
+</tbody>
+</table></section><section class="chapter" id="e25" data-accent="quantum"><span class="chapter-num">Part V · Chapter 25</span><h2>Case study: a distributed QFT</h2><p class="lead">The Quantum Fourier Transform across three QPUs is the exercise the whole day has been building towards. It is a good final case for a reason that has nothing to do with its fame: unlike the GHZ state of chapter 14, its remote gates are not all alike, and the ones that matter least are exactly the ones you would want to cut. The pay-off is chapter-length — the transform written for exercise 8 is reused, verbatim, as a subroutine of exercise 9.</p><h3 id="251-why-the-qft-partitions-badly-and-what-that-teaches">25.1 Why the QFT partitions badly, and what that teaches</h3>
+<p>The QFT on n qubits is a ladder: a Hadamard on each qubit, followed by controlled phase rotations between that qubit and every one below it, with the rotation angle halving at each step. Two properties follow immediately, and both matter for distribution.</p>
+<ul>
+<li><strong>It is almost all two-qubit gates, and they are all-to-all.</strong> Every qubit interacts with every other. Any partition into blocks cuts a number of gates that grows with the product of the block sizes — so the communication cost of a distributed QFT is quadratic in the cut, not linear.</li>
+<li><strong>The gates that cross the cut are the weakest ones.</strong> The rotation angle between qubits <em>j</em> and <em>k</em> falls off as 2^−|j−k|, so the gates between distant qubits — precisely those most likely to cross a partition boundary — contribute the least phase. This is the basis of the <em>approximate</em> QFT, and it means the distributed QFT is one of the rare cases where a principled approximation dramatically reduces the number of remote operations.</li>
+</ul>
+<p>That second point is worth spending a slide on, because it is the general lesson the specific exercise carries: <strong>circuit partitioning is not only a graph problem, it is an algorithmic one.</strong> Chapter 15 listed partitioning as an open research line;<sup class="ref-call"><a href="#r24">24</a></sup> the QFT is the case where a physicist beats the graph partitioner by knowing what the gates mean.</p>
+<h3 id="252-telegates-and-why-a-qft-wants-them">25.2 Telegates, and why a QFT wants them</h3>
+<p>Teleporting a control across a cut and back costs two transfers each way and drags along whatever the qubit is already entangled with. So the QFT does not want to <em>move</em> qubits. It wants to <strong>lend</strong> them: the control stays where it is and is made available to the others through a shared GHZ state. That is a telegate, and it is what <code>expose</code> / <code>unexpose</code> do (chapter 23).</p>
+<p>Three properties of that pair carry the whole exercise.</p>
+<ul>
+<li><strong>They are collective, like <code>MPI_Bcast</code>.</strong> Every rank in the window calls them, in the same order, which is why the calls sit <em>outside</em> the <code>if rank ==</code> branches. Ranks outside the window get <code>None</code> back and consume nothing.</li>
+<li><strong><code>expose</code> returns the index to use as the control</strong> — the root’s own qubit on the root, a freshly reserved comm qubit on every receiver — so the non-local gate is written exactly like a local one.</li>
+<li><strong>Windows nest like scopes.</strong> Two can be open at once, and the inner one must close first. That is not a style rule: it is the reason the vQPU of chapter 21 was raised with two comm qubits rather than one.</li>
+</ul>
+<h3 id="253-the-shape-of-the-program">25.3 The shape of the program</h3>
+<p>Three ranks, <strong>one data qubit each</strong>, and the inverse transform rather than the forward one:</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="plaintext"><code><span class="line"><span>H(q2) · CP(q2→q1, −π/2) · H(q1) · CP(q2→q0, −π/4) · CP(q1→q0, −π/2) · H(q0)</span></span></code></pre>
+<p>Reversing the order is what makes it an exercise rather than a transcription, and it forces two things the forward transform does not.</p>
+<ul>
+<li><strong><code>q2</code>’s Hadamard comes first</strong>, before it is lent to anybody — the mirror of the forward transform, where it came last.</li>
+<li><strong><code>q1</code> is a receiver and <em>then</em> a lender</strong>, so its window opens inside <code>q2</code>’s and therefore has to close before it. Rank 0 sits inside both at once, which is where the second comm qubit of chapter 21 goes.</li>
+</ul>
+<p>The structure to point at is the pairing: every <code>expose</code> has an <code>unexpose</code>, innermost first, with the non-local gates between them. Chapter 23 explained why that pairing is stricter on this backend than on any other — the communication qubit released by <code>unexpose</code> is the one the next window will ask for.</p>
+<p>Note also what a window costs: <em>one</em> GHZ state, however many rotations happen inside it. Rank 2’s control is used twice, by two different ranks, for the price of lending it once. Teleporting <code>q2</code> back and forth would have meant four teledata blocks.</p>
+<h3 id="254-the-exercises">25.4 The exercises</h3>
+<aside class="callout callout--exercise"><span class="callout-label">Exercise 8 · mandatory</span><h4 id="a-3-qubit-inverse-qft-across-three-qpus">A 3-qubit inverse QFT across three QPUs</h4><p><code>examples/netqmpi/5_qft_expose.py</code> builds the forward transform. <strong>Write the inverse</strong>: the same gates back to front, every angle negated, one data qubit per rank.</p><p>How you will know it worked: <code>QFT|x&gt;</code> is a product state, so each rank prepares its own factor locally with no communication at all — rank <em>j</em> holds <code>(|0&gt; + e^(2πi·2^j·x/8)|1&gt;)/√2</code>. Undo the transform and every rank reads one bit of <em>x</em> on all 1024 shots, rank 0 the most significant.</p></aside>
+<p>The value of <em>x</em> travels in the environment, because the launcher passes no arguments through to the program — the SPMD constraint of chapter 6, still binding four parts later.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="One value, then all eight"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> QFT_X=</span><span style="color:#79C0FF">5</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> notebook_apps/ex8_iqft.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> for</span><span style="color:#A5D6FF"> x</span><span style="color:#A5D6FF"> in</span><span style="color:#79C0FF"> 0</span><span style="color:#79C0FF"> 1</span><span style="color:#79C0FF"> 2</span><span style="color:#79C0FF"> 3</span><span style="color:#79C0FF"> 4</span><span style="color:#79C0FF"> 5</span><span style="color:#79C0FF"> 6</span><span style="color:#79C0FF"> 7</span><span style="color:#E6EDF3">; </span><span style="color:#FF7B72">do</span></span>
+<span class="line"><span style="color:#FF7B72">&gt;</span><span style="color:#E6EDF3">   QFT_X</span><span style="color:#FF7B72">=</span><span style="color:#E6EDF3">$x </span><span style="color:#FFA657">netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> notebook_apps/ex8_iqft.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span><span style="color:#FF7B72"> |</span><span style="color:#FFA657"> tail</span><span style="color:#79C0FF"> -1</span></span>
+<span class="line"><span style="color:#FF7B72">&gt;</span><span style="color:#FF7B72"> done</span></span></code></pre>
+<p><code>101</code> is 5, rank 0 first, and every marginal should be a clean <code>1.000</code> / <code>0.000</code>. <strong>The determinism flag is worth more than the value itself.</strong> It guards the one assumption that comes from the counts <em>format</em> rather than the physics: CUNQA joins one bitstring per classical register, the user’s own register first and the two protocol bits after it, and the protocol bits are coin flips. Had the reader picked one of those by mistake, nothing would be deterministic — so you get an honest <code>deterministic=False</code> rather than a plausible wrong answer. One value could be luck; eight cannot.</p>
+<aside class="callout callout--exercise"><span class="callout-label">Exercise 9 · optional</span><h4 id="distributed-phase-estimation">Distributed phase estimation</h4><p>Exercise 8 built a subroutine. This is the algorithm it belongs to. Phase estimation with <code>U = P(2πφ)</code>, whose eigenstate is <code>|1&gt;</code>: counting qubits into <code>|+&gt;</code>, a <code>controlled-U^(2^j)</code> from counting qubit <em>j</em> kicking the phase back, then an inverse QFT on the counting register.</p><p>Step two leaves exactly the product state you prepared by hand in exercise 8, so step three <em>is</em> exercise 8 — <code>inverse_qft</code> is copied over unchanged. Write the first two steps.</p></aside>
+<p>This is the first program of the day in which the ranks are <strong>not symmetric</strong>: rank 0 holds counting bit 0 <em>and</em> the eigenstate on a second data qubit; ranks 1 and 2 hold one counting bit each. Every <code>controlled-U^(2^j)</code> has its control on rank <em>j</em> and its target on rank 0 — local for rank 0, an <code>expose</code> window for the other two. Those windows do not overlap, so they hand the same comm qubit back and forth.</p>
+<p>Two things to settle before writing any of it. The collectives go <em>outside</em> the <code>if rank ==</code> branches, as always: every rank calls <code>expose</code> and <code>unexpose</code>, and only rank 0 puts a gate between them. And the angles are <code>2π·2^j·φ</code>, not <code>2π·φ/2^j</code>. Rank 0 is the most significant bit, so it gets the <em>smallest</em> rotation — which is the ordering the inverse QFT expects, and the reason the two halves fit at all.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="bash" data-title="A phase it can represent, and one it cannot"><code><span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> QPE_PHI=</span><span style="color:#79C0FF">0.625</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> notebook_apps/ex9_qpe.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span></span>
+<span class="line"><span style="color:#FFA657">$</span><span style="color:#A5D6FF"> QPE_PHI=</span><span style="color:#79C0FF">0.3333333333333333</span><span style="color:#A5D6FF"> netqmpi</span><span style="color:#79C0FF"> -n</span><span style="color:#79C0FF"> 3</span><span style="color:#A5D6FF"> notebook_apps/ex9_qpe.py</span><span style="color:#79C0FF"> --cunqa</span><span style="color:#79C0FF"> --shots</span><span style="color:#79C0FF"> 1024</span></span></code></pre>
+<p>φ = 5/8 is a multiple of 1/8, so three bits hold it exactly and the counting register is deterministic: <code>101</code>, every shot. φ = 1/3 falls between 2/8 and 3/8, and the second run is the more instructive of the two — read it carefully, because what comes back is three <strong>marginals</strong>, and nothing in them says which shot of rank 0 went with which of rank 2. For the exact phases that was harmless, since a product of deltas <em>is</em> the joint distribution. Here it is not, and the histogram over <em>x</em> simply is not in the data. <code>010</code> and <code>011</code> agree on the first two bits and differ in the third, which is exactly what you should see: ranks 0 and 1 nearly certain, rank 2 split near 50/50, and <code>deterministic=False</code> — the honest signature.</p>
+<h3 id="255-what-to-take-from-it">25.5 What to take from it</h3>
+<p>The most valuable five minutes are not the run. They are what the two exercises say together.</p>
+<p><strong>The composition is the result.</strong> <code>inverse_qft</code> was copied out of exercise 8 unchanged and kept working even though rank 0 now holds two data qubits and arrives entangled rather than in a product state. A distributed collective that composes is not a given; this one does, because it is written against ranks and qubit indices and does not care what happened before it.</p>
+<p><strong>Peak concurrency is what you pay for, not total count.</strong> Five windows open over the whole of exercise 9, and the family is still <code>[2, 2]</code>. The kickback windows open and close one at a time; only the inverse QFT’s nested pair is ever held at once. <strong>Window lifetime is the comm-qubit budget</strong> — close rank 2’s window earlier and one comm qubit would do, but the circuit would no longer be the inverse QFT.</p>
+<p><strong>And the resources are still yours to give back.</strong> The family has been up since chapter 21, which is why every run here attached instantly and paid no scheduler cost. It is still a reservation.</p>
+<pre class="astro-code github-dark-default" style="background-color:#0d1117;color:#e6edf3;overflow-x:auto" tabindex="0" data-language="python" data-title="The last line of the day"><code><span class="line"><span style="color:#E6EDF3">qdrop(</span><span style="color:#79C0FF">FAMILY</span><span style="color:#E6EDF3">)</span></span></code></pre>
+<p>Two extensions worth trying afterwards, both of which answer themselves on paper before they cost an allocation:</p>
+<ul>
+<li>Redo exercise 8 with <strong>teledata</strong> instead of telegates — move <code>q1</code> and <code>q2</code> to rank 0, transform, move them back — and count the <code>gen_ent</code> requests each version issues.</li>
+<li>Take exercise 9 to four nodes. Work out what to raise <em>before</em> raising it: <em>n</em> counting qubits over <em>n</em> nodes means n(n−1)/2 cross-node rotations and n−1 comm qubits held at once on rank 0.</li>
+</ul></section><section class="chapter" id="e26" data-accent="quantum"><span class="chapter-num">Part V · Chapter 26</span><h2>Closing the second block</h2><p class="lead"></p><p>The second half in one sentence: a programming model needs a machine to run on; there is no such machine yet; CUNQA emulates the infrastructure of one inside a real supercomputer, simulating its devices and channels; and because both projects kept a thin, documented seam at the right height of the stack, NetQMPI’s abstractions can be carried down onto it without either side surrendering its model.</p>
+<h3 id="261-what-cunqa-does-not-do-yet">26.1 What CUNQA does not do yet</h3>
+<p>The honest list, in the order it appears on the roadmap.<sup class="ref-call"><a href="#r1">1</a></sup></p>
+<ul>
+<li><strong>Communication noise: absent.</strong> Every channel in this tutorial is ideal. Latency, entanglement fidelity, heralded loss and memory decoherence during entanglement distribution are the characteristic physics of a distributed system, and none of it is modelled. Two routes are being weighed and both have costs: implementing it over the existing simulators, which were not designed for time-dependent physical-layer effects, or integrating a discrete-event network simulator, which brings mature noise models along with a networking paradigm that does not adapt readily to a computing one — and, being mostly written in Python, would break the C++ ecosystem the current simulators live in.</li>
+<li><strong>Device noise: partial.</strong> Available only when AerSimulator runs the shots loop unassisted — no communication, no <code>CIF</code> (chapters 16 to 18). Lifting this and extending noise to the other simulators that support it, such as Qulacs, is the nearer of the two goals.</li>
+<li><strong>The joint state lives in one process.</strong> Under quantum communication, the centralised executor simulates a single state without exploiting the distributed state vectors that QuEST and AerSimulator-under-MPI already offer. This is the ceiling on how large a quantum-communication experiment can be, and it is the clearest illustration in the whole tutorial of chapter 17’s point: the distribution of a quantum system and the distribution of its classical simulation are orthogonal problems.</li>
+<li><strong>Execution is circuit-at-a-time.</strong> The roadmap points at streaming instructions to the vQPU in small binary blocks, with the vQPU updating its state as each block arrives — driven by the prospect of circuits whose encoding reaches hundreds of gigabytes. That would replace JSON as the interchange format and, incidentally, would make <code>flush()</code> translate properly for the first time (chapter 23).</li>
+<li><strong>Scheduling is list order.</strong> <code>run</code> assigns circuits to vQPUs in the order they appear. Everything a scheduler would do — locality, load, heterogeneous backends — is left as room above the API.</li>
+</ul>
+<h3 id="262-what-the-integration-still-has-to-settle">26.2 What the integration still has to settle</h3>
+<ul>
+<li><strong>Sub-communicators.</strong> Chapter 23 mapped <code>COMM_WORLD</code> onto a family. Splitting a communicator maps onto multiple families, which is workable but not yet the same abstraction — and MPI programmers reach for <code>Comm_split</code> sooner than one might expect.</li>
+<li><strong>Noise parity across backends.</strong> The same program runs on SquidASM and on CUNQA and returns incomparable fidelities, for the reasons in 26.1. Until communication noise exists, the backend choice is a choice about <em>what question you are asking</em>: physical realism, or infrastructure behaviour at HPC scale.</li>
+<li><strong>Where the ranks come from.</strong> Today the two <code>-n</code> flags must agree by hand (chapter 24). A launcher that raised the infrastructure and started the ranks in one act would be more convenient — and would quietly undo the stack decision of chapter 16, which is why it has not been done.</li>
+</ul>
+<h3 id="263-the-through-line">26.3 The through-line</h3>
+<p>Five parts, one argument. Physical limits forced the replication of units, replication forced communication, and communication turned out to be the expensive part. MPI standardised how that is programmed, through three abstractions — SPMD, rank, communicator — that have outlived every machine they were written for. NetQMPI carried those three into the quantum domain, adapting the primitives where physics forbids the literal translation and leaving one cell of the table permanently empty. And CUNQA supplies what the model was missing: not a simulator of quantum mechanics, of which there are many, but an emulator of the <em>infrastructure</em> — vQPUs that are asked for, paid for, queried and released exactly as an accelerator of a real machine would be.</p>
+<p>If an attendee leaves with one sentence from the second half, let it be the counterpart of the one that closed the first: <strong>distributed quantum computing will be run on HPC systems, so it has to be programmed like HPC and managed like HPC.</strong> The quantum part is what is new. Almost everything around it is not — and that is the good news, because it means the discipline already exists.</p></section><section class="references" id="refs"><h2>References</h2><ol><li id="r1"><b>J. Vázquez-Pérez, D. Expósito-Patiño, M. Losada, Á. Carballido, A. Gómez, T. F. Pena.</b> CUNQA: a Distributed Quantum Computing emulator for HPC. arXiv:2511.05209 [quant-ph], 2025. <a href="https://arxiv.org/abs/2511.05209">arxiv.org/abs/2511.05209</a> · documentation and code at <a href="https://github.com/CESGA-Quantum-Spain/cunqa">github.com/CESGA-Quantum-Spain/cunqa</a></li><li id="r2"><b>F. J. Cardama, T. F. Pena.</b> NetQMPI: An MPI-Inspired library for programming Distributed Quantum Applications over Quantum Networks using NetQASM SDK. arXiv:2512.11483 [quant-ph], 2025. <a href="https://arxiv.org/abs/2512.11483">arxiv.org/abs/2512.11483</a> · código en <a href="https://github.com/netqir/netqmpi">github.com/netqir/netqmpi</a></li><li id="r3"><b>F. J. Cardama, J. Vázquez-Pérez, C. Piñeiro, T. F. Pena, J. C. Pichel, A. Gómez.</b> NetQIR: An extension of QIR for distributed quantum computing. <em>Future Generation Computer Systems</em>, 174:107989, 2026.</li><li id="r4"><b>T. Häner, D. S. Steiger, T. Hoefler, M. Troyer.</b> Distributed quantum computing with QMPI. <em>Proc. SC'21</em>, 2021.</li><li id="r5"><b>Y. Shi et al.</b> A Reference Implementation for a Quantum Message Passing Interface. <em>Proc. SC-W '23</em>, pp. 1420–1425, 2023.</li><li id="r6"><b>A. Dahlberg, B. van der Vecht, C. Delle Donne, M. Skrzypczyk, I. te Raa, W. Kozlowski, S. Wehner.</b> NetQASM — a low-level instruction set architecture for hybrid quantum-classical programs in a quantum internet. <em>Quantum Science and Technology</em>, 7(3):035023, 2022.</li><li id="r7"><b>T. Coopmans et al.</b> NetSquid, a NETwork Simulator for QUantum Information using Discrete events. <em>Communications Physics</em>, 4:164, 2021.</li><li id="r8"><b>A. Dahlberg, S. Wehner.</b> SimulaQron — a simulator for developing quantum internet software. <em>Quantum Science and Technology</em>, 4(1):015001, 2018.</li><li id="r9"><b>S. DiAdamo, J. Nötzel, B. Zanger, M. M. Beşe.</b> QuNetSim: A Software Framework for Quantum Networks. <em>IEEE Transactions on Quantum Engineering</em>, 2, 2021.</li><li id="r10"><b>X. Wu et al.</b> SeQUeNCe: a customizable discrete-event simulator of quantum networks. <em>Quantum Science and Technology</em>, 6(4):045027, 2021.</li><li id="r11"><b>D. Barral, F. J. Cardama, G. Díaz-Camacho, D. Faílde, I. F. Llovo, M. Mussa-Juane, J. Vázquez-Pérez, J. Villasuso, C. Piñeiro, N. Costas, J. C. Pichel, T. F. Pena, A. Gómez.</b> Review of Distributed Quantum Computing: From single QPU to High Performance Quantum Computing. <em>Computer Science Review</em>, 57:100747, 2025.</li><li id="r12"><b>M. Caleffi, M. Amoretti, D. Ferrari, J. Illiano, A. Manzalini, A. S. Cacciapuoti.</b> Distributed quantum computing: A survey. <em>Computer Networks</em>, 254:110672, 2024.</li><li id="r13"><b>S. Wehner, D. Elkouss, R. Hanson.</b> Quantum internet: A vision for the road ahead. <em>Science</em>, 362(6412), 2018.</li><li id="r14"><b>J. Preskill.</b> Quantum Computing in the NISQ era and beyond. <em>Quantum</em>, 2:79, 2018.</li><li id="r15"><b>MPI Forum.</b> MPI: A Message-Passing Interface Standard. Version 4.1, 2023. <a href="https://www.mpi-forum.org/docs/">mpi-forum.org/docs</a></li><li id="r16a"><b>G. M. Amdahl.</b> Validity of the single processor approach to achieving large scale computing capabilities. <em>AFIPS Spring Joint Computer Conference</em>, pp. 483–485, 1967. — <b id="r16b">J. L. Gustafson.</b> Reevaluating Amdahl's Law. <em>Communications of the ACM</em>, 31(5):532–533, 1988.</li><li id="r17"><b>J. L. Hennessy, D. A. Patterson.</b> <em>Computer Architecture: A Quantitative Approach.</em> 6th ed., Morgan Kaufmann, 2019. — For the roofline model: S. Williams, A. Waterman, D. Patterson, <em>Communications of the ACM</em>, 52(4):65–76, 2009.</li><li id="r18"><b>W. A. Wulf, S. A. McKee.</b> Hitting the Memory Wall: Implications of the Obvious. <em>ACM SIGARCH Computer Architecture News</em>, 23(1):20–24, 1995.</li><li id="r19"><b>R. H. Dennard, F. H. Gaensslen, H.-N. Yu, V. L. Rideout, E. Bassous, A. R. LeBlanc.</b> Design of ion-implanted MOSFET's with very small physical dimensions. <em>IEEE Journal of Solid-State Circuits</em>, 9(5):256–268, 1974.</li><li id="r20"><b>K. Rupp.</b> Microprocessor Trend Data. Open dataset, CC-BY licence. <a href="https://github.com/karlrupp/microprocessor-trend-data">github.com/karlrupp/microprocessor-trend-data</a> — recommended source if concrete figures are projected in figure 1.</li><li id="r21"><b>L. Dalcín, R. Paz, M. Storti, J. D'Elía.</b> MPI for Python: Performance improvements and MPI-2 extensions. <em>Journal of Parallel and Distributed Computing</em>, 68(5):655–662, 2008. · documentation at <a href="https://mpi4py.readthedocs.io">mpi4py.readthedocs.io</a></li><li id="r22"><b>G. Díaz-Camacho, I. F. Llovo, F. J. Cardama, I. Bautista, D. Faílde, M. M. Juane, J. Vázquez-Pérez, N. Costas, T. F. Pena, A. Gómez.</b> Benchmarking Distributed Quantum Computing Emulators. arXiv:2512.01807, 2025.</li><li id="r23"><b>R. Parekh, A. Ricciardi, A. Darwish, S. DiAdamo.</b> Quantum Algorithms and Simulation for Parallel and Distributed Quantum Computing. <em>Proc. QCS 2021 (SC21)</em>, pp. 9–19, 2021.</li><li id="r24"><b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023.</li><li id="r25"><b>M. Losada, J. Vázquez-Pérez, Á. Carballido, D. Expósito.</b> CUNQA Documentation, 2025. <a href="https://cesga-quantum-spain.github.io/cunqa/">cesga-quantum-spain.github.io/cunqa</a></li><li id="r26"><b>D. Willsch.</b> Supercomputer simulations of transmon quantum computers. PhD dissertation, RWTH Aachen University, 2020.</li><li id="r27"><b>A. Elsharkawy et al.</b> Challenges in HPCQC Integration. <em>2023 IEEE International Conference on Quantum Computing and Engineering (QCE)</em>, vol. 2, pp. 405–406, 2023.</li><li id="r28"><b>S. Gharibian.</b> Strong NP-hardness of the quantum separability problem. <em>Quantum Information and Computation</em>, 10(3):343–360, 2010.</li><li id="r29"><b>M. Dobšíček, G. Johansson, V. Shumeiko, G. Wendin.</b> Arbitrary accuracy iterative quantum phase estimation algorithm using a single ancillary qubit: A two-qubit benchmark. <em>Physical Review A</em>, 76:030306, 2007.</li><li id="r30"><b>A. Y. Kitaev.</b> Quantum measurements and the Abelian Stabilizer Problem. PhD dissertation, Moscow Institute of Physics and Technology, 1995. <a href="https://arxiv.org/abs/quant-ph/9511026">arxiv.org/abs/quant-ph/9511026</a></li><li id="r31"><b>A. Yimsiriwattana, S. J. Lomonaco Jr.</b> Generalized GHZ States and Distributed Quantum Computing. arXiv:quant-ph/0402148, 2004. <a href="https://arxiv.org/abs/quant-ph/0402148">arxiv.org/abs/quant-ph/0402148</a></li><li id="r32"><b>D. Claudino, D. I. Lyakh, A. J. McCaskey.</b> Parallel quantum computing simulations via quantum accelerator platform virtualization. <em>Future Generation Computer Systems</em>, 160:264–273, 2024.</li></ol></section></main></div><footer class="site-footer"><div><p>Supporting material · Practical Distributed Quantum Computing: Programming distributed applications with NetQMPI over the CUNQA emulator — from monolithic circuits to multi-QPU networks · IEEE Quantum Week (QCE26), 18 September.</p><p>Figures are schematic and intended for projection; numerical values illustrate orders of magnitude and trends, not measurements. For citable figures, refer to the primary sources listed in the references.</p></div></footer><script type="module">document.querySelector(`.lang-switch`)?.addEventListener(`click`,e=>{let t=e.currentTarget,n=location.hash.slice(1);n&&(t.href=t.getAttribute(`href`)+`#`+n)});</script></body></html>

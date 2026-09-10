@@ -1,0 +1,67 @@
+---
+lang: es
+order: 17
+part: "Parte IV"
+title: "La vQPU"
+lead: "La infraestructura del capítulo 16 está hecha de una unidad repetida. Una QPU virtual no es una instancia de simulador que aparece cuando se la invoca y se desvanece cuando retorna: es un proceso que existe, que posee recursos y al que se consulta. Y esa distinción es todo el asunto."
+accent: quantum
+---
+### 17.1 Qué es una vQPU
+
+Una **vQPU** es un proceso que corre en un entorno HPC, con su propio conjunto de recursos clásicos asignados, que representa a una QPU real del sistema y ejecuta las tareas cuánticas que se le envían.<Ref n={1} /> El concepto no es del todo nuevo —Claudino et al. ya trabajaron con aceleradores cuánticos virtualizados<Ref n={32} />—, pero aquí el énfasis está en la propiedad: como la vQPU posee sus recursos, **su vida es independiente de las tareas que se ejecutan en ella**.
+
+Esa independencia es lo que la hace comportarse como hardware. Se le puede preguntar si está levantada, de qué está hecha, enviarle trabajo y enviarle más trabajo después. Desde el asiento del programador es otro acelerador que resulta estar en la máquina, exactamente como una GPU o una FPGA: recibe tareas, las ejecuta y devuelve resultados.
+
+El contraste con el flujo habitual de simulación cuántica merece una diapositiva explícita. `AerSimulator()` es un objeto que se construye dentro del script; una vQPU es un trabajo que ya estaba corriendo antes de que el script arrancase y seguirá corriendo cuando termine.
+
+### 17.2 Tres componentes
+
+<Figure id="vqpu">
+  Servidor, backend y simulador. Los dos primeros son lo que hace a la vQPU direccionable como dispositivo; el tercero es lo que la hace computar. Servidor y simulador están desacoplados de cualquier implementación concreta de terceros, de modo que las bibliotecas subyacentes pueden sustituirse o ampliarse; el backend es fijo dentro de cada versión de CUNQA, pero es trivialmente editable para exponer nuevas características de QPU.
+</Figure>
+
+- **Servidor.** Conecta la vQPU con el usuario: recibe tareas cuánticas, las encola y devuelve resultados. Una estructura cliente-servidor convencional sobre una biblioteca de sockets estándar —Asio o ZMQ en la versión actual—.
+- **Backend.** Guarda lo que el usuario necesita saber de la QPU simulada: mapa de acoplamiento, número de qubits, puertas base, modelo de ruido y —bajo el modelo de comunicación cuántica— los qubits de comunicación. Algunos campos son genéricos; otros solo adquieren sentido bajo un modelo DQC concreto.
+- **Simulador.** Hace la ejecución de verdad. La versión 3.0.0 soporta siete: seis de terceros —AerSimulator, MQT-DDSIM, Maestro, Qulacs, Qsim, QuEST— y CunqaSimulator, uno ligero escrito dentro del propio proyecto con fines de prueba.<Ref n={1} />
+
+### 17.3 Cómo cambia la ejecución con el modelo
+
+Esta es la parte que sorprende. El modelo DQC que se emula no solo determina lo que el usuario puede escribir: **cambia cómo ejecuta el sistema por debajo.**
+
+**Sin comunicación.** No cambia nada respecto de una ejecución de circuito ordinaria. El simulador hace todo el trabajo y CUNQA lo trata como una caja negra. Hay exactamente una excepción: un `if` clásico sobre una puerta —`CIF`—. La mayoría de simuladores no lo soportan, así que CUNQA toma el control, ejecuta el bucle de *shots* por su cuenta y comprueba clásicamente el bit de control antes de decidir si aplica la puerta.
+
+Esa excepción es el origen de la restricción de ruido anunciada en el capítulo 16. El modelado de ruido descansa sobre AerSimulator, que inyecta ruido a nivel de simulador sin un mecanismo documentado para hacerlo puerta a puerta. En cuanto CUNQA se apropia del bucle de *shots*, la maquinaria de ruido del simulador queda esquivada. De ahí: **las vQPU con ruido solo existen allí donde AerSimulator ejecuta sin asistencia: sin comunicación y sin `CIF`.**<Ref n={1} />
+
+**Comunicación clásica.** Vale el mismo razonamiento por el mismo motivo: ningún simulador soportado entiende directivas de comunicación. `SEND` y `RECV` se ejecutan, por tanto, dentro de un bucle de *shots* que controla CUNQA, a través de un elemento adicional del componente simulador: el canal de comunicación clásica, disponible sobre ZMQ o MPI.
+
+**Comunicación cuántica.** Aquí el esquema anterior se rompe del todo. Los dos modelos previos descansan sobre la misma suposición implícita: cada vQPU guarda su propio estado, así que cada una puede ejecutar su bucle de *shots* y lo único que cruza entre ellas es clásico. Un canal cuántico rompe esa suposición de raíz —en cuanto dos vQPU están entrelazadas ya no tienen dos estados, tienen uno— y ninguna disposición de simuladores independientes puede representar un estado que no se descompone. Alguien que no sean las vQPU tiene que ejecutar, y de eso trata la sección siguiente.
+
+### 17.4 El ejecutor centralizado
+
+Bajo comunicación nula y clásica, cada vQPU simula su estado de forma independiente: la distribución es puramente clásica. Bajo comunicación cuántica eso deja de ser posible. Los protocolos cuánticos entre vQPU pueden entrelazar sus qubits, y un estado entrelazado no es, por definición, separable; luego **el estado de todas las vQPU implicadas debe simularse como un único estado.**
+
+La consecuencia es estructural. Un único estado necesita un único ejecutor consciente de todas las operaciones, porque una operación dirigida a una vQPU puede afectar a otra. Así que en este modelo las vQPU dejan de ser ejecutoras y pasan a ser **intermediarias**: conservan la interfaz que el usuario tendría con un sistema real, reenvían instrucciones a un ejecutor centralizado y devuelven sus resultados.
+
+<Figure id="execution-models">
+  La misma infraestructura, ejecutando de dos maneras distintas. Arriba, los dos modelos del capítulo 16 que no necesitan canal cuántico: tres vQPU, tres estados, tres ejecutoras, y solo bits clásicos cruzando entre ellas. Abajo, lo que impone la comunicación cuántica: un estado conjunto, luego un único ejecutor, y las vQPU reducidas a la interfaz. Nada cambia en lo que el usuario escribe —las intermediarias exponen exactamente lo que exponían las ejecutoras— y todo cambia en lo que corre por debajo.
+</Figure>
+
+<Note label="Dos objeciones que conviene adelantar">
+  **«Los estados *pueden* estar entrelazados, no *tienen* que estarlo: mantenerlos separados cuando no lo estén.»** Cierto, y exigiría decidir si el estado resultante es separable, que es un problema fuertemente NP-duro.<Ref n={28} /> La comprobación cuesta más que lo que ahorraría.
+
+  **«Un estado único todavía puede simularse repartido entre varios procesos.»** También cierto, y perfectamente compatible con CUNQA, pero esa distribución le corresponde al simulador, no al emulador. CUNQA controla cómo se ejecutan las instrucciones y se mantiene agnóstico respecto de cómo se almacena el estado. Algunos simuladores soportados sí ofrecen vectores de estado distribuidos (QuEST, AerSimulator bajo MPI); la versión 3.0.0 aún no los explota, de modo que el estado conjunto vive en un solo proceso.
+
+  Esto parece contradictorio para un modelo *distribuido* y no lo es: la naturaleza distribuida del sistema cuántico y la distribución de su simulación clásica son cuestiones ortogonales. Que aquí diverjan es la ilustración más nítida posible de lo caro que resulta manejar entrelazamiento clásicamente.
+</Note>
+
+El ejecutor centralizado acepta todas las directivas de los dos modelos anteriores más una propia: **`GEN_ENT`**, la generación de un estado entrelazado entre QPU. Con un ejecutor centralizado, generar entrelazamiento no es más que preparar un estado GHZ sobre los qubits de comunicación seleccionados; pero definirlo como instrucción atómica permite a CUNQA extraerlo del flujo de operaciones cuánticas, que es lo que hace modelables la generación de entrelazamiento y la contabilidad de qubits de comunicación. Se eligió como el mínimo semántico de una comunicación cuántica: todo protocolo de comunicación cuántica conocido lo necesita como bloque básico.<Ref n={11} />
+
+### 17.5 Qubits de datos y qubits de comunicación
+
+El modelo de comunicación cuántica introduce un campo del backend que los otros dos no tienen. Los **qubits de comunicación** son un subconjunto de los qubits de una vQPU reservado en exclusiva para la comunicación con otras vQPU, frente a los **qubits de datos**, que son los que computan. La distinción se remonta a los primeros trabajos sobre computación cuántica distribuida<Ref n={31} /> y se ha mantenido desde entonces.<Ref n={11} />
+
+CUNQA la adopta por dos razones. La primera, fidelidad al estado del arte. La segunda, gestión: separar los dos recursos implica que pedir más qubits de comunicación de los que tiene la máquina **detiene la ejecución hasta que se liberen algunos**, en lugar de consumir silenciosamente los de datos. Nada impide a quien no quiera la separación usar los qubits de comunicación como qubits de datos.
+
+<Bridge label="Antes de escribir código">
+  Todo lo anterior existe antes que el programa. El capítulo 18 va de traerlo a la existencia.
+</Bridge>

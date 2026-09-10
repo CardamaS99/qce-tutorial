@@ -1,6 +1,6 @@
 # Tutorial QCE26 · De circuitos monolíticos a redes multi-QPU
 
-Libro de texto bilingüe (español / inglés) de apoyo al primer bloque del tutorial
+Libro de texto bilingüe (español / inglés) de apoyo a las dos sesiones del tutorial
 *Practical Distributed Quantum Computing* de IEEE Quantum Week 2026.
 
 Sitio estático construido con [Astro](https://astro.build). No envía JavaScript

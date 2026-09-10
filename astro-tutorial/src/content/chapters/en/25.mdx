@@ -1,0 +1,102 @@
+---
+lang: en
+order: 25
+part: "Part V"
+title: "Case study: a distributed QFT"
+lead: "The Quantum Fourier Transform across three QPUs is the exercise the whole day has been building towards. It is a good final case for a reason that has nothing to do with its fame: unlike the GHZ state of chapter 14, its remote gates are not all alike, and the ones that matter least are exactly the ones you would want to cut. The pay-off is chapter-length — the transform written for exercise 8 is reused, verbatim, as a subroutine of exercise 9."
+accent: quantum
+---
+### 25.1 Why the QFT partitions badly, and what that teaches
+
+The QFT on n qubits is a ladder: a Hadamard on each qubit, followed by controlled phase rotations between that qubit and every one below it, with the rotation angle halving at each step. Two properties follow immediately, and both matter for distribution.
+
+- **It is almost all two-qubit gates, and they are all-to-all.** Every qubit interacts with every other. Any partition into blocks cuts a number of gates that grows with the product of the block sizes — so the communication cost of a distributed QFT is quadratic in the cut, not linear.
+- **The gates that cross the cut are the weakest ones.** The rotation angle between qubits *j* and *k* falls off as 2^−|j−k|, so the gates between distant qubits — precisely those most likely to cross a partition boundary — contribute the least phase. This is the basis of the *approximate* QFT, and it means the distributed QFT is one of the rare cases where a principled approximation dramatically reduces the number of remote operations.
+
+That second point is worth spending a slide on, because it is the general lesson the specific exercise carries: **circuit partitioning is not only a graph problem, it is an algorithmic one.** Chapter 15 listed partitioning as an open research line;<Ref n={24} /> the QFT is the case where a physicist beats the graph partitioner by knowing what the gates mean.
+
+### 25.2 Telegates, and why a QFT wants them
+
+Teleporting a control across a cut and back costs two transfers each way and drags along whatever the qubit is already entangled with. So the QFT does not want to *move* qubits. It wants to **lend** them: the control stays where it is and is made available to the others through a shared GHZ state. That is a telegate, and it is what `expose` / `unexpose` do (chapter 23).
+
+Three properties of that pair carry the whole exercise.
+
+- **They are collective, like `MPI_Bcast`.** Every rank in the window calls them, in the same order, which is why the calls sit *outside* the `if rank ==` branches. Ranks outside the window get `None` back and consume nothing.
+- **`expose` returns the index to use as the control** — the root's own qubit on the root, a freshly reserved comm qubit on every receiver — so the non-local gate is written exactly like a local one.
+- **Windows nest like scopes.** Two can be open at once, and the inner one must close first. That is not a style rule: it is the reason the vQPU of chapter 21 was raised with two comm qubits rather than one.
+
+### 25.3 The shape of the program
+
+Three ranks, **one data qubit each**, and the inverse transform rather than the forward one:
+
+```
+H(q2) · CP(q2→q1, −π/2) · H(q1) · CP(q2→q0, −π/4) · CP(q1→q0, −π/2) · H(q0)
+```
+
+Reversing the order is what makes it an exercise rather than a transcription, and it forces two things the forward transform does not.
+
+- **`q2`'s Hadamard comes first**, before it is lent to anybody — the mirror of the forward transform, where it came last.
+- **`q1` is a receiver and *then* a lender**, so its window opens inside `q2`'s and therefore has to close before it. Rank 0 sits inside both at once, which is where the second comm qubit of chapter 21 goes.
+
+The structure to point at is the pairing: every `expose` has an `unexpose`, innermost first, with the non-local gates between them. Chapter 23 explained why that pairing is stricter on this backend than on any other — the communication qubit released by `unexpose` is the one the next window will ask for.
+
+Note also what a window costs: *one* GHZ state, however many rotations happen inside it. Rank 2's control is used twice, by two different ranks, for the price of lending it once. Teleporting `q2` back and forth would have meant four teledata blocks.
+
+### 25.4 The exercises
+
+<Exercise label="Exercise 8 · mandatory">
+  #### A 3-qubit inverse QFT across three QPUs
+
+  `examples/netqmpi/5_qft_expose.py` builds the forward transform. **Write the inverse**: the same gates back to front, every angle negated, one data qubit per rank.
+
+  How you will know it worked: `QFT|x>` is a product state, so each rank prepares its own factor locally with no communication at all — rank *j* holds `(|0> + e^(2πi·2^j·x/8)|1>)/√2`. Undo the transform and every rank reads one bit of *x* on all 1024 shots, rank 0 the most significant.
+</Exercise>
+
+The value of *x* travels in the environment, because the launcher passes no arguments through to the program — the SPMD constraint of chapter 6, still binding four parts later.
+
+```bash title="One value, then all eight"
+$ QFT_X=5 netqmpi -n 3 notebook_apps/ex8_iqft.py --cunqa --shots 1024
+$ for x in 0 1 2 3 4 5 6 7; do
+>   QFT_X=$x netqmpi -n 3 notebook_apps/ex8_iqft.py --cunqa --shots 1024 | tail -1
+> done
+```
+
+`101` is 5, rank 0 first, and every marginal should be a clean `1.000` / `0.000`. **The determinism flag is worth more than the value itself.** It guards the one assumption that comes from the counts *format* rather than the physics: CUNQA joins one bitstring per classical register, the user's own register first and the two protocol bits after it, and the protocol bits are coin flips. Had the reader picked one of those by mistake, nothing would be deterministic — so you get an honest `deterministic=False` rather than a plausible wrong answer. One value could be luck; eight cannot.
+
+<Exercise label="Exercise 9 · optional">
+  #### Distributed phase estimation
+
+  Exercise 8 built a subroutine. This is the algorithm it belongs to. Phase estimation with `U = P(2πφ)`, whose eigenstate is `|1>`: counting qubits into `|+>`, a `controlled-U^(2^j)` from counting qubit *j* kicking the phase back, then an inverse QFT on the counting register.
+
+  Step two leaves exactly the product state you prepared by hand in exercise 8, so step three *is* exercise 8 — `inverse_qft` is copied over unchanged. Write the first two steps.
+</Exercise>
+
+This is the first program of the day in which the ranks are **not symmetric**: rank 0 holds counting bit 0 *and* the eigenstate on a second data qubit; ranks 1 and 2 hold one counting bit each. Every `controlled-U^(2^j)` has its control on rank *j* and its target on rank 0 — local for rank 0, an `expose` window for the other two. Those windows do not overlap, so they hand the same comm qubit back and forth.
+
+Two things to settle before writing any of it. The collectives go *outside* the `if rank ==` branches, as always: every rank calls `expose` and `unexpose`, and only rank 0 puts a gate between them. And the angles are `2π·2^j·φ`, not `2π·φ/2^j`. Rank 0 is the most significant bit, so it gets the *smallest* rotation — which is the ordering the inverse QFT expects, and the reason the two halves fit at all.
+
+```bash title="A phase it can represent, and one it cannot"
+$ QPE_PHI=0.625 netqmpi -n 3 notebook_apps/ex9_qpe.py --cunqa --shots 1024
+$ QPE_PHI=0.3333333333333333 netqmpi -n 3 notebook_apps/ex9_qpe.py --cunqa --shots 1024
+```
+
+φ = 5/8 is a multiple of 1/8, so three bits hold it exactly and the counting register is deterministic: `101`, every shot. φ = 1/3 falls between 2/8 and 3/8, and the second run is the more instructive of the two — read it carefully, because what comes back is three **marginals**, and nothing in them says which shot of rank 0 went with which of rank 2. For the exact phases that was harmless, since a product of deltas *is* the joint distribution. Here it is not, and the histogram over *x* simply is not in the data. `010` and `011` agree on the first two bits and differ in the third, which is exactly what you should see: ranks 0 and 1 nearly certain, rank 2 split near 50/50, and `deterministic=False` — the honest signature.
+
+### 25.5 What to take from it
+
+The most valuable five minutes are not the run. They are what the two exercises say together.
+
+**The composition is the result.** `inverse_qft` was copied out of exercise 8 unchanged and kept working even though rank 0 now holds two data qubits and arrives entangled rather than in a product state. A distributed collective that composes is not a given; this one does, because it is written against ranks and qubit indices and does not care what happened before it.
+
+**Peak concurrency is what you pay for, not total count.** Five windows open over the whole of exercise 9, and the family is still `[2, 2]`. The kickback windows open and close one at a time; only the inverse QFT's nested pair is ever held at once. **Window lifetime is the comm-qubit budget** — close rank 2's window earlier and one comm qubit would do, but the circuit would no longer be the inverse QFT.
+
+**And the resources are still yours to give back.** The family has been up since chapter 21, which is why every run here attached instantly and paid no scheduler cost. It is still a reservation.
+
+```python title="The last line of the day"
+qdrop(FAMILY)
+```
+
+Two extensions worth trying afterwards, both of which answer themselves on paper before they cost an allocation:
+
+- Redo exercise 8 with **teledata** instead of telegates — move `q1` and `q2` to rank 0, transform, move them back — and count the `gen_ent` requests each version issues.
+- Take exercise 9 to four nodes. Work out what to raise *before* raising it: *n* counting qubits over *n* nodes means n(n−1)/2 cross-node rotations and n−1 comm qubits held at once on rank 0.

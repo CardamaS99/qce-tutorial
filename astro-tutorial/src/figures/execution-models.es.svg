@@ -1,0 +1,32 @@
+<svg aria-label="Los dos regímenes de ejecución de una vQPU. Bajo comunicación nula y clásica cada vQPU simula su propio estado y es su propia ejecutora. Bajo comunicación cuántica las vQPU pasan a ser intermediarias de un único ejecutor centralizado que guarda un estado conjunto." role="img" viewbox="0 0 800 380">
+<title>Quién ejecuta bajo cada modelo de comunicación</title>
+<text class="sv-th" x="30" y="24">cómo ejecuta una vQPU</text>
+<text class="sv-s" x="30" y="42">el modelo DQC decide quién ejecuta de verdad el circuito</text>
+<rect fill="#fff" height="126" rx="8" stroke="#C3C7C2" stroke-width="1.2" width="740" x="30" y="58"></rect>
+<text class="sv-m" fill="#6B7683" x="52" y="84">sin comunicación · comunicación clásica</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="52" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="162" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="162" y="136">simula su propio estado</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="290" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="400" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="136">simula su propio estado</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="528" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="638" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="638" y="136">simula su propio estado</text>
+<text class="sv-s" x="52" y="170">estados separados, ejecutoras separadas · solo cruzan bits clásicos</text>
+<rect fill="#EDEAFA" height="156" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="198"></rect>
+<text class="sv-m" fill="#5B3FB8" x="52" y="224">comunicación cuántica</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="52" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="162" y="261">vQPU · intermediaria</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="290" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="400" y="261">vQPU · intermediaria</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="528" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="638" y="261">vQPU · intermediaria</text>
+<line stroke="#5B3FB8" stroke-width="1" x1="162" x2="162" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="400" x2="400" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="638" x2="638" y1="276" y2="292"></line>
+<rect fill="#D3CBF2" height="42" rx="4" stroke="#3B2C82" stroke-width="1.6" width="696" x="52" y="292"></rect>
+<text class="sv-t" fill="#2E2450" text-anchor="middle" x="400" y="311">ejecutor centralizado</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="400" y="327">un estado conjunto · un proceso</text>
+<text class="sv-s" x="30" y="372">un estado entrelazado no es separable: no puede repartirse entre simulaciones independientes</text>
+</svg>

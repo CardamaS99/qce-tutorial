@@ -1,0 +1,74 @@
+---
+lang: es
+order: 22
+part: "Parte V"
+title: "Dos pilas, un punto de contacto"
+lead: "El capítulo 11 dejó una pregunta abierta y la marcó como algo que resolver antes de impartir: el título del tutorial promete «NetQMPI sobre CUNQA», y los dos proyectos se publicaron por separado, cada uno con su pila. Este capítulo la responde. La versión corta es que la integración es un adaptador de backend, y que funciona porque ambos lados dejaron la costura a la altura correcta."
+accent: quantum
+---
+### 22.1 Qué es realmente cada lado
+
+Merece la pena repetir las dos definiciones una junto a la otra, porque casi toda la confusión sobre la integración viene de suponer que ambas herramientas ocupan el mismo nivel.
+
+| | NetQMPI | CUNQA |
+| --- | --- | --- |
+| Qué es | Un *modelo de programación*: el SPMD, el rank y el communicator de MPI trasladados al dominio cuántico.<Ref n={2} /> | Un *emulador de infraestructuras*: vQPU desplegadas en un supercomputador a través del planificador.<Ref n={1} /> |
+| Nivel en la pila del capítulo 11 | Middleware, sobre el SDK de NetQASM. | Capa de sistema más su propia capa de aplicación. |
+| Qué esconde | Sockets, pares EPR, correcciones, identidades de nodo. | Simuladores, procesos, sockets, el trabajo de SLURM. |
+| Qué insiste en que veas | Los ranks y el communicator. | La infraestructura: se levanta, se paga, se libera. |
+| Unidad de trabajo | Un rank que ejecuta un programa. | Un circuito ejecutado en un dispositivo. |
+
+No son competidores, y ninguno es subconjunto del otro. NetQMPI necesita *algo debajo* capaz de sostener estado cuántico, producir entrelazamiento entre nodos y transportar bits clásicos. CUNQA es una de esas cosas, y resulta ser la única que corre dentro de un entorno HPC real con los tres modelos de comunicación.<Ref n={22} />
+
+### 22.2 La costura del lado de CUNQA
+
+El capítulo 19 terminaba con la frase que importa aquí: el middleware conecta con el nivel inferior **a través de un único punto** —un cliente enganchado al servidor de la vQPU— y quien quiera otra interfaz puede descartar el paquete Python `cunqa` por completo; el único requisito es enviar JSON con la forma correcta a las vQPU.<Ref n={1} />
+
+Eso no es un accidente de implementación: es la razón por la que el middleware se mantuvo delgado a propósito. Un emulador cuya API de Python estuviese soldada a su capa de ejecución habría que *envolverlo*. Uno cuyo punto de contacto es un esquema JSON documentado sobre un socket puede *tomarse como destino*.
+
+### 22.3 La costura del lado de NetQMPI
+
+NetQMPI se ha movido en la misma dirección. La versión publicada de la biblioteca se describe como middleware sobre el SDK de NetQASM con SquidASM y SimulaQron como backends de ejecución;<Ref n={2} /> la interfaz se ha reorganizado desde entonces en torno a un `Environment` explícito que posee tanto el communicator como la construcción de circuitos, de modo que el mismo programa de usuario corre contra el backend que seleccione el lanzador.
+
+```python title="La forma agnóstica de backend · examples/netqmpi/send_recv.py"
+from netqmpi.sdk.environment import Environment
+
+def main(env: Environment = None):
+    comm = env.comm
+    rank = comm.rank
+
+    next_rank     = comm.get_next_rank(rank)
+    previous_rank = comm.get_prev_rank(rank)
+
+    with comm:                                    # todo lo de dentro corre en el backend
+        if rank == 0:
+            circuit = env.create_circuit(num_qubits=1, num_clbits=1)
+            circuit.h(0)                          # preparar |+>
+            comm.qsend(circuit, [0], next_rank)   # teleportar el qubit
+        else:
+            circuit = env.create_circuit(num_qubits=1, num_clbits=1)
+            comm.qrecv(circuit, [0], previous_rank)
+            circuit.measure(0, 0)
+
+    results = comm.results
+    if rank != 0:
+        print(f"measure: {results}")
+```
+
+Tres cosas de ese fragmento *son* la integración, y es fácil pasarlas por alto en una primera lectura.
+
+- **`env.create_circuit(...)` en lugar de `Qubit(connection)`.** El usuario ya no instancia qubits contra una conexión viva: construye un *objeto circuito que le proporciona el entorno*. Qué clase sea depende del backend, y sobre CUNQA es un `CunqaCircuit`.
+- **`with comm:` como ámbito de ejecución.** El bloque delimita lo que se despacha. Bajo un backend NetQASM se traduce en vaciados; bajo CUNQA, en ensamblar los circuitos y llamar a `run`.
+- **`comm.results`** recoge después, que es exactamente el `gather` del capítulo 19 con sombrero de MPI.
+
+<Figure id="netqmpi-cunqa">
+  El punto de contacto. NetQMPI conserva todo el modelo de programación —un fichero, SPMD, ranks, `qsend`/`qrecv`, colectivas— y delega dos cosas en el adaptador de backend: qué es un objeto circuito y qué ocurre cuando se cierra el ámbito de ejecución. El adaptador asigna ranks a las vQPU levantadas, traduce las primitivas a directivas de CUNQA y devuelve las cuentas. Todo lo que está por encima de la línea discontinua no cambia entre el backend de SquidASM y el de CUNQA; todo lo que está por debajo son los capítulos 17 a 19.
+</Figure>
+
+### 22.4 Por qué esto compone en lugar de chocar
+
+Que las dos abstracciones estén a alturas distintas es lo que hace limpia la composición, y se nota en tres sitios:
+
+- **Ninguno posee la gestión de recursos de la misma manera.** El lanzador de NetQMPI arranca N ranks; el `qraise` de CUNQA reserva N vQPU. Son el mismo acto en dos vocabularios, y el capítulo 24 enseña cómo se alinean las dos órdenes.
+- **Ambos son ya agnósticos de backend en la dirección correcta.** NetQMPI abstrae sobre lo que ejecuta; CUNQA abstrae sobre lo que lo programa. Se encuentran a mitad de camino y ninguno tiene que renunciar a su modelo.
+- **El circuito es el objeto natural de intercambio.** NetQMPI necesita dónde acumular puertas antes de despachar; la representación intermedia de CUNQA es un circuito en JSON. El desajuste de impedancias que podría haber existido —un modelo de instrucciones en flujo de un lado y uno de circuito completo del otro— no existe, porque hoy ambos son de circuito completo.

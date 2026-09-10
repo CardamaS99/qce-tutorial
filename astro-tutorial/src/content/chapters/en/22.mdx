@@ -1,0 +1,74 @@
+---
+lang: en
+order: 22
+part: "Part V"
+title: "Two stacks, one contact point"
+lead: "Chapter 11 left a question open and flagged it as something to resolve before delivering: the tutorial's title promises «NetQMPI over CUNQA», and the two projects were published independently, each with its own stack. This chapter answers it. The short version is that the integration is a backend adapter, and that it works because both sides were built with the seam in the right place."
+accent: quantum
+---
+### 22.1 What each side actually is
+
+It is worth restating the two definitions next to each other, because most of the confusion about the integration comes from assuming the two tools occupy the same level.
+
+| | NetQMPI | CUNQA |
+| --- | --- | --- |
+| What it is | A *programming model*: MPI's SPMD, rank and communicator carried into the quantum domain.<Ref n={2} /> | An *infrastructure emulator*: vQPUs deployed on a supercomputer through the scheduler.<Ref n={1} /> |
+| Level in the stack of chapter 11 | Middleware, over the NetQASM SDK. | System layer plus its own application layer. |
+| What it hides | Sockets, EPR pairs, corrections, node identities. | Simulators, processes, sockets, the SLURM job. |
+| What it insists you see | Ranks and the communicator. | The infrastructure: you raise it, you pay for it, you drop it. |
+| Unit of work | A rank executing a program. | A circuit executed on a device. |
+
+They are not competitors, and neither is a subset of the other. NetQMPI needs *something underneath* that can hold quantum state, produce entanglement between nodes and carry classical bits. CUNQA is such a something, and it happens to be the only one that runs inside a real HPC environment with all three communication models.<Ref n={22} />
+
+### 22.2 The seam on the CUNQA side
+
+Chapter 19 ended on the sentence that matters here: the middleware connects to the lower level **through a single point** — a client attached to the vQPU's server — and anyone who wants a different interface can discard the `cunqa` Python package entirely, the only requirement being to send correctly shaped JSON to the vQPUs.<Ref n={1} />
+
+That is not an accident of implementation; it is the reason the middleware was kept thin on purpose. An emulator whose Python API was welded to its execution layer would have to be *wrapped*. One whose contact point is a documented JSON schema over a socket can be *targeted*.
+
+### 22.3 The seam on the NetQMPI side
+
+NetQMPI has moved in the same direction. The published version of the library is described as middleware over the NetQASM SDK with SquidASM and SimulaQron as execution backends;<Ref n={2} /> the interface has since been reorganised around an explicit `Environment` that owns both the communicator and the circuit construction, so that the same user program runs against whichever backend the launcher selects.
+
+```python title="The backend-agnostic shape · examples/netqmpi/send_recv.py"
+from netqmpi.sdk.environment import Environment
+
+def main(env: Environment = None):
+    comm = env.comm
+    rank = comm.rank
+
+    next_rank     = comm.get_next_rank(rank)
+    previous_rank = comm.get_prev_rank(rank)
+
+    with comm:                                    # everything inside runs on the backend
+        if rank == 0:
+            circuit = env.create_circuit(num_qubits=1, num_clbits=1)
+            circuit.h(0)                          # prepare |+>
+            comm.qsend(circuit, [0], next_rank)   # teleport the qubit
+        else:
+            circuit = env.create_circuit(num_qubits=1, num_clbits=1)
+            comm.qrecv(circuit, [0], previous_rank)
+            circuit.measure(0, 0)
+
+    results = comm.results
+    if rank != 0:
+        print(f"measure: {results}")
+```
+
+Three things in that snippet are the integration, and they are easy to miss on a first read.
+
+- **`env.create_circuit(...)` instead of `Qubit(connection)`.** The user no longer instantiates qubits against a live connection; they build a *circuit object supplied by the environment*. Which class that is depends on the backend — and on CUNQA it is a `CunqaCircuit`.
+- **`with comm:` as an execution scope.** The block delimits what gets dispatched. Under a NetQASM backend this maps onto flushes; under CUNQA it maps onto assembling the circuits and calling `run`.
+- **`comm.results`** collects afterwards, which is exactly the `gather` of chapter 19 wearing an MPI-shaped hat.
+
+<Figure id="netqmpi-cunqa">
+  The contact point. NetQMPI keeps the whole programming model — one file, SPMD, ranks, `qsend`/`qrecv`, collectives — and delegates two things to the backend adapter: what a circuit object is, and what happens when the execution scope closes. The adapter maps ranks onto raised vQPUs, translates the primitives into CUNQA directives, and returns the counts. Everything above the dashed line is unchanged between the SquidASM backend and the CUNQA one; everything below it is chapters 17 to 19.
+</Figure>
+
+### 22.4 Why this composes rather than collides
+
+The two abstractions being at different heights is what makes the composition clean, and it shows up in three places:
+
+- **Neither owns resource management, in the same way.** NetQMPI's launcher starts N ranks; CUNQA's `qraise` reserves N vQPUs. These are the same act performed in two vocabularies, and chapter 24 shows how the two commands line up.
+- **Both are already backend-agnostic in the right direction.** NetQMPI abstracts over what executes; CUNQA abstracts over what programs it. They meet in the middle and neither has to give up its model.
+- **The circuit is the natural interchange object.** NetQMPI needs somewhere to accumulate gates before dispatch; CUNQA's IR is a circuit in JSON. The impedance mismatch that could have existed — a streaming instruction model on one side, a whole-circuit model on the other — does not, because both are currently whole-circuit.

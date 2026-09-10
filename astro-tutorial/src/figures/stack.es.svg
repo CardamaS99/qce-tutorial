@@ -38,5 +38,5 @@
 <text class="sv-m" fill="#12695C" x="590" y="317">supercomputador</text>
 <line stroke="#6B7683" stroke-dasharray="4 3" stroke-width="1.2" x1="524" x2="556" y1="120" y2="120"></line>
 <path d="M552 116l6 4-6 4" fill="#6B7683"></path><path d="M528 116l-6 4 6 4" fill="#6B7683"></path>
-<text class="sv-s" text-anchor="middle" x="400" y="374">el punto de integración es el objeto del tutorial · confirmar la ruta exacta antes de la sesión</text>
+<text class="sv-s" text-anchor="middle" x="400" y="374">el punto de integración es un adaptador de backend · lo dibuja el capítulo 22</text>
 </svg>

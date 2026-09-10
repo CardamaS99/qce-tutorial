@@ -1,0 +1,32 @@
+<svg aria-label="The two execution regimes of a vQPU. Under no communication and classical communication each vQPU simulates its own state and is its own executor. Under quantum communication the vQPUs become proxies of a single centralised executor holding one joint state." role="img" viewbox="0 0 800 380">
+<title>Who executes, under each communication model</title>
+<text class="sv-th" x="30" y="24">how a vQPU executes</text>
+<text class="sv-s" x="30" y="42">the DQC model decides who actually runs the circuit</text>
+<rect fill="#fff" height="126" rx="8" stroke="#C3C7C2" stroke-width="1.2" width="740" x="30" y="58"></rect>
+<text class="sv-m" fill="#6B7683" x="52" y="84">no communication · classical communication</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="52" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="162" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="162" y="136">simulates its own state</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="290" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="400" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="400" y="136">simulates its own state</text>
+<rect fill="#F7F8F6" height="52" rx="4" stroke="#C3C7C2" stroke-width="1" width="220" x="528" y="96"></rect>
+<text class="sv-t" text-anchor="middle" x="638" y="118">vQPU</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="638" y="136">simulates its own state</text>
+<text class="sv-s" x="52" y="170">separate states, separate executors · only classical bits cross</text>
+<rect fill="#EDEAFA" height="156" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="198"></rect>
+<text class="sv-m" fill="#5B3FB8" x="52" y="224">quantum communication</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="52" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="162" y="261">vQPU · proxy</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="290" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="400" y="261">vQPU · proxy</text>
+<rect fill="#fff" height="40" rx="4" stroke="#5B3FB8" stroke-dasharray="3 2" stroke-width="1" width="220" x="528" y="236"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="638" y="261">vQPU · proxy</text>
+<line stroke="#5B3FB8" stroke-width="1" x1="162" x2="162" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="400" x2="400" y1="276" y2="292"></line>
+<line stroke="#5B3FB8" stroke-width="1" x1="638" x2="638" y1="276" y2="292"></line>
+<rect fill="#D3CBF2" height="42" rx="4" stroke="#3B2C82" stroke-width="1.6" width="696" x="52" y="292"></rect>
+<text class="sv-t" fill="#2E2450" text-anchor="middle" x="400" y="311">centralised executor</text>
+<text class="sv-m" fill="#3B2C82" text-anchor="middle" x="400" y="327">one joint state · one process</text>
+<text class="sv-s" x="30" y="372">an entangled state is not separable, so it cannot be split across independent simulations</text>
+</svg>

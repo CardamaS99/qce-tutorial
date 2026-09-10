@@ -22,7 +22,9 @@
   --font-body: "Source Serif 4", Georgia, "Times New Roman", serif;
   --font-mono: "IBM Plex Mono", Menlo, Consolas, monospace;
 
-  --measure: 70ch;
-  --shell: 1180px;
+  /* Una sola medida para texto, figuras, tablas, código y avisos: todo
+     comparte ancho. En rem para que no dependa de la fuente de cada bloque. */
+  --measure: 42rem;
+  --shell: 1000px;
   --rail: 210px;
 }

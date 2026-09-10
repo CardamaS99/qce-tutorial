@@ -1,0 +1,32 @@
+<svg aria-label="The life cycle of a raised CUNQA infrastructure: qraise submits a scheduler job that keeps N vQPUs alive for a bounded wall time, qinfo reports what is up, the Python program attaches with get_QPUs and runs against it, and qdrop frees the resources." role="img" viewbox="0 0 800 232">
+<title>The life cycle of a raised infrastructure</title>
+<rect fill="#F7F8F6" height="40" rx="5" stroke="#C3C7C2" stroke-width="1" width="150" x="30" y="40"></rect>
+<text class="sv-m" text-anchor="middle" x="105" y="58">qraise -n 4 -t T</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="105" y="72">a SLURM job</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="180" x2="222" y1="60" y2="60"></line>
+<path d="M218 56l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#E4F1EE" height="176" rx="8" stroke="#12695C" stroke-dasharray="6 4" stroke-width="1.6" width="316" x="226" y="40"></rect>
+<text class="sv-th" fill="#0C3F38" x="242" y="62">family · alive for T</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="242" y="76"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="309" y="98">vQPU 0</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="392" y="76"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="459" y="98">vQPU 1</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="242" y="124"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="309" y="146">vQPU 2</text>
+<rect fill="#fff" height="36" rx="4" stroke="#12695C" stroke-width="1" width="134" x="392" y="124"></rect>
+<text class="sv-m" fill="#12695C" text-anchor="middle" x="459" y="146">vQPU 3</text>
+<text class="sv-s" fill="#12695C" x="242" y="188">qinfo lists them · they outlive your program</text>
+<line stroke="#6B7683" stroke-width="1.2" x1="542" x2="584" y1="60" y2="60"></line>
+<path d="M580 56l6 4-6 4" fill="#6B7683"></path>
+<rect fill="#F7F8F6" height="40" rx="5" stroke="#C3C7C2" stroke-width="1" width="180" x="588" y="40"></rect>
+<text class="sv-m" text-anchor="middle" x="678" y="58">qdrop --all</text>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="678" y="72">scancel</text>
+<rect fill="#EDEAFA" height="96" rx="6" stroke="#5B3FB8" stroke-width="1.4" width="180" x="588" y="104"></rect>
+<text class="sv-t" fill="#3B2C82" text-anchor="middle" x="678" y="126">your program</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="146">get_QPUs()</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="163">run(...)</text>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="678" y="180">gather(...)</text>
+<line stroke="#5B3FB8" stroke-width="1.2" x1="584" x2="546" y1="140" y2="140"></line>
+<path d="M550 136l-6 4 6 4" fill="#5B3FB8"></path>
+<text class="sv-m" fill="#5B3FB8" text-anchor="middle" x="566" y="130">attach</text>
+</svg>

@@ -1,0 +1,164 @@
+---
+lang: es
+order: 20
+part: "Parte IV"
+title: "Un algoritmo, tres modelos"
+lead: "La manera más limpia de ver qué le hace cada modelo de comunicación a un programa es fijar el algoritmo y variar solo el modelo. La estimación de fase cuántica es la que usa la literatura de CUNQA justo por eso: emplear un único algoritmo aísla las diferencias que impone el modelo de las que habría impuesto el algoritmo de todos modos."
+accent: quantum
+---
+### 20.1 El algoritmo, en breve
+
+La QPE, introducida por Kitaev en 1995,<Ref n={30} /> estima la fase φ de un autovalor de un operador unitario U: dados U y uno de sus autovectores |ψ⟩ con U|ψ⟩ = e^(2πiφ)|ψ⟩, devuelve
+
+<Formula>
+  φ ≃ ξ / 2ⁿ, con error 1 / 2ⁿ
+</Formula>
+
+donde n es el número de qubits ancilla y ξ la lectura decimal de la cadena de salida más frecuente del registro de ancillas. El circuito tiene dos registros: las n ancillas que guardan la fase, y el registro que contiene |ψ⟩ al que se aplican las potencias controladas de U, seguido de una QFT inversa sobre las ancillas.
+
+La demostración toma U = R_z y |ψ⟩ = |1⟩, por dos razones prácticas: los autovectores de R_z son triviales de preparar —y la preparación del autoestado es uno de los cuellos de botella reales de la QPE— y con |1⟩ la respuesta se conoce de antemano por θ = 2πφ, de modo que la corrección es comprobable y no meramente plausible.
+
+### 20.2 Sin comunicación: repartir los *shots*
+
+Más precisión significa más ancillas, más resultados posibles y, por tanto, más *shots*. Nada del *circuito* necesita distribuirse; el *muestreo* sí. Este es el caso *embarrassingly parallel*, y el código lo enseña: el circuito se construye exactamente como se construiría en una sola máquina, y luego se replica.
+
+```python title="QPE con shots distribuidos · el circuito no se toca"
+# Definición del circuito QPE
+qpe = CunqaCircuit(num_qubits + 1, num_qubits)
+qpe.x(num_qubits)                       # autoestado |psi> = |1>
+
+for i in range(num_qubits):
+    qpe.h(i)
+    for _ in range(2**i):
+        qpe.crz(phase, i, num_qubits)   # U^(2^i) controlada
+
+qpe.IQFT(0, num_qubits - 1)
+qpe.measure_all()
+
+# Obtener las vQPU disponibles y repartir los shots
+qpus = get_QPUs()
+shots_per_qpu = [shots // len(qpus) for _ in range(len(qpus))]
+
+qjobs = run([qpe]*len(qpus), qpus, shots=shots_per_qpu)
+results = gather(qjobs)
+```
+
+Lo único distribuido de ese programa son las tres últimas líneas. Ese es el asunto: el modelo sin comunicación no le pide nada al algoritmo.
+
+### 20.3 Comunicación clásica: el IPEA
+
+El algoritmo iterativo de estimación de fase<Ref n={29} /> ataca el coste en qubits en lugar del coste en *shots*: extrae la expansión binaria de la fase bit a bit, usando una sola ancilla por circuito.
+
+La derivación merece hacerse en una diapositiva porque convierte un algoritmo desconocido en uno conocido. Lo último que actúa sobre las ancillas antes de la medida es la QFT inversa: una escalera de Hadamards y rotaciones controladas. Por el principio de medida diferida, medir *antes* de esas rotaciones controladas es equivalente, y las convierte en puertas controladas **clásicamente**. Y unas puertas controladas clásicamente cuyos controles vienen de medidas anteriores son exactamente un punto de partición: cada rebanada pasa a ser un circuito independiente que necesita un bit clásico de cada uno de sus predecesores.
+
+```python title="IPEA sobre CUNQA · un subcircuito por vQPU"
+qpus_QPE = get_QPUs()
+num_qpus = len(qpus_QPE)
+circuits = []
+
+for i in range(num_qpus):
+    theta = 2 * pi * 2**(num_qpus - i - 1) * phase
+
+    circuits.append(CunqaCircuit(num_qubits=2, num_clbits=2, id=f"circuit_{i}"))
+    circuits[i].h(0)
+    circuits[i].x(1)
+    circuits[i].crz(theta, 0, 1)          # la potencia de U de esta rebanada
+
+    # Recepción de bits de los circuitos anteriores
+    for j in range(i):
+        circuits[i].recv(clbits=0, sending_circuit=f"circuit_{i - j - 1}")
+        circuits[i].cif(clbits=0)
+        circuits[i].rz(param=-pi * 2**(-j - 1), qubits=0)
+        circuits[i].endcif()
+
+    circuits[i].h(0)
+
+    # Envío de bits a los circuitos posteriores
+    circuits[i].measure(0, 0)
+    for k in range(num_qpus - i - 1):
+        circuits[i].send(clbits=0, recving_circuit=f"circuit_{i + k + 1}")
+
+    circuits[i].measure(1, 1)
+
+qjobs = run(circuits, qpus_QPE)
+results = gather(qjobs)
+```
+
+El bucle interno es todo el algoritmo. `recv` bloquea hasta que el subcircuito *i − j − 1* ha medido; `cif`/`endcif` aplican la rotación de corrección R_z(−π · 2^−(j+1)) solo cuando el bit recibido vale 1; y el efecto acumulado de todas esas rotaciones condicionadas reproduce la QFT inversa bit a bit, sin ancillas adicionales. Después se mide la ancilla y se difunde a todos los subcircuitos posteriores que la vayan a necesitar.
+
+La partición es legítima por una razón que merece decirse: en el registro del autovector, cada puerta controlada deja el registro en el autoestado, de modo que las rebanadas son genuinamente independientes entre sí salvo por los bits clásicos.
+
+### 20.4 Comunicación cuántica: partir por registros
+
+La QPE tiene dos registros, así que la partición obvia para comunicación cuántica es un registro por vQPU. Hacerlo convierte cada U controlada en una puerta controlada **no local**, que es justo para lo que sirve el telegate. El ejemplo usa `cat_entangler` / `cat_disentangler` en vez de `gen_ent` en crudo, lo que hace legible la estructura.
+
+```python title="QPE distribuida con comunicación cuántica · dos circuitos, un qubit de comunicación cada uno"
+ancilla_circuit  = CunqaCircuit((N_ANCILLA_QUBITS, 1), N_ANCILLA_QUBITS, id="ancilla_circuit")
+register_circuit = CunqaCircuit((N_REGISTER_QUBITS, 1), 1, id="register_circuit")
+
+data_qubits_anc, comm_qubits_anc = ancilla_circuit.get_qubits()
+data_qubits_reg, comm_qubits_reg = register_circuit.get_qubits()
+
+register_circuit.x(data_qubits_reg[0])          # autoestado |1>
+for i in range(N_ANCILLA_QUBITS):
+    ancilla_circuit.h(data_qubits_anc[i])
+
+for i in range(N_ANCILLA_QUBITS):
+    cat_entangler(
+        target_circuits = [ancilla_circuit, register_circuit],
+        data_qubit      = data_qubits_anc[N_ANCILLA_QUBITS - 1 - i],
+        comm_qubits     = [comm_qubits_anc[0], comm_qubits_reg[0]],
+        clbits          = [0, 0],
+        tag             = "telegate"
+    )
+
+    param = (2**i) * 2 * 2 * pi * PHASE_TO_COMPUTE
+    register_circuit.crz(param, comm_qubits_reg[0], data_qubits_reg[0])
+
+    cat_disentangler(
+        target_circuits = [ancilla_circuit, register_circuit],
+        data_qubit      = data_qubits_anc[N_ANCILLA_QUBITS - 1 - i],
+        comm_qubits     = [comm_qubits_reg[0]],
+        recv_clbits     = [0],
+        send_clbits     = [0]
+    )
+
+ancilla_circuit.IQFT(0, N_ANCILLA_QUBITS)
+ancilla_circuit.measure_all()
+
+qjobs = run([ancilla_circuit, register_circuit], get_QPUs())
+results = gather(qjobs)
+```
+
+El patrón de tres pasos del bucle es lo que hay que retener:
+
+- **`cat_entangler`** comparte el estado de un qubit ancilla con `register_circuit` a través de los qubits de comunicación reservados, *sin destruirlo*. Si la ancilla está en α|0⟩ + β|1⟩, el estado conjunto de esa ancilla y del qubit de comunicación remoto pasa a ser α|00⟩ + β|11⟩ con α y β intactos; usar el qubit de comunicación como control equivale, por tanto, a usar la ancilla como control.
+- **La `crz` local** es después una puerta local ordinaria dentro de `register_circuit`. Ahí ha ido a parar la no localidad: no ha desaparecido, se ha pagado por adelantado.
+- **`cat_disentangler`** elimina el entrelazamiento residual y deja la ancilla en α′|0⟩ + β′|1⟩ y el qubit de comunicación de vuelta en |0⟩, libre para la siguiente iteración.
+
+Los tres juntos realizan una puerta controlada no local habiendo intercambiado solo un par entrelazado temporal y unos bits clásicos, nunca el estado de la ancilla.
+
+### 20.5 Leer los números con honestidad
+
+Las tres variantes se ejecutaron para estimar φ = 1/π en el clúster QMIO del CESGA, con 2 núcleos y 30 GB por vQPU, todas co-localizadas, y cada caso repetido 100 veces.<Ref n={1} />
+
+| Modelo | vQPU | Shots por vQPU | Fase estimada | Tiempo medio (s) |
+| --- | --- | --- | --- | --- |
+| Sin comunicación | 1 | 10⁸ | 0,3183135986328125 | 123,602 |
+| Sin comunicación | 128 | 781 250 | 0,3183135986328125 | 1,267 |
+| Comunicación clásica | 16 | 10⁸ | 0,3183135986328125 | 4959,346 |
+| Comunicación cuántica | 2 | 10⁴ | 0,3183135986328125 | 5124,625 |
+
+Dos lecturas, y no deben mezclarse.
+
+**Corrección.** Todos los modelos devuelven la misma estimación, 0,3183135986328125 ± 0,000015, frente al valor real 1/π = 0,31830988…. La incertidumbre es 2⁻¹⁶, exactamente la resolución de la QPE con n = 16 ancillas, y la estimación concuerda holgadamente dentro de ella. La plataforma emula los tres modelos y da la respuesta correcta en los tres. Eso es lo que la tabla sostiene.
+
+**Coste.** Los tiempos miden el reloj de pared clásico invertido en emular y simular la infraestructura. **No** son predicciones del tiempo de ejecución de un sistema DQC físico —los canales son ideales y no llevan ningún modelo temporal— y **no** son un benchmark, porque medir aquí sería sobre todo medir a AerSimulator. Lo que sí muestran es cómo cada modelo moldea la simulación:
+
+- **Sin comunicación escala.** 128 vQPU corren unas 100 veces más rápido que una, cerca de la línea de aceleración ideal, porque no hay nada que coordinar. La razón para parar en 128 no es que la curva se aplane, sino la factura: 256 núcleos y 3,84 TB.
+- **La comunicación clásica serializa.** Los dieciséis subcircuitos *podrían* solaparse, pero cada subcircuito *i* debe recibir un bit de cada uno de sus *i* predecesores, y `recv` bloquea. La estructura de dependencias del IPEA es una cadena, así que la partición no compra nada y el tráfico de comunicación cuesta bastante: 40 veces más lento que la línea base monolítica con el mismo número de *shots*.
+- **La comunicación cuántica es monolítica y cara.** El ejecutor centralizado toma el mando, el estado conjunto es uno solo y el protocolo telegate inserta muchas puertas adicionales. Cuatro órdenes de magnitud menos de *shots* para un tiempo de pared comparable: un coste por *shot* del orden de 4 × 10⁵ veces mayor.
+
+<Note label="Cada modelo quiere un número distinto de vQPU">
+  1, 128, 16 y 2 vQPU en cuatro filas no es metodología descuidada. El modelo sin comunicación admite tantas como se puedan pagar; el clásico queda anclado al número de subcircuitos, que es el número de ancillas; el cuántico quiere la partición natural por registros, que son dos. Forzar una N común quedaría más pulcro y escondería justo aquello para lo que sirve la comparación: **el modelo dicta la forma del despliegue, y no al revés.**
+</Note>

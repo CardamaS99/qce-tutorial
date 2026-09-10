@@ -1,0 +1,119 @@
+---
+lang: es
+order: 21
+part: "Parte IV"
+title: "Ejercicios con CUNQA"
+lead: "Dos ejercicios, y son el mismo programa dos veces. El primero escribe a mano lo que el cuaderno de NetQMPI obtuvo con una sola llamada; el segundo se lo devuelve a NetQMPI y pone los dos ficheros uno al lado del otro. Lo que los separa no es la capacidad: es cuántas decisiones son tuyas, y con qué silencio fallan las equivocadas."
+accent: quantum
+---
+### 21.1 Una familia para toda la tarde
+
+Los dos ejercicios de este capítulo y los dos del capítulo 25 se ejecutan contra una única familia levantada. Ese es el sentido del flujo en dos pasos del capítulo 18: levantar una vez, engancharse muchas y no pagar coste de planificador por ejecución.
+
+```python title="Levantada una vez · tres vQPU, comunicación cuántica, dos horas"
+from cunqa.qpu import get_QPUs, qraise
+
+FAMILY, SIZE = "netqmpi_notebook", 3
+
+qpus = get_QPUs(co_located=True, family=FAMILY) or []
+if len(qpus) < SIZE:
+    qraise(SIZE, "02:00:00",
+           simulator="Munich",
+           co_located=True,
+           quantum_comm=True,               # sin esto no hay gen_ent
+           backend="notebook_apps/notebook_vqpu.json",
+           family=FAMILY)
+    qpus = get_QPUs(co_located=True, family=FAMILY) or []
+```
+
+La definición de la vQPU es el número que decide si la tarde termina. `num_qubits` es el par `[datos, comunicación]`, y el ejecutor simula **toda la familia en un único registro** que abarca todos los qubits que cada vQPU *declara*, se usen o no.
+
+```json title="notebook_vqpu.json · [2, 2] no es una corazonada"
+{
+    "name": "netqmpi_notebook",
+    "num_qubits": [2, 2]
+}
+```
+
+**Dos qubits de datos** porque el rank 0 del ejercicio 9 sostiene un qubit de conteo *y* el autoestado, y una familia se levanta a partir de una única definición, así que los demás ranks cargan con el segundo qubit sin usarlo. **Dos qubits de comunicación** porque la QFT inversa del ejercicio 8 mantiene dos ventanas de `expose` abiertas a la vez, y una ventana abierta cuesta un qubit de comunicación en cada rank que esté dentro. Cuatro qubits por tres vQPU son un registro de doce qubits: 4096 amplitudes, 64 KiB. Eso se lee en la definición, nunca en tu circuito: `[4, 4]` en tres vQPU son 256 MiB, y `[8, 8]` en dos son 64 GiB.
+
+<Exercise label="Ejercicio 6 · obligatorio">
+  #### Comunicar dos vQPU
+
+  El rank 0 prepara `|+>` y se lo entrega al rank 1, que lo mide. En NetQMPI eso es `comm.qsend(circuit, [0], next_rank)` contra un `comm.qrecv` que le corresponde. **Escribir el mismo programa otra vez sin NetQMPI**: dos objetos `CunqaCircuit` construidos a mano, teleportación con `cunqa.qc_protocols.qsend` / `qrecv`, enviados con `run`.
+
+  La gracia no está en la dificultad. Está en que cuatro cosas que NetQMPI *derivaba* pasan a ser tuyas, y cada una de ellas es una manera de equivocarse.
+</Exercise>
+
+| | NetQMPI la deriva | Tú la eliges |
+| --- | --- | --- |
+| Identificador del circuito | `f"rank_{rank}"` | Los nombras tú, y los nombres son las direcciones |
+| Qubits de comunicación | Tomados de un fondo común por bloque de protocolo | Declarados por adelantado en el par `(datos, comunicación)` |
+| Bits clásicos del protocolo | Su propio registro `netqmpi_protocol` | Los reservas tú, aparte de tus propios bits |
+| Emparejar las dos mitades | Una etiqueta construida con los ranks y un contador | La misma cadena en ambos lados, o la ejecución se cuelga |
+
+```python title="Lo que necesitas · la superficie de la API"
+CunqaCircuit((num_datos, num_comunicacion), num_clbits, id="...")
+
+circuit.add_cl_register("nombre", n)   # devuelve el nombre que ha usado
+circuit.classical_regs["nombre"]       # los bits de ese registro
+circuit.comm_qubits                    # los índices reservados para comunicación
+
+qsend(circuit, qubit_datos, qubit_comm, clbits, recving_circuit="<id>", tag="...")
+qrecv(circuit, qubit_datos, qubit_comm, clbits, control_circuit="<id>", tag="...")
+```
+
+Ambas llamadas necesitan **un** qubit de comunicación y **dos** bits clásicos, y la etiqueta tiene que coincidir carácter a carácter en los dos lados.
+
+Dos detalles operativos que la API no anuncia y en los que se pierde tiempo.
+
+- **En un circuito `(1, 1)`, `comm_qubits` es `[1]`.** Los qubits de comunicación se numeran después de los de datos, y `add_cl_register` devuelve el nombre que ha usado, así que el registro buscado por ese nombre entra directo en la llamada.
+- **La vQPU sobrante necesita un circuito.** La familia tiene tres vQPU y este programa usa dos. CUNQA ejecuta un ejecutor por familia y no arranca una ronda hasta que *todas* las vQPU han enviado algo, así que la que está ociosa no se salta la ronda: la atasca. Hay que darle un circuito de usar y tirar.
+
+```python title="El envío · con la vQPU sobrante incluida"
+spare = CunqaCircuit((1, 0), 1, id="spare")
+spare.measure(0, 0)
+
+results = gather(run(circuits + [spare], qpus, shots=1024))
+
+for result in results:
+    if result.id != "spare":
+        print(f"{result.id}: {result.counts}")
+```
+
+**Hay que leer las cuentas antes de seguir.** `rank_1` se reparte más o menos 50/50, que es el aspecto de `|+>`, y también exactamente el aspecto de un canal *roto* que devuelve ruido. Cambiar el `h(0)` del emisor por un `x(0)` y volver a ejecutar: el rank 1 tiene que dar `1` en prácticamente todas las tiradas. Esa es la prueba que de verdad distingue los dos casos. `rank_0` no aporta nada en ninguno de los dos, porque la teleportación *mueve* el estado: al terminar, su qubit de datos ha vuelto a `|0>` y sus únicas medidas son las del propio protocolo.
+
+<Exercise label="Ejercicio 6b · opcional, cinco minutos">
+  #### Romperlo a conciencia
+
+  Cambiar la etiqueta en un solo lado. El programa se cuelga. No hay error, no hay aviso: cada vQPU se queda esperando para siempre a un compañero que nunca la nombra, y lo que acaba con ello es el tiempo de pared fijado en el `qraise`. Es el interbloqueo del capítulo 7 vestido de cuántico, y merece verse una vez a propósito, porque el diagnóstico no se parece en nada al de un interbloqueo de MPI.
+</Exercise>
+
+<Exercise label="Ejercicio 7 · comparación">
+  #### El mismo programa, el otro modelo de programación
+
+  Ahora escribir el ejercicio 6 en NetQMPI y ejecutarlo contra esas mismas tres vQPU. Son las dos mismas llamadas citadas en el ejercicio 6, dentro de un bloque `with comm:`: dos líneas de trabajo. El ejercicio es lo que viene después: **poner los dos ficheros uno al lado del otro.**
+</Exercise>
+
+```bash title="Sin --config y sin nombrar la familia en la línea de órdenes"
+$ netqmpi -n 2 notebook_apps/ex7_send_recv.py --cunqa --shots 1024
+```
+
+Con exactamente una familia levantada, eso es todo lo que necesita el adaptador: se engancha a lo que esté corriendo y después deja la reserva en paz. Nótese además que dos ranks se han ejecutado sobre una familia de tres vQPU y nada se ha atascado: el adaptador le dio a la vQPU sobrante un circuito de usar y tirar, lo mismo que en el ejercicio 6 había que saber hacer a mano. Una familia sobredimensionada es un desperdicio, nunca un error.
+
+Unas treinta líneas contra seis, y la diferencia son exactamente las cuatro filas de la tabla de arriba. Ninguno de esos valores tiene una versión *correcta* que puedas consultar; solo tienen que **coincidir entre las dos mitades**, y nada comprueba que lo hagan. Esa es la clase de error que NetQMPI elimina: no uno difícil, uno silencioso.
+
+Cuatro preguntas para responder por escrito antes de que empiece la parte V:
+
+- **¿A quién se direcciona?** En NetQMPI se envía a un *rank*; en CUNQA se nombra un *identificador de circuito*. ¿Cuál de los dos es el communicator, y dónde vive en cada modelo?
+- **¿Cuándo aparece el paralelismo?** NetQMPI lanza N copias de un fichero, al estilo SPMD. CUNQA construye N objetos circuito en un fichero y los entrega a N vQPU. Ambos acaban con N cosas ejecutándose, pero solo uno de los dos es SPMD.
+- **¿Quién reserva los recursos?** En NetQMPI lo hace el lanzador como parte de arrancar la aplicación. En CUNQA ocurrió antes de que el programa existiera, en una orden aparte, y le sobrevive.
+- **¿Cuál es la unidad de trabajo?** Un rank que ejecuta un programa, o un circuito que se ejecuta en un dispositivo. Es la más profunda de las cuatro diferencias y la que la parte V tiene que reconciliar.
+
+<Note label="Para qué sirve la comparación">
+  Ninguna de las dos respuestas es la buena. NetQMPI es un *modelo de programación* que esconde la máquina; CUNQA es un *emulador de infraestructuras* que insiste en que la veas. Están a alturas distintas de la pila del capítulo 11, que es justamente por lo que se componen en lugar de competir, y componerlos es el tema de los cinco capítulos siguientes.
+</Note>
+
+<Bridge label="Déjala levantada">
+  No ejecutes `qdrop` al final de este capítulo. La familia levantada en 21.1 es a la que se engancha el capítulo 25, y por eso allí cada ejecución no cuesta más que las tiradas.
+</Bridge>

@@ -118,5 +118,45 @@
     "id": "r24",
     "es": "<b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023.",
     "en": "<b>A. Ovide, S. Rodrigo, M. Bandic, H. van Someren, S. Feld, S. Abadal, E. Alarcón, C. G. Almudever.</b> Mapping quantum algorithms to multi-core quantum computing architectures. <em>Proc. IEEE ISCAS</em>, 2023."
+  },
+  {
+    "id": "r25",
+    "es": "<b>M. Losada, J. Vázquez-Pérez, Á. Carballido, D. Expósito.</b> Documentación de CUNQA, 2025. <a href=\"https://cesga-quantum-spain.github.io/cunqa/\">cesga-quantum-spain.github.io/cunqa</a>",
+    "en": "<b>M. Losada, J. Vázquez-Pérez, Á. Carballido, D. Expósito.</b> CUNQA Documentation, 2025. <a href=\"https://cesga-quantum-spain.github.io/cunqa/\">cesga-quantum-spain.github.io/cunqa</a>"
+  },
+  {
+    "id": "r26",
+    "es": "<b>D. Willsch.</b> Supercomputer simulations of transmon quantum computers. Tesis doctoral, RWTH Aachen University, 2020.",
+    "en": "<b>D. Willsch.</b> Supercomputer simulations of transmon quantum computers. PhD dissertation, RWTH Aachen University, 2020."
+  },
+  {
+    "id": "r27",
+    "es": "<b>A. Elsharkawy et al.</b> Challenges in HPCQC Integration. <em>2023 IEEE International Conference on Quantum Computing and Engineering (QCE)</em>, vol. 2, pp. 405–406, 2023.",
+    "en": "<b>A. Elsharkawy et al.</b> Challenges in HPCQC Integration. <em>2023 IEEE International Conference on Quantum Computing and Engineering (QCE)</em>, vol. 2, pp. 405–406, 2023."
+  },
+  {
+    "id": "r28",
+    "es": "<b>S. Gharibian.</b> Strong NP-hardness of the quantum separability problem. <em>Quantum Information and Computation</em>, 10(3):343–360, 2010.",
+    "en": "<b>S. Gharibian.</b> Strong NP-hardness of the quantum separability problem. <em>Quantum Information and Computation</em>, 10(3):343–360, 2010."
+  },
+  {
+    "id": "r29",
+    "es": "<b>M. Dobšíček, G. Johansson, V. Shumeiko, G. Wendin.</b> Arbitrary accuracy iterative quantum phase estimation algorithm using a single ancillary qubit: A two-qubit benchmark. <em>Physical Review A</em>, 76:030306, 2007.",
+    "en": "<b>M. Dobšíček, G. Johansson, V. Shumeiko, G. Wendin.</b> Arbitrary accuracy iterative quantum phase estimation algorithm using a single ancillary qubit: A two-qubit benchmark. <em>Physical Review A</em>, 76:030306, 2007."
+  },
+  {
+    "id": "r30",
+    "es": "<b>A. Y. Kitaev.</b> Quantum measurements and the Abelian Stabilizer Problem. Tesis doctoral, Instituto de Física y Tecnología de Moscú, 1995. <a href=\"https://arxiv.org/abs/quant-ph/9511026\">arxiv.org/abs/quant-ph/9511026</a>",
+    "en": "<b>A. Y. Kitaev.</b> Quantum measurements and the Abelian Stabilizer Problem. PhD dissertation, Moscow Institute of Physics and Technology, 1995. <a href=\"https://arxiv.org/abs/quant-ph/9511026\">arxiv.org/abs/quant-ph/9511026</a>"
+  },
+  {
+    "id": "r31",
+    "es": "<b>A. Yimsiriwattana, S. J. Lomonaco Jr.</b> Generalized GHZ States and Distributed Quantum Computing. arXiv:quant-ph/0402148, 2004. <a href=\"https://arxiv.org/abs/quant-ph/0402148\">arxiv.org/abs/quant-ph/0402148</a>",
+    "en": "<b>A. Yimsiriwattana, S. J. Lomonaco Jr.</b> Generalized GHZ States and Distributed Quantum Computing. arXiv:quant-ph/0402148, 2004. <a href=\"https://arxiv.org/abs/quant-ph/0402148\">arxiv.org/abs/quant-ph/0402148</a>"
+  },
+  {
+    "id": "r32",
+    "es": "<b>D. Claudino, D. I. Lyakh, A. J. McCaskey.</b> Parallel quantum computing simulations via quantum accelerator platform virtualization. <em>Future Generation Computer Systems</em>, 160:264–273, 2024.",
+    "en": "<b>D. Claudino, D. I. Lyakh, A. J. McCaskey.</b> Parallel quantum computing simulations via quantum accelerator platform virtualization. <em>Future Generation Computer Systems</em>, 160:264–273, 2024."
   }
 ]

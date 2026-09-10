@@ -20,7 +20,7 @@ h1, h2, h3, h4 {
   line-height: 1.18;
 }
 p { margin: 0 0 1.15rem; max-width: var(--measure); }
-ul, ol { max-width: 68ch; padding-left: 1.3rem; margin: 0 0 1.2rem; }
+ul, ol { max-width: var(--measure); padding-left: 1.3rem; margin: 0 0 1.2rem; }
 li { margin-bottom: .55rem; }
 strong { font-weight: 600; }
 a {

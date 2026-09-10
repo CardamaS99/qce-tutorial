@@ -1,0 +1,31 @@
+---
+lang: es
+order: 26
+part: "Parte V"
+title: "Cierre del segundo bloque"
+lead: ""
+accent: quantum
+---
+La segunda mitad en una frase: un modelo de programación necesita una máquina sobre la que correr; esa máquina todavía no existe; CUNQA emula la infraestructura de una dentro de un supercomputador real, simulando sus dispositivos y sus canales; y, como ambos proyectos dejaron una costura delgada y documentada a la altura adecuada de la pila, las abstracciones de NetQMPI pueden bajarse sobre ella sin que ninguno de los dos lados renuncie a su modelo.
+
+### 26.1 Lo que CUNQA todavía no hace
+
+La lista honesta, en el orden en que aparece en la hoja de ruta.<Ref n={1} />
+
+- **Ruido de comunicación: ausente.** Todos los canales de este tutorial son ideales. La latencia, la fidelidad del entrelazamiento, la pérdida heraldada y la decoherencia de memoria durante la distribución del entrelazamiento son la física característica de un sistema distribuido, y nada de eso está modelado. Se están sopesando dos vías y ambas tienen coste: implementarlo sobre los simuladores existentes, que no se diseñaron para efectos de capa física dependientes del tiempo, o integrar un simulador de red de eventos discretos, que trae modelos de ruido maduros junto con un paradigma de red que no se adapta con facilidad a uno de cómputo y que, al estar escrito en su mayoría en Python, rompería el ecosistema en C++ en el que viven los simuladores actuales.
+- **Ruido de dispositivo: parcial.** Disponible solo cuando AerSimulator ejecuta el bucle de *shots* sin asistencia: sin comunicación y sin `CIF` (capítulos 16 a 18). Levantar esa restricción y extender el ruido a los demás simuladores que lo soportan, como Qulacs, es el más cercano de los dos objetivos.
+- **El estado conjunto vive en un proceso.** Bajo comunicación cuántica, el ejecutor centralizado simula un único estado sin explotar los vectores de estado distribuidos que ya ofrecen QuEST y AerSimulator bajo MPI. Es el techo del tamaño que puede alcanzar un experimento de comunicación cuántica, y es la ilustración más clara de todo el tutorial del punto del capítulo 17: la distribución de un sistema cuántico y la distribución de su simulación clásica son problemas ortogonales.
+- **La ejecución es circuito a circuito.** La hoja de ruta apunta a transmitir instrucciones a la vQPU en bloques binarios pequeños, actualizando la vQPU su estado según llega cada bloque, empujada por la perspectiva de circuitos cuya codificación alcance cientos de gigabytes. Eso sustituiría a JSON como formato de intercambio y, de paso, haría que `flush()` tradujese bien por primera vez (capítulo 23).
+- **La planificación es el orden de la lista.** `run` asigna circuitos a vQPU en el orden en que aparecen. Todo lo que haría un planificador —localidad, carga, backends heterogéneos— queda como espacio por encima de la API.
+
+### 26.2 Lo que la integración todavía tiene que resolver
+
+- **Subcommunicators.** El capítulo 23 hizo corresponder `COMM_WORLD` con una familia. Partir un communicator se corresponde con varias familias, lo cual es viable pero todavía no es la misma abstracción, y quien programa MPI echa mano de `Comm_split` antes de lo que uno esperaría.
+- **Paridad de ruido entre backends.** El mismo programa corre sobre SquidASM y sobre CUNQA y devuelve fidelidades incomparables, por las razones de 26.1. Hasta que exista el ruido de comunicación, elegir backend es elegir *qué pregunta se está haciendo*: realismo físico, o comportamiento de la infraestructura a escala HPC.
+- **De dónde salen los ranks.** Hoy los dos `-n` tienen que coincidir a mano (capítulo 24). Un lanzador que levantase la infraestructura y arrancase los ranks en un solo acto sería más cómodo, y desharía por lo bajo la decisión de pila del capítulo 16, que es por lo que no se ha hecho.
+
+### 26.3 El hilo
+
+Cinco partes, un argumento. Los límites físicos obligaron a replicar unidades, replicar obligó a comunicar, y comunicar resultó ser la parte cara. MPI estandarizó cómo se programa eso mediante tres abstracciones —SPMD, rank, communicator— que han sobrevivido a todas las máquinas para las que se escribieron. NetQMPI llevó esas tres al dominio cuántico, adaptando las primitivas allí donde la física prohíbe la traducción literal y dejando una celda de la tabla permanentemente vacía. Y CUNQA aporta lo que al modelo le faltaba: no un simulador de mecánica cuántica, de los que hay muchos, sino un emulador de la *infraestructura*, con vQPU que se piden, se pagan, se consultan y se liberan exactamente como lo haría un acelerador de una máquina real.
+
+Si un asistente se lleva una frase de la segunda mitad, que sea la contrapartida de la que cerró la primera: **la computación cuántica distribuida se va a ejecutar en sistemas HPC, así que hay que programarla como HPC y gestionarla como HPC.** Lo cuántico es lo nuevo. Casi todo lo que la rodea, no; y esa es la buena noticia, porque significa que la disciplina ya existe.

@@ -1,0 +1,164 @@
+---
+lang: en
+order: 20
+part: "Part IV"
+title: "One algorithm, three models"
+lead: "The cleanest way to see what each communication model does to a program is to hold the algorithm fixed and vary only the model. Quantum Phase Estimation is the one the CUNQA literature uses for exactly that reason: using a single algorithm isolates the differences the model imposes from the differences the algorithm would have imposed anyway."
+accent: quantum
+---
+### 20.1 The algorithm, briefly
+
+QPE, introduced by Kitaev in 1995,<Ref n={30} /> estimates the phase φ of an eigenvalue of a unitary operator U: given U and one of its eigenvectors |ψ⟩ with U|ψ⟩ = e^(2πiφ)|ψ⟩, it returns
+
+<Formula>
+  φ ≃ ξ / 2ⁿ, with error 1 / 2ⁿ
+</Formula>
+
+where n is the number of ancilla qubits and ξ is the decimal reading of the most frequent output string of the ancilla register. The circuit has two registers: the n ancillas that hold the phase, and the register holding |ψ⟩ to which the controlled powers of U are applied, followed by an inverse QFT on the ancillas.
+
+The demonstration takes U = R_z and |ψ⟩ = |1⟩, for two practical reasons: the eigenvectors of R_z are trivial to prepare — eigenstate preparation being one of QPE's real bottlenecks — and with |1⟩ the answer is known in advance through θ = 2πφ, so correctness is checkable rather than merely plausible.
+
+### 20.2 No communication: distribute the shots
+
+More precision means more ancillas, more possible outcomes, and therefore more shots. Nothing about the *circuit* needs distributing; the *sampling* does. This is the embarrassingly parallel case, and the code shows it: the circuit is built exactly as it would be on one machine, then replicated.
+
+```python title="QPE with distributed shots · the circuit is untouched"
+# Defining the QPE circuit
+qpe = CunqaCircuit(num_qubits + 1, num_qubits)
+qpe.x(num_qubits)                       # eigenstate |psi> = |1>
+
+for i in range(num_qubits):
+    qpe.h(i)
+    for _ in range(2**i):
+        qpe.crz(phase, i, num_qubits)   # controlled U^(2^i)
+
+qpe.IQFT(0, num_qubits - 1)
+qpe.measure_all()
+
+# Obtaining available vQPUs and distributing the shots
+qpus = get_QPUs()
+shots_per_qpu = [shots // len(qpus) for _ in range(len(qpus))]
+
+qjobs = run([qpe]*len(qpus), qpus, shots=shots_per_qpu)
+results = gather(qjobs)
+```
+
+The only distributed thing in that program is the last three lines. That is the point: the no-communication model asks nothing of the algorithm.
+
+### 20.3 Classical communication: the IPEA
+
+The Iterative Phase Estimation Algorithm<Ref n={29} /> attacks the qubit cost instead of the shot cost: it extracts the binary expansion of the phase one bit at a time, using a single ancilla per circuit.
+
+The derivation is worth doing on a slide because it turns an unfamiliar algorithm into a familiar one. The last thing acting on the ancillas before measurement is the inverse QFT — a ladder of Hadamards and controlled rotations. By the deferred measurement principle, measuring *before* those controlled rotations is equivalent, and it converts them into **classically** controlled gates. Classically controlled gates whose controls come from earlier measurements are precisely a partition point: each slice becomes an independent circuit that needs one classical bit from each of its predecessors.
+
+```python title="IPEA on CUNQA · one subcircuit per vQPU"
+qpus_QPE = get_QPUs()
+num_qpus = len(qpus_QPE)
+circuits = []
+
+for i in range(num_qpus):
+    theta = 2 * pi * 2**(num_qpus - i - 1) * phase
+
+    circuits.append(CunqaCircuit(num_qubits=2, num_clbits=2, id=f"circuit_{i}"))
+    circuits[i].h(0)
+    circuits[i].x(1)
+    circuits[i].crz(theta, 0, 1)          # this slice's power of U
+
+    # Receiving bits from previous circuits
+    for j in range(i):
+        circuits[i].recv(clbits=0, sending_circuit=f"circuit_{i - j - 1}")
+        circuits[i].cif(clbits=0)
+        circuits[i].rz(param=-pi * 2**(-j - 1), qubits=0)
+        circuits[i].endcif()
+
+    circuits[i].h(0)
+
+    # Sending bits to upcoming circuits
+    circuits[i].measure(0, 0)
+    for k in range(num_qpus - i - 1):
+        circuits[i].send(clbits=0, recving_circuit=f"circuit_{i + k + 1}")
+
+    circuits[i].measure(1, 1)
+
+qjobs = run(circuits, qpus_QPE)
+results = gather(qjobs)
+```
+
+The inner loop is the whole algorithm. `recv` blocks until subcircuit *i − j − 1* has measured; `cif`/`endcif` apply the correction rotation R_z(−π · 2^−(j+1)) only when the received bit is 1; and the cumulative effect of all those conditional rotations reproduces the inverse QFT one bit at a time, with no extra ancillas. Then the ancilla is measured and broadcast to every later subcircuit that will need it.
+
+The partition is legitimate for a reason worth stating: in the eigenvector register, each controlled gate leaves the register in the eigenstate, so the slices are genuinely independent of one another except through the classical bits.
+
+### 20.4 Quantum communication: the register split
+
+QPE has two registers, so the obvious quantum-communication partition is one register per vQPU. Doing that turns every controlled-U into a **non-local** controlled gate, which is exactly what telegate is for. The example below uses `cat_entangler` / `cat_disentangler` rather than raw `gen_ent`, which makes the structure legible.
+
+```python title="Distributed QPE with quantum communication · two circuits, one comm qubit each"
+ancilla_circuit  = CunqaCircuit((N_ANCILLA_QUBITS, 1), N_ANCILLA_QUBITS, id="ancilla_circuit")
+register_circuit = CunqaCircuit((N_REGISTER_QUBITS, 1), 1, id="register_circuit")
+
+data_qubits_anc, comm_qubits_anc = ancilla_circuit.get_qubits()
+data_qubits_reg, comm_qubits_reg = register_circuit.get_qubits()
+
+register_circuit.x(data_qubits_reg[0])          # eigenstate |1>
+for i in range(N_ANCILLA_QUBITS):
+    ancilla_circuit.h(data_qubits_anc[i])
+
+for i in range(N_ANCILLA_QUBITS):
+    cat_entangler(
+        target_circuits = [ancilla_circuit, register_circuit],
+        data_qubit      = data_qubits_anc[N_ANCILLA_QUBITS - 1 - i],
+        comm_qubits     = [comm_qubits_anc[0], comm_qubits_reg[0]],
+        clbits          = [0, 0],
+        tag             = "telegate"
+    )
+
+    param = (2**i) * 2 * 2 * pi * PHASE_TO_COMPUTE
+    register_circuit.crz(param, comm_qubits_reg[0], data_qubits_reg[0])
+
+    cat_disentangler(
+        target_circuits = [ancilla_circuit, register_circuit],
+        data_qubit      = data_qubits_anc[N_ANCILLA_QUBITS - 1 - i],
+        comm_qubits     = [comm_qubits_reg[0]],
+        recv_clbits     = [0],
+        send_clbits     = [0]
+    )
+
+ancilla_circuit.IQFT(0, N_ANCILLA_QUBITS)
+ancilla_circuit.measure_all()
+
+qjobs = run([ancilla_circuit, register_circuit], get_QPUs())
+results = gather(qjobs)
+```
+
+The three-step pattern inside the loop is the one to keep:
+
+- **`cat_entangler`** shares the state of one ancilla qubit with `register_circuit` through the reserved communication qubits, *without destroying it*. If the ancilla is α|0⟩ + β|1⟩, the joint state of that ancilla and the remote communication qubit becomes α|00⟩ + β|11⟩ with α and β unchanged — so using the communication qubit as a control is equivalent to using the ancilla as a control.
+- **The local `crz`** is then an ordinary local gate inside `register_circuit`. This is where the non-locality has gone: it has not disappeared, it has been paid for in advance.
+- **`cat_disentangler`** removes the residual entanglement, leaving the ancilla in α′|0⟩ + β′|1⟩ and the communication qubit back in |0⟩, free for the next iteration.
+
+Together the three realise a non-local controlled gate having exchanged only a temporary entangled pair and some classical bits — never the ancilla's state itself.
+
+### 20.5 Reading the numbers honestly
+
+All three variants were run to estimate φ = 1/π on the QMIO cluster at CESGA, each vQPU given the same 2 cores and 30 GB, all co-located, every case repeated 100 times.<Ref n={1} />
+
+| Model | vQPUs | Shots per vQPU | Estimated phase | Mean time (s) |
+| --- | --- | --- | --- | --- |
+| No communication | 1 | 10⁸ | 0.3183135986328125 | 123.602 |
+| No communication | 128 | 781 250 | 0.3183135986328125 | 1.267 |
+| Classical communication | 16 | 10⁸ | 0.3183135986328125 | 4959.346 |
+| Quantum communication | 2 | 10⁴ | 0.3183135986328125 | 5124.625 |
+
+Two readings, and they must not be mixed up.
+
+**Correctness.** Every model returns the same estimate, 0.3183135986328125 ± 0.000015, against the true 1/π = 0.31830988…. The uncertainty is 2⁻¹⁶, exactly the resolution of QPE with n = 16 ancillas, and the estimate agrees well inside it. The platform emulates all three models and gets the right answer in all three. That is the claim the table supports.
+
+**Cost.** The times measure the classical wall clock spent emulating and simulating the infrastructure. They are **not** predictions of a physical DQC system's runtime — the channels are ideal and carry no timing model at all — and they are **not** a benchmark, because benchmarking here would mostly benchmark AerSimulator. What they do show is how each model shapes the simulation:
+
+- **No communication scales.** 128 vQPUs run about 100× faster than one, close to the ideal speedup line, because there is nothing to coordinate. The reason to stop at 128 is not the curve flattening but the bill: 256 cores and 3.84 TB.
+- **Classical communication serialises.** Sixteen subcircuits *could* overlap, but every subcircuit *i* must receive a bit from each of its *i* predecessors, and `recv` blocks. The dependency structure of the IPEA is a chain, so the partition buys nothing and the communication traffic costs plenty: 40× slower than the monolithic baseline at the same shot count.
+- **Quantum communication is monolithic and expensive.** The centralised executor takes over, the joint state is one state, and the telegate protocol inserts many extra gates. Four orders of magnitude fewer shots for a comparable wall time — a per-shot cost roughly 4 × 10⁵ times higher.
+
+<Note label="Different models want different vQPU counts">
+  1, 128, 16 and 2 vQPUs across four rows is not sloppy methodology. The no-communication model takes as many as you can pay for; the classical model is pinned to the number of subcircuits, which is the number of ancilla qubits; the quantum model wants the natural register split, which is two. Forcing a common N would be tidier and would hide the exact thing the comparison is for: **the model dictates the shape of the deployment, not the other way round.**
+</Note>

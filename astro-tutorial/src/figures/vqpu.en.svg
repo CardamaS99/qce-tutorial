@@ -1,0 +1,23 @@
+<svg aria-label="Anatomy of a virtual QPU: a single process holding three components — server, backend and simulator — reached by the user program through the server." role="img" viewbox="0 0 800 340">
+<title>The three components of a vQPU</title>
+<text class="sv-th" x="30" y="24">anatomy of one vQPU</text>
+<text class="sv-s" x="30" y="42">a process with its own classical resources</text>
+<rect fill="#F7F8F6" height="30" rx="15" stroke="#C3C7C2" stroke-width="1" width="174" x="596" y="8"></rect>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="683" y="28">your program</text>
+<line stroke="#6B7683" stroke-width="1" x1="683" x2="683" y1="38" y2="55"></line>
+<path d="M677 55 L683 64 L689 55 Z" fill="#6B7683"></path>
+<rect fill="#F7F8F6" height="232" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="64"></rect>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="84"></rect>
+<text class="sv-t" x="72" y="108">server</text>
+<text class="sv-m" fill="#6B7683" x="72" y="127">receives tasks · queues them · returns results</text>
+<text class="sv-s" text-anchor="end" x="728" y="108">how it is reached</text>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="152"></rect>
+<text class="sv-t" x="72" y="176">backend</text>
+<text class="sv-m" fill="#6B7683" x="72" y="195">qubits · coupling map · gates · noise · comm qubits</text>
+<text class="sv-s" text-anchor="end" x="728" y="176">what it declares it is</text>
+<rect fill="#EDEAFA" height="56" rx="5" stroke="#5B3FB8" stroke-width="1.2" width="700" x="50" y="220"></rect>
+<text class="sv-t" fill="#3B2C82" x="72" y="244">simulator</text>
+<text class="sv-m" fill="#5B3FB8" x="72" y="263">one of seven · plus the classical channel</text>
+<text class="sv-s" fill="#5B3FB8" text-anchor="end" x="728" y="244">what makes it compute</text>
+<text class="sv-s" x="30" y="322">server and simulator are swappable · the backend is fixed per version, but trivially editable</text>
+</svg>

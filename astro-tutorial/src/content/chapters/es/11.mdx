@@ -21,8 +21,8 @@ Al margen de esta pila existen herramientas de alto nivel con filosofías distin
   NetQMPI se apoya en el SDK de NetQASM y, por tanto, en sus backends. CUNQA es un desarrollo independiente, orientado a emular QPU distribuidas dentro de un entorno HPC real, con su propia API y sus tres modelos de comunicación.<Ref n={1} /> Que ambos se combinen en el título del tutorial exige explicitar por dónde se conectan.
 </Figure>
 
-<Warning label="Punto a resolver antes de impartir">
-  La literatura publicada describe NetQMPI como middleware sobre el SDK de NetQASM, con SquidASM y SimulaQron como backends de ejecución.<Ref n={2} /> CUNQA, por su parte, se publica como emulador de computación cuántica distribuida para HPC con su propia interfaz de gestión de QPU.<Ref n={1} /> El título del tutorial promete «NetQMPI sobre el emulador CUNQA», lo que presupone una ruta de integración entre ambos.
-  
-  Conviene dedicar una diapositiva explícita a esa ruta: si existe un backend de CUNQA para NetQMPI, dibujarlo en la pila; si la integración va por otro camino —por ejemplo, a través de NetQIR como representación intermedia común, o mediante una capa de traducción—, decirlo con claridad. Un asistente con formación en la materia lo va a preguntar, y la respuesta debería estar en las diapositivas y no en el turno de preguntas.
-</Warning>
+<Note label="Resuelto en la parte V">
+  La literatura publicada describe NetQMPI como middleware sobre el SDK de NetQASM, con SquidASM y SimulaQron como backends de ejecución.<Ref n={2} /> CUNQA, a su vez, está publicado como emulador de computación cuántica distribuida para HPC con su propia interfaz de gestión de QPU.<Ref n={1} /> El título del tutorial promete «NetQMPI sobre el emulador CUNQA», lo que presupone una vía de integración entre ambos.
+
+  Esa vía es un adaptador de backend, y el capítulo 22 la dibuja: NetQMPI conserva todo su modelo de programación y delega dos cosas —qué es un objeto circuito y qué ocurre cuando se cierra el ámbito de ejecución—, mientras CUNQA expone debajo un único punto de contacto documentado. La parte IV cubre antes el emulador en sí, porque el adaptador es ilegible sin conocer su mitad inferior.
+</Note>

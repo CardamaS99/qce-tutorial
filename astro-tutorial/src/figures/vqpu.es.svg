@@ -1,0 +1,23 @@
+<svg aria-label="Anatomía de una QPU virtual: un único proceso con tres componentes —servidor, backend y simulador— al que el programa del usuario llega a través del servidor." role="img" viewbox="0 0 800 340">
+<title>Los tres componentes de una vQPU</title>
+<text class="sv-th" x="30" y="24">anatomía de una vQPU</text>
+<text class="sv-s" x="30" y="42">un proceso con sus propios recursos clásicos</text>
+<rect fill="#F7F8F6" height="30" rx="15" stroke="#C3C7C2" stroke-width="1" width="174" x="596" y="8"></rect>
+<text class="sv-m" fill="#6B7683" text-anchor="middle" x="683" y="28">tu programa</text>
+<line stroke="#6B7683" stroke-width="1" x1="683" x2="683" y1="38" y2="55"></line>
+<path d="M677 55 L683 64 L689 55 Z" fill="#6B7683"></path>
+<rect fill="#F7F8F6" height="232" rx="8" stroke="#5B3FB8" stroke-width="1.6" width="740" x="30" y="64"></rect>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="84"></rect>
+<text class="sv-t" x="72" y="108">servidor</text>
+<text class="sv-m" fill="#6B7683" x="72" y="127">recibe tareas · las encola · devuelve resultados</text>
+<text class="sv-s" text-anchor="end" x="728" y="108">cómo se llega a ella</text>
+<rect fill="#fff" height="56" rx="5" stroke="#C3C7C2" stroke-width="1" width="700" x="50" y="152"></rect>
+<text class="sv-t" x="72" y="176">backend</text>
+<text class="sv-m" fill="#6B7683" x="72" y="195">qubits · acoplamiento · puertas · ruido · qubits de comunicación</text>
+<text class="sv-s" text-anchor="end" x="728" y="176">qué declara que es</text>
+<rect fill="#EDEAFA" height="56" rx="5" stroke="#5B3FB8" stroke-width="1.2" width="700" x="50" y="220"></rect>
+<text class="sv-t" fill="#3B2C82" x="72" y="244">simulador</text>
+<text class="sv-m" fill="#5B3FB8" x="72" y="263">uno de siete · más el canal clásico</text>
+<text class="sv-s" fill="#5B3FB8" text-anchor="end" x="728" y="244">qué la hace computar</text>
+<text class="sv-s" x="30" y="322">servidor y simulador son sustituibles · el backend es fijo por versión, pero trivialmente editable</text>
+</svg>
