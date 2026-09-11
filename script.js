@@ -53,15 +53,49 @@ document.addEventListener('DOMContentLoaded', function () {
     revealTargets.forEach(function (el) { el.classList.add('in-view'); });
   }
 
-  /* Code tabs */
-  const tabs = document.querySelectorAll('.code-tab');
-  const panels = document.querySelectorAll('.code-panel');
-  tabs.forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      tabs.forEach(function (t) { t.classList.remove('active'); });
-      panels.forEach(function (p) { p.classList.remove('active'); });
-      tab.classList.add('active');
-      document.getElementById(tab.dataset.tab).classList.add('active');
+  /* Tab groups (code examples, setup guide per OS) — scoped so one group
+     does not close the panels of another. */
+  document.querySelectorAll('.tab-group').forEach(function (group) {
+    const tabs = group.querySelectorAll('.code-tab');
+    const panels = group.querySelectorAll('.code-panel');
+    tabs.forEach(function (tab) {
+      tab.addEventListener('click', function () {
+        tabs.forEach(function (t) { t.classList.remove('active'); });
+        panels.forEach(function (p) { p.classList.remove('active'); });
+        tab.classList.add('active');
+        const panel = group.querySelector('#' + tab.dataset.tab);
+        if (panel) panel.classList.add('active');
+      });
+    });
+  });
+
+  /* Copy button on the terminal blocks of the setup guide */
+  document.querySelectorAll('.term .copy-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      const pre = btn.closest('.term').querySelector('pre');
+      if (!pre) return;
+      const text = pre.innerText.trim();
+
+      const done = function (ok) {
+        btn.textContent = ok ? 'Copied' : 'Ctrl+C';
+        btn.classList.toggle('copied', ok);
+        setTimeout(function () {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1800);
+      };
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(text).then(function () { done(true); }, function () { done(false); });
+      } else {
+        /* file:// and plain http have no clipboard API: select the text instead */
+        const range = document.createRange();
+        range.selectNodeContents(pre);
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        done(false);
+      }
     });
   });
 
