@@ -120,11 +120,15 @@ RUN python3 -m pip install --break-system-packages \
 # them apart.
 #
 # A branch name never invalidates the layer cache, so new commits are missed.
-# To refresh, pass a commit:
-#     docker build --build-arg NETQMPI_REF=<sha> ...
+# To refresh, pass a commit: docker build --build-arg NETQMPI_REF=<sha> ...
+#
+# Cloned rather than installed straight from the URL because pip discards the
+# source tree, and examples/ is wanted in the final image. Full clone (no
+# --depth) so NETQMPI_REF can be a commit, not just a branch or tag.
 ARG NETQMPI_REF=main
-RUN python3 -m pip install --break-system-packages \
-        "git+https://github.com/NetQIR/netqmpi.git@${NETQMPI_REF}"
+RUN git clone https://github.com/NetQIR/netqmpi.git /usr/src/netqmpi \
+    && git -C /usr/src/netqmpi checkout --quiet "${NETQMPI_REF}" \
+    && python3 -m pip install --break-system-packages /usr/src/netqmpi
 
 # PyYAML is declared by NetQMPI (pyyaml>=5.1) but pinned above for
 # reproducibility. It is imported lazily inside read_config_block(), so a
@@ -154,6 +158,25 @@ RUN cmake --preset release \
         -DCMAKE_INSTALL_PREFIX=/opt/cunqa
 RUN cmake --build --preset release --parallel $(nproc)
 RUN cmake --install build/release
+
+# ===========================================================================
+# Tutorial notebooks stage
+#
+# Fetched from the public tutorial repository instead of the build context, so
+# building needs no local copy of the notebooks. Only notebooks/ is fetched, and
+# without .git. BuildKit resolves TUTORIAL_REF to a commit on every build, so
+# pushing new notebooks and rebuilding refreshes this stage and the final COPY
+# without touching Slurm or CUNQA. If a stale copy ever sticks, rebuild just
+# this stage:
+#     docker build --no-cache-filter notebooks ...
+#
+# solutions/ becomes .solutions so Jupyter's file browser hides it.
+# ===========================================================================
+FROM base AS notebooks
+
+ARG TUTORIAL_REF=main
+ADD https://github.com/CardamaS99/qce-tutorial.git#${TUTORIAL_REF}:notebooks /notebooks
+RUN if [ -d /notebooks/solutions ]; then mv /notebooks/solutions /notebooks/.solutions; fi
 
 # ===========================================================================
 # Final image: installed artefacts only, no compilers or -dev headers.
@@ -209,6 +232,17 @@ ENV STORE=/var/opt/cunqa
 # (quotes included) when the file is missing, which the C++ qraise then fails
 # to read as an object.
 RUN mkdir -p /var/opt/cunqa/.cunqa && printf '{}\n' > /var/opt/cunqa/.cunqa/qpus.json
+
+# Examples from both repos, kept side by side under the working directory so
+# they show up in the Jupyter file browser. NetQMPI's examples/ carries the
+# cunqa_*.yaml configs, which is the path that needs PyYAML.
+COPY --from=build /usr/src/cunqa/examples   /home/tutorial/examples/cunqa
+COPY --from=build /usr/src/netqmpi/examples /home/tutorial/examples/netqmpi
+
+# Notebooks straight into the Jupyter root, the hidden .solutions beside them.
+# Kept last of the copies so a notebooks-only change rebuilds nothing before
+# this layer.
+COPY --from=notebooks /notebooks/ /home/tutorial/
 
 # EXPOSE documents the port; publish it with `docker run -p 8888:8888` or in
 # Docker Desktop's optional settings.
