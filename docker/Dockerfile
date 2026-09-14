@@ -149,6 +149,12 @@ WORKDIR /usr/src/cunqa
 ENV STORE=/var/opt/cunqa
 ENV CPATH="/usr/lib/x86_64-linux-gnu/openmpi/include:/usr/include/eigen3:${CPATH}"
 
+# Force a portable x86-64-v2 baseline (SSE4.2, no AVX-512) so the compiled
+# binaries run on any x86_64 laptop from roughly the last 12 years, rather
+# than whatever instruction set happens to be available on the build machine.
+ENV CFLAGS="-march=x86-64-v2 -mtune=generic"
+ENV CXXFLAGS="-march=x86-64-v2 -mtune=generic"
+
 # CACHEBUST exists because the clone line never changes, so rebuilds silently
 # reuse a stale main. Pass --build-arg CACHEBUST=$(date +%s) to refresh.
 ARG CACHEBUST=1
