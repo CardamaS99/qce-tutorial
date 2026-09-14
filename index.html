@@ -163,7 +163,7 @@
     <div class="section-head reveal">
       <span class="eyebrow">03 — Environment Setup</span>
       <h2 class="section-title">Your laptop is the cluster</h2>
-      <p class="section-lede">Every exercise runs inside a single Docker image that ships <strong>NetQMPI</strong>, the <strong>CUNQA</strong> emulator and a working <strong>Slurm</strong> installation, wired together as a miniature HPC cluster on your own machine. No supercomputer account, no VPN, no dependency hunting — install Docker, pull the image, run it.</p>
+      <p class="section-lede">Every exercise runs inside a single Docker image that ships <strong>NetQMPI</strong>, the <strong>CUNQA</strong> emulator and a working <strong>Slurm</strong> installation, wired together as a miniature HPC cluster on your own machine. No supercomputer account, no VPN, no dependency hunting — install Docker, pull the image, run it. And if Docker refuses to cooperate with your laptop, <a href="#railway">Plan B</a> puts the same image in the cloud.</p>
     </div>
 
     <div class="stack-strip reveal">
@@ -284,7 +284,7 @@ docker run <span class="tok-flag">--rm</span> <span class="tok-str">hello-world<
               </div>
               <div class="dark-note">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
-                <span>On Apple silicon, add <code>--platform linux/amd64</code> to the <code>pull</code> and <code>run</code> commands in the next steps.</span>
+                <span>On Apple silicon, add <code>--platform linux/amd64</code> to the <code>pull</code> and <code>run</code> commands in the next steps. CUNQA is compiled for x86-64, so it runs under emulation here — and if it will not start at all, take <a href="#railway">Plan B</a> instead.</span>
               </div>
             </div>
           </div>
@@ -400,6 +400,185 @@ debug*       up   infinite      1   idle 7c41ab93f2e5
       </li>
 
     </ol>
+    <!-- ---------- Plan B: Railway ---------- -->
+    <div class="fallback-block reveal" id="railway">
+
+      <div class="fallback-head">
+        <span class="fallback-eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4.5 6v6c0 4.4 3.1 8.5 7.5 10 4.4-1.5 7.5-5.6 7.5-10V6Z"/><path d="m9 12 2 2 4-4"/></svg>
+          Plan B — when Docker will not cooperate
+        </span>
+        <h3>Docker not working? Let us make this easy.</h3>
+        <p>CUNQA is compiled for <strong>x86-64</strong>. On an ARM laptop, on a machine where Docker Desktop never gets past the installer, or behind a corporate policy that blocks virtualization, the image may simply refuse to run — and there is nothing you can do about it from your side on the day of the tutorial.</p>
+        <p>So run it on someone else's x86-64 machine instead. <strong>Railway</strong> deploys the very same published image, hands you an HTTPS address, and the tutorial opens in your browser. About five minutes, no terminal, nothing installed on your laptop.</p>
+        <div class="hub-row">
+          <a class="btn btn-railway" href="https://railway.com/" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16.5h16M4 12h16M4 7.5h10"/><circle cx="17.5" cy="7.5" r="2.2"/></svg>
+            Open railway.com
+          </a>
+          <span class="hub-hint">same image · jvazquezperez/cunqa_netqmpi:latest</span>
+        </div>
+      </div>
+
+      <ol class="setup-steps rw-steps">
+
+        <!-- ---------- A ---------- -->
+        <li class="setup-step">
+          <div class="step-num">A</div>
+          <div class="step-body">
+            <h3>Create a Railway account</h3>
+            <p>Go to <a href="https://railway.com/" target="_blank" rel="noopener">railway.com</a> and sign up — GitHub is the quickest route. New accounts get a one-time <strong>$5 trial credit</strong>, valid for 30 days and with no card required, which is far more than a two-session tutorial consumes.</p>
+
+            <div class="rw-shot">
+              <div class="rw-bar">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <span class="rw-crumb">railway.com / login</span>
+              </div>
+              <div class="rw-body rw-body-center">
+                <div class="rw-login">
+                  <span class="rw-login-title">Sign in to Railway</span>
+                  <span class="rw-auth rw-auth-primary"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.5 9.5 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.69-4.57 4.94.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2Z"/></svg>Continue with GitHub</span>
+                  <span class="rw-auth">Continue with Google</span>
+                  <span class="rw-auth">Continue with email</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span>The old <code>railway.app</code> address redirects to <code>railway.com</code> — the dashboard is the same, only the domain changed. Deployed services still get a <code>*.up.railway.app</code> URL.</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- ---------- B ---------- -->
+        <li class="setup-step">
+          <div class="step-num">B</div>
+          <div class="step-body">
+            <h3>Deploy the Docker image</h3>
+            <p>From the dashboard, hit <strong>New Project</strong> — or <strong>New</strong> inside an existing project, or <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>K</kbd> for the command palette — and choose <strong>Docker Image</strong>. Paste the image name, tag included, and deploy. Nothing is built: Railway pulls the very same image from Docker Hub that the Docker path uses, on its own fast network.</p>
+
+            <div class="rw-shot">
+              <div class="rw-bar">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <span class="rw-crumb">railway.com / new</span>
+              </div>
+              <div class="rw-body">
+                <div class="rw-menu">
+                  <span class="rw-menu-label">Deploy from…</span>
+                  <span class="rw-menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3v12M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6ZM18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 0v3a3 3 0 0 1-3 3H9"/></svg>GitHub Repo</span>
+                  <span class="rw-menu-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="10" width="4" height="4" rx="0.6"/><rect x="8" y="10" width="4" height="4" rx="0.6"/><rect x="13" y="10" width="4" height="4" rx="0.6"/><rect x="8" y="5" width="4" height="4" rx="0.6"/><path d="M2 16c1.6 2.4 4.2 3.6 7.6 3.6 5.2 0 8.6-2.4 10.1-7 1.3.6 2.3.3 2.9-.6"/></svg>Docker Image<span class="rw-pick">pick this</span></span>
+                  <span class="rw-menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Template</span>
+                  <span class="rw-menu-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/><path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Database</span>
+                </div>
+                <div class="rw-field">
+                  <span class="rw-field-label">Image path</span>
+                  <span class="rw-input"><span class="rw-input-text">jvazquezperez/cunqa_netqmpi:latest</span><span class="rw-caret"></span></span>
+                  <span class="rw-btn">Deploy</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m20 6-11 11-5-5"/></svg>
+              <span>Copy the image path exactly — <code>jvazquezperez/cunqa_netqmpi:latest</code>. Watch the <strong>Deploy Logs</strong> tab: when the lines <code>[entrypoint] munge OK</code> and <code>[entrypoint] Jupyter: http://localhost:8888/…</code> scroll past, your cluster is up.</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- ---------- C ---------- -->
+        <li class="setup-step">
+          <div class="step-num">C</div>
+          <div class="step-body">
+            <h3>Publish port 8888 as a public URL</h3>
+            <p>The container is running, but nothing reaches it yet. Open the service, go to <strong>Settings → Networking → Public Networking</strong> and click <strong>Generate Domain</strong>. When it asks for the port, answer <strong>8888</strong> — the port the Jupyter server listens on inside the container, exactly the same number that <code>-p 8888:8888</code> publishes on the Docker path.</p>
+
+            <div class="rw-shot">
+              <div class="rw-bar">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <span class="rw-crumb">cunqa-netqmpi / settings / networking</span>
+              </div>
+              <div class="rw-body">
+                <div class="rw-panel">
+                  <span class="rw-panel-title">Public Networking</span>
+                  <div class="rw-port-row">
+                    <span class="rw-field-label">Target port</span>
+                    <span class="rw-input rw-input-sm">8888</span>
+                    <span class="rw-btn">Generate Domain</span>
+                  </div>
+                  <div class="rw-domain">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.6 3.8 5.6 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.6-3.8-9S9.5 5.6 12 3Z"/></svg>
+                    <span class="rw-domain-url">cunqa-netqmpi-production.up.railway.app</span>
+                    <span class="rw-badge">:8888</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="dark-note">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>
+              <span>8888 is the only port the container listens on, so Railway usually detects it and fills the field in for you. If the page later shows <em>“Application failed to respond”</em>, the target port is the first thing to check — and adding a service variable <code>PORT</code> = <code>8888</code> settles it for good.</span>
+            </div>
+
+            <div class="dark-note warn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></svg>
+              <span><strong>That URL is public.</strong> Anyone who has it — and the token — can run code in your container. The image ships with the default token <code>cunqa</code>, which is fine on your laptop and careless on the open internet. In <strong>Variables</strong>, add <code>JUPYTER_TOKEN</code> with a secret of your own and use that one in the URL below.</span>
+            </div>
+          </div>
+        </li>
+
+        <!-- ---------- D ---------- -->
+        <li class="setup-step">
+          <div class="step-num">D</div>
+          <div class="step-body">
+            <h3>Open the notebooks</h3>
+            <p>Take the domain Railway just generated and add the token to it. That is the whole setup — the notebooks, Slurm and CUNQA are already there, running on an x86-64 machine that is not yours.</p>
+
+            <div class="browser-mock">
+              <div class="browser-bar">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <span class="browser-url">https://cunqa-netqmpi-production.up.railway.app/?token=cunqa</span>
+              </div>
+              <div class="jup-list">
+                <div class="jup-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="jup-name">01-foundations.ipynb</span><span class="jup-tag">Exercise 0</span></div>
+                <div class="jup-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="jup-name">02-mpi-basics.ipynb</span><span class="jup-tag">Exercises 1–3</span></div>
+                <div class="jup-row"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/></svg><span class="jup-name">03-netqmpi-basics.ipynb</span><span class="jup-tag">Exercises 4–5</span></div>
+              </div>
+            </div>
+
+            <p class="term-caption">There is no <code>docker exec</code> here, so run the Exercise 0 check from a Jupyter terminal — <strong>New → Terminal</strong> in the file browser:</p>
+            <div class="term">
+              <div class="term-head">
+                <div class="window-dots"><span></span><span></span><span></span></div>
+                <span class="code-filename">jupyter terminal · your cluster in the cloud</span>
+              </div>
+              <pre><span class="tok-prompt">$</span> sinfo
+PARTITION AVAIL  TIMELIMIT  NODES  STATE NODELIST
+debug*       up   infinite      1   idle 3f9a1c02b7de
+
+<span class="tok-prompt">$</span> srun <span class="tok-flag">-N1</span> hostname
+3f9a1c02b7de</pre>
+            </div>
+
+            <div class="rw-caveats">
+              <div class="rw-caveat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="5" width="19" height="14" rx="2"/><path d="M2.5 10h19"/><path d="M6 14.5h4"/></svg>
+                <div><strong>It costs credits while it runs</strong><span>The trial grant covers the tutorial comfortably, but the meter runs for as long as the service is up. Delete the project when the session is over — <em>Settings → Danger → Delete</em>.</span></div>
+              </div>
+              <div class="rw-caveat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v5H4zM4 13h16v5H4z"/><path d="M7.5 8.5h.01M7.5 15.5h.01"/></svg>
+                <div><strong>2 vCPU and 1 GB of RAM</strong><span>That is the per-service ceiling on the free trial. Plenty for the exercises as written; if <code>qraise</code> dies on memory, raise fewer vQPUs or drop a couple of qubits.</span></div>
+              </div>
+              <div class="rw-caveat">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3.5-7.1"/><path d="M21 3v5h-5"/></svg>
+                <div><strong>The filesystem is ephemeral</strong><span>A redeploy or a restart wipes everything you wrote. Download the notebooks you want to keep — <em>File → Download</em> — or attach a Railway <strong>Volume</strong> mounted at <code>/home/tutorial/work</code>.</span></div>
+              </div>
+            </div>
+          </div>
+        </li>
+
+      </ol>
+    </div>
   </div>
 </section>
 

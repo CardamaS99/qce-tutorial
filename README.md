@@ -30,6 +30,18 @@ Then open <http://localhost:8888/?token=cunqa>.
 Instructions for installing Docker on Linux, Windows and macOS are in the
 *Environment Setup* section of the tutorial website (`index.html`).
 
+### No Docker? Run the image in the cloud
+
+CUNQA is compiled for x86-64, so the image cannot run natively on ARM and may
+not run at all where Docker Desktop will not install. The fallback is to deploy
+the same published image to [Railway](https://railway.com/): **New Project ->
+Docker Image**, paste `jvazquezperez/cunqa_netqmpi:latest`, then
+**Settings -> Networking -> Generate Domain** with target port `8888`, and open
+`https://<your-service>.up.railway.app/?token=cunqa`. Set a `JUPYTER_TOKEN`
+variable first — that URL is public. The step-by-step version, with the small
+print on credits, RAM and the ephemeral filesystem, is the *Plan B* block of
+the *Environment Setup* section (`index.html#railway`).
+
 ## Notebooks
 
 | Notebook | Part | Time |
