@@ -209,15 +209,22 @@ h2.section-title {
 
 /* ---------------- Hero ---------------- */
 
+/* Fill the first screen below the sticky header; --header-h is kept in sync
+   with the real header height by script.js. */
 .hero {
   background: var(--navy);
   color: #fff;
   padding: 4.5rem 0 4rem;
   position: relative;
   overflow: hidden;
+  min-height: calc(100vh - var(--header-h, 80px));
+  min-height: calc(100svh - var(--header-h, 80px));
+  display: flex;
+  align-items: center;
 }
 
 .hero .container {
+  width: 100%;
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
   gap: 2.5rem;

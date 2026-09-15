@@ -29,6 +29,17 @@ document.addEventListener('DOMContentLoaded', function () {
   /* Header shadow on scroll */
   const header = document.querySelector('.site-header');
   if (header) {
+    /* Expose the header height so the hero can fill the rest of the viewport */
+    const syncHeaderHeight = function () {
+      document.documentElement.style.setProperty('--header-h', header.offsetHeight + 'px');
+    };
+    syncHeaderHeight();
+    if ('ResizeObserver' in window) {
+      new ResizeObserver(syncHeaderHeight).observe(header);
+    } else {
+      window.addEventListener('resize', syncHeaderHeight);
+    }
+
     window.addEventListener('scroll', function () {
       header.style.boxShadow = window.pageYOffset > 4
         ? '0 4px 20px rgba(0,0,0,0.25)'
