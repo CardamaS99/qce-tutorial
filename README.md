@@ -5,7 +5,7 @@ distributed quantum applications with [NetQMPI](https://github.com/NetQIR/netqmp
 over the [CUNQA](https://github.com/CESGA-Quantum-Spain/cunqa) emulator — from
 monolithic circuits to multi-QPU networks.
 
-**Friday, September 18, 2026** · 13:00–14:30 and 15:00–16:30 · Metro Toronto Convention Centre
+**Friday, September 18, 2026** · 10:00–11:30 and 13:00–14:30 · Metro Toronto Convention Centre
 
 ## Quick start
 
@@ -46,11 +46,11 @@ the *Environment Setup* section (`index.html#railway`).
 
 | Notebook | Part | Time |
 |---|---|---|
-| [`01-foundations`](notebooks/01-foundations.ipynb) | Session 1 · Foundations of Distributed Computing | 13:00–13:30 |
-| [`02-mpi-basics`](notebooks/02-mpi-basics.ipynb) | Session 1 · Programming Model: MPI Basics | 13:30–14:00 |
-| [`03-netqmpi-basics`](notebooks/03-netqmpi-basics.ipynb) | Session 1 · Programming Model: NetQMPI Basics | 14:00–14:30 |
-| [`04-cunqa-foundations`](notebooks/04-cunqa-foundations.ipynb) | Session 2 · CUNQA Foundations | 15:00–15:45 |
-| [`05-advanced-algorithms`](notebooks/05-advanced-algorithms.ipynb) | Session 2 · Advanced Distributed Algorithms | 15:45–16:15 |
+| [`01-foundations`](notebooks/01-foundations.ipynb) | Session 1 · Foundations of Distributed Computing | 10:00–10:30 |
+| [`02-mpi-basics`](notebooks/02-mpi-basics.ipynb) | Session 1 · Programming Model: MPI Basics | 10:30–11:00 |
+| [`03-netqmpi-basics`](notebooks/03-netqmpi-basics.ipynb) | Session 1 · Programming Model: NetQMPI Basics | 11:00–11:30 |
+| [`04-cunqa-foundations`](notebooks/04-cunqa-foundations.ipynb) | Session 2 · CUNQA Foundations | 13:00–13:45 |
+| [`05-advanced-algorithms`](notebooks/05-advanced-algorithms.ipynb) | Session 2 · Advanced Distributed Algorithms | 13:45–14:15 |
 
 Worked solutions are in [`notebooks/solutions/`](notebooks/solutions/). Inside
 the Docker image they sit in the hidden `/home/tutorial/.solutions/` directory —
