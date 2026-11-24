@@ -72,18 +72,20 @@ RUN mkdir -p /var/spool/slurmctld /var/spool/slurmd /var/log/slurm \
 COPY slurm.conf.template /etc/slurm/slurm.conf.template
 COPY cgroup.conf /etc/slurm/cgroup.conf
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY cunqa-selftest.sh /usr/local/bin/cunqa-selftest
 
 # Normalise every file copied from Windows, not just the entrypoint: a CRLF
 # leaves a stray CR glued to the last directive's value in the Slurm configs.
 RUN apt-get update && apt-get install -y --no-install-recommends file \
-    && for f in /usr/local/bin/entrypoint.sh /etc/slurm/cgroup.conf \
+    && for f in /usr/local/bin/entrypoint.sh /usr/local/bin/cunqa-selftest \
+                /etc/slurm/cgroup.conf \
                 /etc/slurm/slurm.conf.template; do \
          case "$(file -b --mime-encoding "$f")" in \
            utf-16*) iconv -f UTF-16 -t UTF-8 "$f" -o /tmp/x && mv /tmp/x "$f" ;; \
          esac; \
          sed -i 's/\r$//' "$f"; \
        done \
-    && chmod +x /usr/local/bin/entrypoint.sh \
+    && chmod +x /usr/local/bin/entrypoint.sh /usr/local/bin/cunqa-selftest \
     && apt-get purge -y file && rm -rf /var/lib/apt/lists/*
 
 # ===========================================================================

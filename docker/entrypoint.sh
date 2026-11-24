@@ -99,6 +99,17 @@ runs once the internal cache refreshes (~1 minute the first time).
 ====================================================================
 EOF
 
+# --- CUNQA self-test ----------------------------------------------------------
+# CUNQA is compiled on the build machine but runs on the attendee's laptop, and
+# some hosts cannot run it even inside Docker. Only a real qraise on this host
+# tells, so try one now and say plainly whether it worked (see cunqa-selftest).
+# It also absorbs the slow first Slurm job, so the first qraise in the
+# notebooks is fast. Skip with -e CUNQA_SELFTEST=no.
+if [[ "${CUNQA_SELFTEST:-yes}" == "yes" ]]; then
+    log "Checking CUNQA: raising a test vQPU (can take up to a minute the first time)..."
+    /usr/local/bin/cunqa-selftest || true
+fi
+
 # Docker Desktop's Run button gives no TTY, and the default bash would read
 # EOF and exit, stopping the container. Keep it alive and stream the Jupyter
 # log instead, so the Logs tab shows something useful. An explicit command
