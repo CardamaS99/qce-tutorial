@@ -1,5 +1,6 @@
 #!/bin/bash
-# CUNQA self-test: raise one vQPU, run a one-qubit circuit on it, drop it.
+# CUNQA self-test: raise two vQPUs (qraise -n 2 -t 00:10:00), run a one-qubit
+# circuit on each, then qdrop --all.
 #
 # CUNQA is compiled once, on the machine that builds the image, and then runs
 # on whatever laptop pulls it. Some hosts cannot run it even inside Docker (an
@@ -31,9 +32,16 @@ cd "$WORKDIR" || exit 1
 JOBS_BEFORE=$(squeue -h -o '%i' 2>/dev/null | sort)
 
 cleanup() {
-    qdrop --family "$FAMILY" >/dev/null 2>&1 || true
-    # If the test died before the vQPU registered, qdrop cannot map the family
-    # to a job. Cancel whatever job this test added to the queue.
+    if [[ -z "$JOBS_BEFORE" ]]; then
+        # Nothing was queued before the test (always the case at container
+        # start), so everything up now is ours.
+        qdrop --all >/dev/null 2>&1 || true
+    else
+        # Re-run by hand with vQPUs already up: drop only the test family.
+        qdrop --family "$FAMILY" >/dev/null 2>&1 || true
+    fi
+    # If the test died before the vQPUs registered, qdrop cannot map them to a
+    # job. Cancel whatever job this test added to the queue.
     local job
     for job in $(comm -13 <(echo "$JOBS_BEFORE") <(squeue -h -o '%i' 2>/dev/null | sort)); do
         scancel "$job" 2>/dev/null || true
@@ -58,21 +66,34 @@ from cunqa.qjob import gather
 from cunqa.qpu import get_QPUs, qraise, run
 
 stage("qraise")
-qraise(1, "00:10:00", co_located=True, family=family)
+N = 2
+# qraise -n 2 -t 00:10:00 --co-located --family=cunqa_selftest
+# --co-located: without it get_QPUs() only finds vQPUs from inside a Slurm job,
+# and this script runs on the head node.
+qraise(N, "00:10:00", co_located=True, family=family)
 qpus = get_QPUs(co_located=True, family=family) or []
-if not qpus:
-    sys.exit("qraise returned but no vQPU of the test family is registered")
+if len(qpus) < N:
+    sys.exit(f"qraise returned but only {len(qpus)} of {N} vQPUs are registered")
 
 stage("run")
 SHOTS = 16
-circuit = CunqaCircuit(1, 1, id="selftest")
-circuit.h(0)
-circuit.measure(0, 0)
-results = gather(run([circuit], qpus[:1], shots=SHOTS))
-counts = results[0].counts
-print("counts:", counts, flush=True)
-if sum(counts.values()) != SHOTS:
-    sys.exit(f"expected {SHOTS} shots in the result, got {counts}")
+circuits = []
+for i in range(N):
+    circuit = CunqaCircuit(1, 1, id=f"selftest_{i}")
+    circuit.h(0)
+    circuit.measure(0, 0)
+    circuits.append(circuit)
+# run() returns a bare QJob, not a list, when it is given a single circuit,
+# and gather() only takes lists.
+qjobs = run(circuits, qpus[:N], shots=SHOTS)
+if not isinstance(qjobs, list):
+    qjobs = [qjobs]
+results = gather(qjobs)
+for qpu, result in zip(qpus, results):
+    counts = result.counts
+    print(f"{qpu.id} counts: {counts}", flush=True)
+    if sum(counts.values()) != SHOTS:
+        sys.exit(f"expected {SHOTS} shots from {qpu.id}, got {counts}")
 
 stage("done")
 PY
@@ -89,7 +110,7 @@ RC=$?
 
 if [[ $RC -eq 0 ]]; then
     echo ok > "$STATUS"
-    echo "[cunqa-selftest] OK: raised a vQPU and ran a circuit on it. CUNQA works on this machine."
+    echo "[cunqa-selftest] OK: raised 2 vQPUs and ran a circuit on each. CUNQA works on this machine."
     exit 0
 fi
 
@@ -99,8 +120,8 @@ echo fail > "$STATUS"
 LAST_STAGE=$(grep -o '^STAGE [a-z]*' "$LOG" | tail -n1 | cut -d' ' -f2)
 case "$LAST_STAGE" in
     import) WHAT="importing CUNQA's Python package" ;;
-    qraise) WHAT="raising a vQPU (qraise)" ;;
-    run)    WHAT="running a circuit on the vQPU (qraise itself worked)" ;;
+    qraise) WHAT="raising 2 vQPUs (qraise -n 2)" ;;
+    run)    WHAT="running circuits on the vQPUs (qraise itself worked)" ;;
     *)      WHAT="starting the test" ;;
 esac
 

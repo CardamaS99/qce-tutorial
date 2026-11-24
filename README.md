@@ -26,8 +26,8 @@ Then open <http://localhost:8888/?token=cunqa>.
   `--platform linux/amd64` to both commands.
 - **Keep your work:** `--rm` deletes the container on exit. Add
   `-v "$PWD/work:/home/tutorial/work"` and save anything you want to keep in `work/`.
-- **CUNQA self-test:** on startup the container raises a test vQPU and runs a
-  one-qubit circuit on it, then prints either `OK` or a `CUNQA SELF-TEST FAILED`
+- **CUNQA self-test:** on startup the container raises 2 test vQPUs
+  (`qraise -n 2 -t 00:10:00`), runs a one-qubit circuit on each, drops them, then prints either `OK` or a `CUNQA SELF-TEST FAILED`
   banner explaining what failed (CUNQA is compiled for x86-64-v2, and some hosts
   cannot run it even inside Docker). Re-run it with `cunqa-selftest`; the log is
   in `/var/log/cunqa-selftest.log`. Skip it with `-e CUNQA_SELFTEST=no`.

@@ -106,7 +106,7 @@ EOF
 # It also absorbs the slow first Slurm job, so the first qraise in the
 # notebooks is fast. Skip with -e CUNQA_SELFTEST=no.
 if [[ "${CUNQA_SELFTEST:-yes}" == "yes" ]]; then
-    log "Checking CUNQA: raising a test vQPU (can take up to a minute the first time)..."
+    log "Checking CUNQA: raising 2 test vQPUs (can take up to a minute the first time)..."
     /usr/local/bin/cunqa-selftest || true
 fi
 
