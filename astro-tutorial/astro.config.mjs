@@ -11,8 +11,8 @@ const codeTitle = {
 };
 
 export default defineConfig({
-  site: 'https://example.org',
-  base: '/tutorial',
+  site: process.env.ASTRO_SITE ?? 'https://example.org',
+  base: process.env.ASTRO_BASE ?? '/tutorial',
   integrations: [mdx()],
   markdown: {
     shikiConfig: {
